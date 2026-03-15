@@ -1,0 +1,161 @@
+.segredo-justica-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.segredo-justica-table .p-datatable-thead > tr > th {
+  white-space: nowrap;
+}
+
+.segredo-justica-table .p-tag {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.segredo-update-dialog .p-dialog-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.segredo-update-dialog .p-dialog-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.segredo-update-dialog .p-dialog-content {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.segredo-update-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.update-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.update-processo-title {
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: #475569;
+}
+
+.update-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.update-section h3 {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+}
+
+.update-info-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.update-info-grid div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.update-info-grid strong {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: #9ca3af;
+  letter-spacing: 0.04em;
+}
+
+.update-info-grid span {
+  font-size: 0.95rem;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.documentos-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.documento-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.documento-item span {
+  color: #475569;
+  font-weight: 500;
+}
+
+.documento-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.resultado-only-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.resultado-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.field .p-inputtextarea {
+  width: 100%;
+  min-height: 150px;
+  resize: vertical;
+}
+
+@media (max-width: 700px) {
+  .update-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .resultado-actions {
+    flex-direction: column;
+  }
+
+  .documento-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

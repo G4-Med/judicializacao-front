@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import type {
   DataTableFilterMeta,

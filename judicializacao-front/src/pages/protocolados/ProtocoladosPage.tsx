@@ -1,3 +1,634 @@
+import { useEffect, useMemo, useState } from 'react';
+import { DataTable } from 'primereact/datatable';
+import type {
+  DataTableFilterMeta,
+  DataTablePageEvent,
+  DataTableSortEvent
+} from 'primereact/datatable';
+import { Column } from 'primereact/column';
+import { Tag } from 'primereact/tag';
+import { Button } from 'primereact/button';
+import { InputText } from 'primereact/inputtext';
+import { InputTextarea } from 'primereact/inputtextarea';
+import { FilterMatchMode } from 'primereact/api';
+import { Dialog } from 'primereact/dialog';
+import { Timeline } from 'primereact/timeline';
+import './ProtocoladosPage.css';
+
+interface HistoricoAcompanhamento {
+  id: number;
+  data: string;
+  titulo: string;
+  descricao: string;
+  autor: string;
+}
+
+interface DocumentoProcesso {
+  label: string;
+  nome: string;
+}
+
+interface Protocolado {
+  id: number;
+  paciente: string;
+  cliente: string;
+  valor: number;
+  numeroProcesso: string;
+  procedimento: string;
+  dataProtocolo: string;
+  status: string;
+  resultado: string;
+  documentos: DocumentoProcesso[];
+  historico: HistoricoAcompanhamento[];
+}
+
+interface ProtocoladoTableRow extends Protocolado {
+  sequencial: number;
+  dias: number;
+}
+
+type ResultadoType = 'ganho' | 'perda' | '';
+
 export function ProtocoladosPage() {
-  return <div>Protocolados</div>;
+  const [loading, setLoading] = useState(false);
+  const [registros, setRegistros] = useState<Protocolado[]>([]);
+  const [selectedRegistros, setSelectedRegistros] = useState<ProtocoladoTableRow[]>([]);
+  const [first, setFirst] = useState(0);
+  const [rows, setRows] = useState(10);
+  const [sortField, setSortField] = useState<string | undefined>(undefined);
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+
+  const [filters, setFilters] = useState<DataTableFilterMeta>({
+    paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    cliente: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    valor: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    numeroProcesso: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    dias: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    status: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    resultado: { value: '', matchMode: FilterMatchMode.CONTAINS }
+  });
+
+  const [updateDialogVisible, setUpdateDialogVisible] = useState(false);
+  const [registroAtualizando, setRegistroAtualizando] = useState<ProtocoladoTableRow | null>(null);
+
+  const [novoAcompanhamento, setNovoAcompanhamento] = useState('');
+  const [parecerJuridico, setParecerJuridico] = useState('');
+  const [resultadoSelecionado, setResultadoSelecionado] = useState<ResultadoType>('');
+  const [arquivoAcompanhamento, setArquivoAcompanhamento] = useState<File | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+
+    const mock: Protocolado[] = [
+      {
+        id: 1,
+        paciente: 'Maria Aparecida Mori',
+        cliente: 'Instituto Brasileiro de Gestão da Saúde - IBG Saúde',
+        valor: 189600,
+        numeroProcesso: '#5004687-38.2023.8.13.0309',
+        procedimento: 'Implante de válvula mitral transcateter (TAVI)',
+        dataProtocolo: '2026-03-10',
+        status: 'Protocolado',
+        resultado: 'Em andamento',
+        documentos: [
+          { label: 'Orçamento', nome: 'orcamento_maria.pdf' },
+          { label: 'Petição', nome: 'peticao_maria.pdf' },
+          { label: 'Documento Adicional 1', nome: 'doc_extra_1.pdf' },
+          { label: 'Documento Adicional 2', nome: 'doc_extra_2.pdf' }
+        ],
+        historico: [
+          {
+            id: 1,
+            data: '2026-03-15',
+            titulo: 'Processo protocolado',
+            descricao: 'Protocolo realizado com sucesso.',
+            autor: 'Advogado (Admin)'
+          },
+          {
+            id: 2,
+            data: '2026-03-15',
+            titulo: 'Decisão do Processo',
+            descricao: 'Processo aguardando manifestação.',
+            autor: 'Advogado (Admin)'
+          }
+        ]
+      },
+      {
+        id: 2,
+        paciente: 'João Pedro Santos',
+        cliente: 'Clínica Alfa',
+        valor: 9200,
+        numeroProcesso: '#5001111-22.2026.8.13.0001',
+        procedimento: 'Herniorrafia inguinal',
+        dataProtocolo: '2026-03-05',
+        status: 'Ativo',
+        resultado: 'Sem resultado',
+        documentos: [
+          { label: 'Orçamento', nome: 'orcamento_joao.pdf' },
+          { label: 'Petição', nome: 'peticao_joao.pdf' },
+          { label: 'Documento Adicional 1', nome: 'doc_extra_1_joao.pdf' },
+          { label: 'Documento Adicional 2', nome: 'doc_extra_2_joao.pdf' }
+        ],
+        historico: []
+      }
+    ];
+
+    const timer = setTimeout(() => {
+      setRegistros(mock);
+      setLoading(false);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const dataComCamposCalculados = useMemo<ProtocoladoTableRow[]>(() => {
+    const hoje = new Date();
+
+    return registros.map((item, index) => {
+      const dataBase = new Date(`${item.dataProtocolo}T00:00:00`);
+      const diferencaMs = hoje.getTime() - dataBase.getTime();
+      const dias = Math.max(0, Math.floor(diferencaMs / (1000 * 60 * 60 * 24)));
+
+      return {
+        ...item,
+        sequencial: index + 1,
+        dias
+      };
+    });
+  }, [registros]);
+
+  const kpis = useMemo(() => {
+    const totalProcessos = dataComCamposCalculados.length;
+    const ativos = dataComCamposCalculados.filter((item) =>
+      ['protocolado', 'ativo', 'em andamento'].includes(item.status.toLowerCase())
+    ).length;
+
+    const mediaProcessos = totalProcessos
+      ? Math.round(
+          dataComCamposCalculados.reduce((acc, item) => acc + item.dias, 0) / totalProcessos
+        )
+      : 0;
+
+    const valorTotal = dataComCamposCalculados.reduce((acc, item) => acc + item.valor, 0);
+
+    return {
+      totalProcessos,
+      ativos,
+      mediaProcessos,
+      valorTotal
+    };
+  }, [dataComCamposCalculados]);
+
+  const onPage = (event: DataTablePageEvent) => {
+    setFirst(event.first);
+    setRows(event.rows);
+  };
+
+  const onSort = (event: DataTableSortEvent) => {
+    setSortField(event.sortField);
+    setSortOrder(event.sortOrder);
+  };
+
+  const formatarMoeda = (valor: number) =>
+    valor.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    });
+
+  const formatarData = (data: string) => {
+    const [ano, mes, dia] = data.split('-');
+    return `${dia}/${mes}/${ano}`;
+  };
+
+  const formatarDataTimeline = (data: string) => {
+    const [ano, mes, dia] = data.split('-');
+    return `Há ${Math.max(
+      0,
+      Math.floor(
+        (new Date().getTime() - new Date(`${ano}-${mes}-${dia}T00:00:00`).getTime()) /
+          (1000 * 60 * 60 * 24)
+      )
+    )} dias`;
+  };
+
+  const getStatusSeverity = (
+    status: string
+  ): 'success' | 'info' | 'warning' | 'danger' | 'secondary' | 'contrast' => {
+    const valor = status.toLowerCase();
+
+    if (['protocolado', 'ativo', 'concluído', 'concluido'].includes(valor)) return 'success';
+    if (['em andamento', 'sem resultado'].includes(valor)) return 'info';
+    if (['pendente', 'aguardando'].includes(valor)) return 'warning';
+    if (['perdido', 'indeferido'].includes(valor)) return 'danger';
+
+    return 'secondary';
+  };
+
+  const getResultadoSeverity = (
+    resultado: string
+  ): 'success' | 'info' | 'warning' | 'danger' | 'secondary' | 'contrast' => {
+    const valor = resultado.toLowerCase();
+
+    if (['ganho', 'procedente'].includes(valor)) return 'success';
+    if (['perda', 'improcedente'].includes(valor)) return 'danger';
+    if (['em andamento'].includes(valor)) return 'warning';
+
+    return 'secondary';
+  };
+
+  const precoBodyTemplate = (rowData: ProtocoladoTableRow) => formatarMoeda(rowData.valor);
+  const diasBodyTemplate = (rowData: ProtocoladoTableRow) => <span className="dias-cell">{rowData.dias}</span>;
+  const statusBodyTemplate = (rowData: ProtocoladoTableRow) => (
+    <Tag value={rowData.status} severity={getStatusSeverity(rowData.status)} />
+  );
+  const resultadoBodyTemplate = (rowData: ProtocoladoTableRow) => (
+    <Tag value={rowData.resultado} severity={getResultadoSeverity(rowData.resultado)} />
+  );
+
+  const atualizarBodyTemplate = (rowData: ProtocoladoTableRow) => {
+    return (
+      <Button
+        label="Atualizar"
+        icon="pi pi-refresh"
+        outlined
+        onClick={() => {
+          setRegistroAtualizando({ ...rowData });
+          setNovoAcompanhamento('');
+          setParecerJuridico('');
+          setResultadoSelecionado('');
+          setArquivoAcompanhamento(null);
+          setUpdateDialogVisible(true);
+        }}
+      />
+    );
+  };
+
+  const filterElement = (options: any, placeholder: string) => {
+    return (
+      <InputText
+        value={options.value || ''}
+        onChange={(e) => options.filterApplyCallback(e.target.value)}
+        placeholder={placeholder}
+        className="p-column-filter"
+      />
+    );
+  };
+
+  const handleBaixarDocumento = (nome: string) => {
+    console.log('Baixar documento:', nome);
+  };
+
+  const handleVisualizarDocumento = (nome: string) => {
+    console.log('Visualizar documento:', nome);
+  };
+
+  const handleSalvarAtualizacao = () => {
+    if (!registroAtualizando) return;
+
+    console.log('Salvar atualização', {
+      registro: registroAtualizando,
+      novoAcompanhamento,
+      parecerJuridico,
+      resultadoSelecionado,
+      arquivoAcompanhamento
+    });
+
+    setUpdateDialogVisible(false);
+  };
+
+  const timelineContent = (item: HistoricoAcompanhamento) => {
+    return (
+      <div className="timeline-card">
+        <div className="timeline-date">{formatarDataTimeline(item.data)}</div>
+        <div className="timeline-title">{item.titulo}</div>
+        <div className="timeline-description">{item.descricao}</div>
+        <div className="timeline-author">Resp.: {item.autor}</div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="protocolados-page">
+      <div className="page-header">
+        <div>
+          <h1>Protocolados</h1>
+          <p>Gestão dos processos protocolados</p>
+        </div>
+
+        <div className="page-actions">
+          <Button
+            label="Novo Protocolo"
+            icon="pi pi-plus"
+          />
+        </div>
+      </div>
+
+      <div className="kpi-grid">
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>Total Processos</span>
+            <i className="pi pi-list"></i>
+          </div>
+          <div className="kpi-value">{kpis.totalProcessos}</div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>Ativos</span>
+            <i className="pi pi-check-circle"></i>
+          </div>
+          <div className="kpi-value">{kpis.ativos}</div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>Média/Processos</span>
+            <i className="pi pi-chart-line"></i>
+          </div>
+          <div className="kpi-value">{kpis.mediaProcessos}</div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>Valor Total</span>
+            <i className="pi pi-dollar"></i>
+          </div>
+          <div className="kpi-value">{formatarMoeda(kpis.valorTotal)}</div>
+        </div>
+      </div>
+
+      <div className="card">
+        <DataTable
+          value={dataComCamposCalculados}
+          dataKey="id"
+          paginator
+          rows={rows}
+          first={first}
+          totalRecords={dataComCamposCalculados.length}
+          onPage={onPage}
+          sortField={sortField}
+          sortOrder={sortOrder}
+          onSort={onSort}
+          filters={filters}
+          onFilter={(e) => setFilters(e.filters)}
+          filterDisplay="row"
+          loading={loading}
+          selectionMode="multiple"
+          selection={selectedRegistros}
+          onSelectionChange={(e) => setSelectedRegistros(e.value as ProtocoladoTableRow[])}
+          tableStyle={{ minWidth: '95rem' }}
+          emptyMessage="Nenhum processo encontrado."
+          className="protocolados-table"
+        >
+          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+
+          <Column
+            field="sequencial"
+            header="#"
+            sortable
+            style={{ minWidth: '4rem' }}
+            body={(rowData: ProtocoladoTableRow) => rowData.sequencial}
+          />
+
+          <Column
+            field="paciente"
+            header="Paciente"
+            sortable
+            filter
+            filterElement={(options) => filterElement(options, 'Buscar')}
+            style={{ minWidth: '16rem' }}
+          />
+
+          <Column
+            field="cliente"
+            header="Cliente"
+            sortable
+            filter
+            filterElement={(options) => filterElement(options, 'Buscar')}
+            style={{ minWidth: '16rem' }}
+          />
+
+          <Column
+            field="valor"
+            header="Valor"
+            sortable
+            filter
+            filterElement={(options) => filterElement(options, 'Buscar')}
+            body={precoBodyTemplate}
+            style={{ minWidth: '10rem' }}
+          />
+
+          <Column
+            field="numeroProcesso"
+            header="Processo"
+            sortable
+            filter
+            filterElement={(options) => filterElement(options, 'Buscar')}
+            style={{ minWidth: '16rem' }}
+          />
+
+          <Column
+            field="dias"
+            header="Dias"
+            sortable
+            filter
+            filterElement={(options) => filterElement(options, 'Buscar')}
+            body={diasBodyTemplate}
+            style={{ minWidth: '7rem' }}
+          />
+
+          <Column
+            field="status"
+            header="Status"
+            sortable
+            filter
+            filterElement={(options) => filterElement(options, 'Buscar')}
+            body={statusBodyTemplate}
+            style={{ minWidth: '12rem' }}
+          />
+
+          <Column
+            field="resultado"
+            header="Resultado"
+            sortable
+            filter
+            filterElement={(options) => filterElement(options, 'Buscar')}
+            body={resultadoBodyTemplate}
+            style={{ minWidth: '12rem' }}
+          />
+
+          <Column
+            header="Atualizar"
+            body={atualizarBodyTemplate}
+            style={{ minWidth: '10rem' }}
+            bodyStyle={{ textAlign: 'center' }}
+          />
+        </DataTable>
+      </div>
+
+      <Dialog
+        header="Atualização"
+        visible={updateDialogVisible}
+        style={{ width: '72rem', maxWidth: '96vw' }}
+        modal
+        onHide={() => setUpdateDialogVisible(false)}
+        className="protocolado-update-dialog"
+      >
+        {registroAtualizando && (
+          <div className="update-processo-layout">
+            <div className="update-topbar">
+              <div className="update-processo-title">
+                Processo {registroAtualizando.numeroProcesso}
+              </div>
+
+              <Button
+                label="Voltar"
+                outlined
+                onClick={() => setUpdateDialogVisible(false)}
+              />
+            </div>
+
+            <section className="update-section">
+              <h3>Informações do Processo</h3>
+
+              <div className="update-info-grid">
+                <div><strong>Paciente</strong><span>{registroAtualizando.paciente}</span></div>
+                <div><strong>Cliente</strong><span>{registroAtualizando.cliente}</span></div>
+                <div><strong>Procedimento</strong><span>{registroAtualizando.procedimento}</span></div>
+                <div><strong>Valor</strong><span>{formatarMoeda(registroAtualizando.valor)}</span></div>
+                <div><strong>Data Protocolo</strong><span>{formatarData(registroAtualizando.dataProtocolo)}</span></div>
+                <div><strong>Dias desde o protocolo</strong><span>{registroAtualizando.dias} dias</span></div>
+              </div>
+            </section>
+
+            <section className="update-section">
+              <h3>Documentos do Processo</h3>
+
+              <div className="documentos-grid">
+                {registroAtualizando.documentos.map((doc) => (
+                  <div key={doc.nome} className="documento-item">
+                    <span>{doc.label}</span>
+                    <div className="documento-actions">
+                      <Button
+                        label="Ver PDF"
+                        icon="pi pi-eye"
+                        text
+                        onClick={() => handleVisualizarDocumento(doc.nome)}
+                      />
+                      <Button
+                        label="Baixar"
+                        icon="pi pi-download"
+                        text
+                        onClick={() => handleBaixarDocumento(doc.nome)}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="update-section">
+              <h3>Histórico de Acompanhamento</h3>
+
+              {registroAtualizando.historico.length > 0 ? (
+                <Timeline
+                  value={registroAtualizando.historico}
+                  align="left"
+                  content={timelineContent}
+                  className="processo-timeline"
+                />
+              ) : (
+                <div className="timeline-empty">Nenhum acompanhamento registrado.</div>
+              )}
+            </section>
+
+            <section className="update-section">
+              <h3>Adicionar Acompanhamento</h3>
+
+              <div className="update-form-grid">
+                <div className="field field-span-2">
+                  <label>Acompanhamento</label>
+
+                    <div className="resultado-actions">
+                    <Button
+                      label="Acompanhamento"
+                      severity={resultadoSelecionado === 'ganho' ? 'success' : 'secondary'}
+                      outlined={resultadoSelecionado !== 'ganho'}
+                      onClick={() => setResultadoSelecionado('ganho')}
+                    />
+                    <Button
+                      label="Decisão Processo"
+                      severity={resultadoSelecionado === 'perda' ? 'danger' : 'secondary'}
+                      outlined={resultadoSelecionado !== 'perda'}
+                      onClick={() => setResultadoSelecionado('perda')}
+                    />
+                  </div>
+
+                  
+                  <label>Descrição</label>
+
+
+
+                  <InputTextarea
+                    value={novoAcompanhamento}
+                    onChange={(e) => setNovoAcompanhamento(e.target.value)}
+                    rows={5}
+                    placeholder="Digite a atualização do processo..."
+                  />
+                </div>
+
+                <div className="field field-span-2">
+                  <label>Resultado</label>
+
+                  <div className="resultado-actions">
+                    <Button
+                      label="Procedente (Ganho)"
+                      severity={resultadoSelecionado === 'ganho' ? 'success' : 'secondary'}
+                      outlined={resultadoSelecionado !== 'ganho'}
+                      onClick={() => setResultadoSelecionado('ganho')}
+                    />
+                    <Button
+                      label="Improcedente (Perda)"
+                      severity={resultadoSelecionado === 'perda' ? 'danger' : 'secondary'}
+                      outlined={resultadoSelecionado !== 'perda'}
+                      onClick={() => setResultadoSelecionado('perda')}
+                    />
+                  </div>
+
+                  <label className="parecer-label">Análise Jurídica Final</label>
+                  <InputTextarea
+                    value={parecerJuridico}
+                    onChange={(e) => setParecerJuridico(e.target.value)}
+                    rows={5}
+                    placeholder="Descreva, quanto participante, valores das cotações, qual foi a menor, motivo do resultado..."
+                  />
+                </div>
+
+                <div className="field field-span-2">
+                  <label>Anexo (Opcional)</label>
+                  <input
+                    type="file"
+                    onChange={(e) => setArquivoAcompanhamento(e.target.files?.[0] ?? null)}
+                  />
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+
+        <div className="dialog-footer-actions">
+          <Button
+            label="Cancelar"
+            outlined
+            onClick={() => setUpdateDialogVisible(false)}
+          />
+          <Button
+            label="Salvar"
+            icon="pi pi-check"
+            onClick={handleSalvarAtualizacao}
+          />
+        </div>
+      </Dialog>
+    </div>
+  );
 }
