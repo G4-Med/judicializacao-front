@@ -1,0 +1,432 @@
+.clientes-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #1f2937;
+}
+
+.page-header p {
+  margin: 6px 0 0;
+  color: #6b7280;
+}
+
+.page-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* KPIs */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.kpi-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px 18px 14px;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #4b5563;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.kpi-header i {
+  color: #fb923c;
+  font-size: 1.05rem;
+}
+
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 500;
+  line-height: 1;
+  color: #f97316;
+}
+
+/* Card da tabela */
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.clientes-table {
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.clientes-table .p-datatable-thead > tr > th {
+  white-space: nowrap;
+}
+
+.clientes-table .p-tag {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.clientes-table .p-button.p-button-outlined {
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.clientes-table .p-button.p-button-outlined:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #334155;
+}
+
+/* Modal */
+.cliente-edit-dialog .p-dialog-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.cliente-edit-dialog .p-dialog-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.cliente-edit-dialog .p-dialog-content {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+/* Abas */
+.cliente-edit-dialog .p-tabview-nav {
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 18px;
+}
+
+.cliente-edit-dialog .p-tabview-nav li .p-tabview-nav-link {
+  padding: 0.9rem 1rem;
+  font-weight: 600;
+  color: #64748b;
+  background: transparent;
+}
+
+.cliente-edit-dialog .p-tabview-nav li.p-highlight .p-tabview-nav-link {
+  color: #2563eb;
+  border-color: #2563eb;
+}
+
+.cliente-edit-dialog .p-tabview-panels {
+  padding: 0;
+  background: transparent;
+}
+
+/* Grid do formulário */
+.cliente-form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cliente-form-grid .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cliente-form-grid .field label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.cliente-form-grid .p-inputtext,
+.cliente-form-grid .p-dropdown,
+.cliente-form-grid .p-inputnumber,
+.cliente-form-grid .p-inputnumber-input {
+  width: 100%;
+}
+
+.cliente-form-grid .p-inputtext,
+.cliente-form-grid .p-inputnumber-input,
+.cliente-form-grid .p-dropdown {
+  height: 42px;
+}
+
+.cliente-form-grid .p-inputtext:disabled,
+.cliente-form-grid .p-inputnumber-input:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  opacity: 1;
+}
+
+.field-span-1 {
+  grid-column: span 1;
+}
+
+.field-span-2 {
+  grid-column: span 2;
+}
+
+.field-span-3 {
+  grid-column: span 3;
+}
+
+.field-span-4 {
+  grid-column: span 4;
+}
+
+.field-button {
+  justify-content: flex-end;
+}
+
+.field-button .p-button {
+  width: 100%;
+  height: 42px;
+}
+
+.tag-box {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  padding: 0 2px;
+}
+
+.dialog-footer-actions {
+  margin-top: 22px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.dialog-footer-actions .p-button {
+  min-width: 110px;
+}
+
+/* Dark mode */
+body.dark-theme .clientes-page {
+  color: #f8fafc;
+}
+
+body.dark-theme .page-header h1 {
+  color: #f8fafc;
+}
+
+body.dark-theme .page-header p {
+  color: #94a3b8;
+}
+
+body.dark-theme .kpi-card {
+  background: #1f2a3d;
+  border-color: #334155;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+body.dark-theme .kpi-header {
+  color: #cbd5e1;
+}
+
+body.dark-theme .kpi-header i {
+  color: #fb923c;
+}
+
+body.dark-theme .kpi-value {
+  color: #fb923c;
+}
+
+body.dark-theme .card {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+body.dark-theme .clientes-table .p-datatable-wrapper {
+  background: #1e293b;
+}
+
+body.dark-theme .clientes-table .p-datatable-header,
+body.dark-theme .clientes-table .p-datatable-thead > tr > th {
+  background: #1e293b;
+  color: #f8fafc;
+  border-color: #334155;
+}
+
+body.dark-theme .clientes-table .p-datatable-tbody > tr {
+  background: #1f2a3d;
+  color: #f8fafc;
+}
+
+body.dark-theme .clientes-table .p-datatable-tbody > tr:nth-child(even) {
+  background: #223047;
+}
+
+body.dark-theme .clientes-table .p-datatable-tbody > tr:hover {
+  background: #2b3a55;
+}
+
+body.dark-theme .clientes-table .p-datatable-tbody > tr > td {
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+body.dark-theme .clientes-table .p-inputtext,
+body.dark-theme .clientes-table .p-column-filter {
+  background: #0f172a;
+  color: #f8fafc;
+  border-color: #334155;
+}
+
+body.dark-theme .clientes-table .p-inputtext::placeholder {
+  color: #94a3b8;
+}
+
+body.dark-theme .clientes-table .p-paginator {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+body.dark-theme .clientes-table .p-paginator .p-paginator-page,
+body.dark-theme .clientes-table .p-paginator .p-paginator-prev,
+body.dark-theme .clientes-table .p-paginator .p-paginator-next,
+body.dark-theme .clientes-table .p-paginator .p-paginator-first,
+body.dark-theme .clientes-table .p-paginator .p-paginator-last {
+  color: #cbd5e1;
+}
+
+body.dark-theme .clientes-table .p-paginator .p-highlight {
+  background: #334155;
+  color: #ffffff;
+}
+
+body.dark-theme .clientes-table .p-checkbox .p-checkbox-box {
+  background: #0f172a;
+  border-color: #475569;
+}
+
+body.dark-theme .clientes-table .p-checkbox .p-checkbox-box.p-highlight {
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+
+body.dark-theme .cliente-edit-dialog .p-dialog-header {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+body.dark-theme .cliente-edit-dialog .p-dialog-title {
+  color: #f8fafc;
+}
+
+body.dark-theme .cliente-edit-dialog .p-dialog-content {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+body.dark-theme .cliente-edit-dialog .p-tabview-nav {
+  border-color: #334155;
+}
+
+body.dark-theme .cliente-edit-dialog .p-tabview-nav li .p-tabview-nav-link {
+  color: #94a3b8;
+  background: transparent;
+}
+
+body.dark-theme .cliente-edit-dialog .p-tabview-nav li.p-highlight .p-tabview-nav-link {
+  color: #60a5fa;
+  border-color: #60a5fa;
+}
+
+body.dark-theme .cliente-edit-dialog .p-tabview-panels {
+  background: transparent;
+}
+
+body.dark-theme .cliente-form-grid .field label {
+  color: #cbd5e1;
+}
+
+body.dark-theme .cliente-form-grid .p-inputtext,
+body.dark-theme .cliente-form-grid .p-dropdown,
+body.dark-theme .cliente-form-grid .p-inputnumber-input {
+  background: #0f172a;
+  color: #f8fafc;
+  border-color: #334155;
+}
+
+body.dark-theme .cliente-form-grid .p-inputtext:disabled,
+body.dark-theme .cliente-form-grid .p-inputnumber-input:disabled {
+  background: #111827;
+  color: #94a3b8;
+  opacity: 1;
+}
+
+body.dark-theme .dialog-footer-actions {
+  border-top: 1px solid transparent;
+}
+
+/* Responsivo */
+@media (max-width: 1400px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 1100px) {
+  .cliente-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .field-span-3,
+  .field-span-4 {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 900px) {
+  .page-header {
+    flex-direction: column;
+  }
+
+  .page-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 700px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cliente-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field-span-1,
+  .field-span-2,
+  .field-span-3,
+  .field-span-4 {
+    grid-column: span 1;
+  }
+}
