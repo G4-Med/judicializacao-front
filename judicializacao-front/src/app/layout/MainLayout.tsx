@@ -1,24 +1,27 @@
-import { Outlet } from 'react-router-dom';
+import 'primereact/resources/themes/lara-dark-blue/theme.css'
+import 'primereact/resources/primereact.min.css'
+import 'primeicons/primeicons.css'
+import 'primeflex/primeflex.css'
+import { Outlet } from 'react-router-dom'
+import { useState } from 'react'
+import { Header } from './Header'
+import { MenuSidebar } from './MenuSidebar'
 
 export function MainLayout() {
+  const [menuVisible, setMenuVisible] = useState(false)
+
   return (
-    <div className="min-h-screen">
-      <header className="p-3 border-bottom-1 surface-border">
-        <h2 className="m-0">G4Med • Judicialização</h2>
-      </header>
+    <div style={{ minHeight: '100vh' }}>
+      <Header onMenuClick={() => setMenuVisible(true)} />
 
-      <div className="flex">
-        <aside
-          className="p-3 border-right-1 surface-border"
-          style={{ width: '260px', minHeight: 'calc(100vh - 61px)' }}
-        >
-          <p className="font-bold">Menu</p>
-        </aside>
+      <MenuSidebar
+        visible={menuVisible}
+        onHide={() => setMenuVisible(false)}
+      />
 
-        <main className="flex-1 p-4">
-          <Outlet />
-        </main>
-      </div>
+      <main style={{ padding: '20px' }}>
+        <Outlet />
+      </main>
     </div>
-  );
+  )
 }
