@@ -1,0 +1,138 @@
+.para-protocolar-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.kpi-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.para-protocolar-table .p-datatable-thead > tr > th {
+  white-space: nowrap;
+}
+
+.para-protocolar-table .p-tag {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.pp-dialog .p-dialog-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pp-dialog .p-dialog-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.pp-dialog .p-dialog-content {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.pp-form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.pp-form-grid .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pp-form-grid .field label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.pp-form-grid .p-inputtext,
+.pp-form-grid .p-dropdown,
+.pp-form-grid .p-inputnumber,
+.pp-form-grid .p-inputnumber-input,
+.pp-form-grid .p-calendar,
+.pp-form-grid .p-calendar .p-inputtext,
+.pp-form-grid .p-inputtextarea {
+  width: 100%;
+}
+
+.pp-form-grid .p-inputtext,
+.pp-form-grid .p-inputnumber-input,
+.pp-form-grid .p-dropdown,
+.pp-form-grid .p-calendar .p-inputtext {
+  height: 42px;
+}
+
+.pp-form-grid .p-inputtextarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.pp-form-grid .p-inputtext:disabled,
+.pp-form-grid .p-inputnumber-input:disabled,
+.pp-form-grid .p-inputtextarea:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  opacity: 1;
+}
+
+.field-button {
+  justify-content: flex-end;
+}
+
+.field-button .p-button {
+  width: 100%;
+  height: 42px;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 6px;
+}
+
+.radio-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.radio-item label {
+  margin: 0;
+  font-weight: 500;
+  color: #374151;
+}
+
+@media (max-width: 1100px) {
+  .kpi-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pp-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .field-span-4 {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 700px) {
+  .kpi-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .pp-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field-span-2,
+  .field-span-4 {
+    grid-column: span 1;
+  }
+}
