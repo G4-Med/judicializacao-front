@@ -1,0 +1,91 @@
+.date-picker-periodo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 480px;
+}
+
+.periodo-tabs {
+  display: flex;
+  background: #ececec;
+  border-radius: 16px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.periodo-tabs button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  height: 42px;
+  font-size: 1rem;
+  color: #a1a1aa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.periodo-tabs button.active {
+  background: #ffffff;
+  color: #22c3ff;
+  font-weight: 600;
+}
+
+.periodo-label {
+  text-align: center;
+  font-size: 1.05rem;
+  color: #27272a;
+  font-weight: 500;
+}
+
+.periodo-calendar-box {
+  padding: 8px 0 0;
+}
+
+.periodo-calendar-box .p-calendar {
+  width: 100%;
+}
+
+.periodo-calendar-box .p-datepicker {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  width: 100%;
+}
+
+/* dark mode */
+body.dark-theme .date-picker-periodo {
+  color: #f8fafc;
+}
+
+body.dark-theme .periodo-tabs {
+  background: #1f2937;
+}
+
+body.dark-theme .periodo-tabs button {
+  color: #94a3b8;
+}
+
+body.dark-theme .periodo-tabs button.active {
+  background: #334155;
+  color: #38bdf8;
+}
+
+body.dark-theme .periodo-label {
+  color: #f8fafc;
+}
+
+body.dark-theme .periodo-calendar-box .p-datepicker {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+body.dark-theme .periodo-calendar-box .p-datepicker table td > span {
+  color: #f8fafc;
+}
+
+body.dark-theme .periodo-calendar-box .p-datepicker .p-datepicker-header {
+  background: #1e293b;
+  color: #f8fafc;
+  border-color: #334155;
+}

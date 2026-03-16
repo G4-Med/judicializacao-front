@@ -1,0 +1,52 @@
+.configuracoes-page {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.page-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.card {
+  padding: 0;
+}
+
+/* HEADER DA TABELA */
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.table-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* FORM */
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.form-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* FOOTER MODAL */
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}

@@ -1,0 +1,165 @@
+.usuarios-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.usuarios-table .p-datatable-thead > tr > th {
+  white-space: nowrap;
+}
+
+.usuarios-table .p-tag {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* Modal editar */
+.usuario-edit-dialog .p-dialog-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.usuario-edit-dialog .p-dialog-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.usuario-edit-dialog .p-dialog-content {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.usuario-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.usuario-form-grid .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.usuario-form-grid .field label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.usuario-form-grid .p-inputtext,
+.usuario-form-grid .p-dropdown {
+  width: 100%;
+}
+
+.usuario-form-grid .p-inputtext,
+.usuario-form-grid .p-dropdown {
+  height: 42px;
+}
+
+.usuario-form-grid .p-inputtext:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  opacity: 1;
+}
+
+.field-span-2 {
+  grid-column: span 2;
+}
+
+.status-switch-box {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-switch-box span {
+  font-weight: 600;
+  color: #475569;
+}
+
+/* Modal vínculo */
+.usuario-vinculo-dialog .p-dialog-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.usuario-vinculo-dialog .p-dialog-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.usuario-vinculo-dialog .p-dialog-content {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.medicos-vinculo-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.medico-vinculo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.medico-vinculo-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.medico-vinculo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.medico-vinculo-info strong {
+  color: #1f2937;
+}
+
+.medico-vinculo-info span {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* Footer comum */
+.dialog-footer-actions {
+  margin-top: 22px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.dialog-footer-actions .p-button {
+  min-width: 120px;
+}
+
+/* Responsivo */
+@media (max-width: 700px) {
+  .usuario-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field-span-2 {
+    grid-column: span 1;
+  }
+
+  .medico-vinculo-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

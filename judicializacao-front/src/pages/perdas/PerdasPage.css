@@ -1,0 +1,14 @@
+.perdas-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.perdas-table .p-datatable-thead > tr > th {
+  white-space: nowrap;
+}
+
+.perdas-table .p-tag {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
