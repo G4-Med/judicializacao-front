@@ -11,6 +11,7 @@ import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { FilterMatchMode } from 'primereact/api';
+import { getSegredoJustica, salvarResultadoSegredo } from '../../services/api/orders';
 import { Dialog } from 'primereact/dialog';
 import './SegredoJusticaPage.css';
 
@@ -22,10 +23,19 @@ interface DocumentoProcesso {
 interface SegredoJustica {
   id: number;
   paciente: string;
+  nprocesso: string;
+  procedimento: string;
+  area: string;
+  refPreco: number;
+  valorOrcamento: number;
+  dataStatusOrcamento: string | null;
+  dias: number;
+  statusProcesso: string;
+  obsProtocolo: string;
+  // campos legados para compatibilidade com a tabela existente
   cliente: string;
   valor: number;
   numeroProcesso: string;
-  procedimento: string;
   dataEnvioOrcamento: string;
   status: string;
   resultado: string;
@@ -64,47 +74,39 @@ export function SegredoJusticaPage() {
   const [resultadoSelecionado, setResultadoSelecionado] = useState<ResultadoType>('');
   const [parecerJuridico, setParecerJuridico] = useState('');
 
-  useEffect(() => {
-    setLoading(true);
 
-    const mock: SegredoJustica[] = [
-      {
-        id: 1,
-        paciente: 'Maria Aparecida Mori',
-        cliente: 'Instituto Brasileiro de Gestão da Saúde - IBG Saúde',
-        valor: 188600,
-        numeroProcesso: '#5004687-38.2023.8.13.0309',
-        procedimento: 'Implante de válvula mitral transcateter (TAVI)',
-        dataEnvioOrcamento: '2026-03-11',
+const carregarDados = () => {
+  setLoading(true);
+  getSegredoJustica()
+    .then(({ data }) => {
+      setRegistros(data.map((o: any) => ({
+        id: o.id,
+        paciente: o.paciente ?? '',
+        nprocesso: o.nprocesso ?? '',
+        procedimento: o.procedimento ?? '',
+        area: o.area ?? '',
+        refPreco: o.refPreco ?? 0,
+        valorOrcamento: o.valorOrcamento ?? 0,
+        dataStatusOrcamento: o.dataStatusOrcamento,
+        dias: o.dias ?? 0,
+        statusProcesso: o.statusProcesso ?? '',
+        obsProtocolo: o.obsProtocolo ?? '',
+        // campos legados mapeados
+        cliente: o.area ?? '',
+        valor: o.valorOrcamento ?? o.refPreco ?? 0,
+        numeroProcesso: o.nprocesso ?? '',
+        dataEnvioOrcamento: o.dataStatusOrcamento ?? '',
         status: 'Ativo',
         resultado: 'Sem resultado',
-        documentos: [
-          { label: 'Orçamento', nome: 'orcamento_maria.pdf' }
-        ]
-      },
-      {
-        id: 2,
-        paciente: 'João Pedro Santos',
-        cliente: 'Clínica Alfa',
-        valor: 9200,
-        numeroProcesso: '#5001111-22.2026.8.13.0001',
-        procedimento: 'Herniorrafia inguinal',
-        dataEnvioOrcamento: '2026-03-08',
-        status: 'Ativo',
-        resultado: 'Sem resultado',
-        documentos: [
-          { label: 'Orçamento', nome: 'orcamento_joao.pdf' }
-        ]
-      }
-    ];
+        documentos: [],
+      })));
+    })
+    .catch(() => console.error('Erro ao carregar segredo de justiça'))
+    .finally(() => setLoading(false));
+};
 
-    const timer = setTimeout(() => {
-      setRegistros(mock);
-      setLoading(false);
-    }, 400);
+useEffect(() => { carregarDados(); }, []);  
 
-    return () => clearTimeout(timer);
-  }, []);
 
   const dataComCamposCalculados = useMemo<SegredoJusticaTableRow[]>(() => {
     const hoje = new Date();
@@ -234,16 +236,22 @@ export function SegredoJusticaPage() {
     console.log('Visualizar documento:', nome);
   };
 
-  const handleSalvarAtualizacao = () => {
-    if (!registroAtualizando) return;
+  const handleSalvarAtualizacao = async () => {
+    if (!registroAtualizando || !resultadoSelecionado) {
+      alert('Selecione um resultado antes de salvar.');
+      return;
+    }
 
-    console.log('Salvar atualização', {
-      registro: registroAtualizando,
-      resultadoSelecionado,
-      parecerJuridico
-    });
-
-    setUpdateDialogVisible(false);
+    try {
+      await salvarResultadoSegredo(registroAtualizando.id, {
+        resultado: resultadoSelecionado,
+        parecer: parecerJuridico,
+      });
+      carregarDados();
+      setUpdateDialogVisible(false);
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'Erro ao salvar.');
+    }
   };
 
   return (
@@ -432,11 +440,14 @@ export function SegredoJusticaPage() {
 
               <div className="update-info-grid">
                 <div><strong>Paciente</strong><span>{registroAtualizando.paciente}</span></div>
-                <div><strong>Cliente</strong><span>{registroAtualizando.cliente}</span></div>
+                <div><strong>Nº Processo</strong><span>{registroAtualizando.nprocesso || '-'}</span></div>
                 <div><strong>Procedimento</strong><span>{registroAtualizando.procedimento}</span></div>
-                <div><strong>Valor</strong><span>{formatarMoeda(registroAtualizando.valor)}</span></div>
-                <div><strong>Data Envio Orçamento</strong><span>{formatarData(registroAtualizando.dataEnvioOrcamento)}</span></div>
-                <div><strong>Dias desde o envio do orçamento</strong><span>{registroAtualizando.dias} dias</span></div>
+                <div><strong>Valor Orçamento</strong><span>{formatarMoeda(registroAtualizando.valorOrcamento)}</span></div>
+                <div><strong>Data Envio Orçamento</strong><span>{registroAtualizando.dataEnvioOrcamento ? formatarData(registroAtualizando.dataEnvioOrcamento) : '-'}</span></div>
+                <div><strong>Dias desde o envio</strong><span>{registroAtualizando.dias} dias</span></div>
+                {registroAtualizando.obsProtocolo && (
+                  <div><strong>Obs Protocolo</strong><span>{registroAtualizando.obsProtocolo}</span></div>
+                )}
               </div>
             </section>
 

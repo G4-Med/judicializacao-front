@@ -6,6 +6,7 @@ import type {
   DataTableSortEvent
 } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { getParaProtocolar, salvarProtocolar, uploadAnexoOrder } from '../../services/api/orders';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -20,12 +21,20 @@ import './ParaProtocolarPage.css';
 interface ParaProtocolar {
   id: number;
   paciente: string;
+  dataNascimento: string | null;
+  procedimento: string;
+  area: string;
+  subarea: string;
+  nprocesso: string;
+  refPreco: number;
+  valorOrcamento: number;
+  dataStatusOrcamento: string | null;
+  solicitacao: string;
   cliente: string;
   valor: number;
   dataEnvioOrcamento: string;
   observacoes: string;
   numeroProcesso: string;
-  procedimento: string;
   status: string;
   anexoNome: string;
 }
@@ -45,6 +54,11 @@ export function ParaProtocolarPage() {
   const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>(undefined);
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [dataProtocolo, setDataProtocolo] = useState('');
+  const [arquivoPeticao, setArquivoPeticao] = useState<File | null>(null)
+  const [arquivoExtra1, setArquivoExtra1] = useState<File | null>(null)
+  const [arquivoExtra2, setArquivoExtra2] = useState<File | null>(null)
+  const [enviandoProtocolo, setEnviandoProtocolo] = useState(false)
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -63,65 +77,52 @@ export function ParaProtocolarPage() {
   const [registroProtocolando, setRegistroProtocolando] = useState<ParaProtocolarTableRow | null>(null);
   const [registroNaoProtocolar, setRegistroNaoProtocolar] = useState<ParaProtocolarTableRow | null>(null);
 
-  const [dataProtocolacao, setDataProtocolacao] = useState<Date | null>(null);
   const [naoProtocolarOpcao, setNaoProtocolarOpcao] = useState<NaoProtocolarOpcao>('');
   const [naoProtocolarObs, setNaoProtocolarObs] = useState('');
 
-  useEffect(() => {
+  const carregarDados = () => {
     setLoading(true);
+    getParaProtocolar()
+      .then(({ data }) => {
+        setRegistros(
+          data.map((o: any) => ({
+            id: o.id,
+            paciente: o.paciente ?? '',
+            dataNascimento: o.dataNascimento,
+            procedimento: o.procedimento ?? '',
+            area: o.area ?? '',
+            subarea: o.subarea ?? '',
+            nprocesso: o.nprocesso ?? '',
+            refPreco: o.refPreco ?? 0,
+            valorOrcamento: o.valorOrcamento ?? 0,
+            dataStatusOrcamento: o.dataStatusOrcamento,
+            solicitacao: o.solicitacao ?? '',
+            cliente: o.area ?? '',
+            valor: o.valorOrcamento ?? o.refPreco ?? 0,
+            dataEnvioOrcamento: o.dataStatusOrcamento ?? '',
+            observacoes: o.solicitacao ?? '',
+            numeroProcesso: o.nprocesso ?? '',
+            status: o.statusProcesso ?? '',
+            anexoNome: ''
+          }))
+        );
+      })
+      .catch(() => console.error('Erro ao carregar para protocolar'))
+      .finally(() => setLoading(false));
+  };
 
-    const mock: ParaProtocolar[] = [
-      {
-        id: 1,
-        paciente: 'Maria Helena Souza',
-        cliente: 'Clínica Alfa',
-        valor: 18500,
-        dataEnvioOrcamento: '2026-03-10',
-        observacoes: 'Aguardando protocolo judicial.',
-        numeroProcesso: 'PROC-1001',
-        procedimento: 'Artroplastia total de joelho',
-        status: 'Aguardando protocolo',
-        anexoNome: 'orcamento_maria_helena.pdf'
-      },
-      {
-        id: 2,
-        paciente: 'João Pedro Santos',
-        cliente: 'Instituto Beta',
-        valor: 9200,
-        dataEnvioOrcamento: '2026-03-08',
-        observacoes: 'Orçamento validado.',
-        numeroProcesso: 'PROC-1002',
-        procedimento: 'Herniorrafia inguinal',
-        status: 'Pendente',
-        anexoNome: 'orcamento_joao_pedro.pdf'
-      },
-      {
-        id: 3,
-        paciente: 'Ana Cláudia Costa',
-        cliente: 'Neuro Gama',
-        valor: 27500,
-        dataEnvioOrcamento: '2026-03-02',
-        observacoes: 'Prioridade alta.',
-        numeroProcesso: 'PROC-1003',
-        procedimento: 'Cirurgia bariátrica',
-        status: 'Em análise',
-        anexoNome: 'orcamento_ana_claudia.pdf'
-      }
-    ];
-
-    const timer = setTimeout(() => {
-      setRegistros(mock);
-      setLoading(false);
-    }, 400);
-
-    return () => clearTimeout(timer);
+  useEffect(() => {
+    carregarDados();
   }, []);
 
   const dataComCamposCalculados = useMemo<ParaProtocolarTableRow[]>(() => {
     const hoje = new Date();
 
     return registros.map((item, index) => {
-      const dataBase = new Date(`${item.dataEnvioOrcamento}T00:00:00`);
+      const dataBase = item.dataEnvioOrcamento
+        ? new Date(`${item.dataEnvioOrcamento}T00:00:00`)
+        : hoje;
+
       const diferencaMs = hoje.getTime() - dataBase.getTime();
       const dias = Math.max(0, Math.floor(diferencaMs / (1000 * 60 * 60 * 24)));
 
@@ -164,17 +165,20 @@ export function ParaProtocolarPage() {
     });
 
   const formatarData = (data: string) => {
+    if (!data) return '';
     const [ano, mes, dia] = data.split('-');
     return `${dia}/${mes}/${ano}`;
   };
 
-  const getStatusSeverity = (status: string): 'success' | 'info' | 'warning' | 'danger' | 'secondary' | 'contrast' => {
+  const getStatusSeverity = (
+    status: string
+  ): 'success' | 'info' | 'warning' | 'danger' | 'secondary' | 'contrast' => {
     const valor = status.toLowerCase();
 
     if (['protocolado', 'concluído', 'concluido'].includes(valor)) return 'success';
     if (['pendente', 'aguardando protocolo', 'em análise', 'em analise'].includes(valor)) return 'warning';
     if (['em andamento'].includes(valor)) return 'info';
-    if (['perdido', 'indeferido'].includes(valor)) return 'danger';
+    if (['perdido', 'indeferido', 'perda'].includes(valor)) return 'danger';
 
     return 'secondary';
   };
@@ -182,6 +186,7 @@ export function ParaProtocolarPage() {
   const precoBodyTemplate = (rowData: ParaProtocolarTableRow) => formatarMoeda(rowData.valor);
   const dataBodyTemplate = (rowData: ParaProtocolarTableRow) => formatarData(rowData.dataEnvioOrcamento);
   const diasBodyTemplate = (rowData: ParaProtocolarTableRow) => <span className="dias-cell">{rowData.dias}</span>;
+
   const statusBodyTemplate = (rowData: ParaProtocolarTableRow) => (
     <Tag value={rowData.status} severity={getStatusSeverity(rowData.status)} />
   );
@@ -226,7 +231,7 @@ export function ParaProtocolarPage() {
         outlined
         onClick={() => {
           setRegistroProtocolando({ ...rowData });
-          setDataProtocolacao(null);
+          setDataProtocolo('');
           setProtocolarDialogVisible(true);
         }}
       />
@@ -276,27 +281,75 @@ export function ParaProtocolarPage() {
     setEditDialogVisible(false);
   };
 
-  const handleConfirmarProtocolacao = () => {
-    if (!registroProtocolando) return;
+const handleConfirmarProtocolacao = async () => {
+  if (!registroProtocolando) return
 
-    console.log('Protocolar:', {
-      registro: registroProtocolando,
-      dataProtocolacao
-    });
+  // Validações obrigatórias
+  if (!dataProtocolo) {
+    alert('A data de protocolação é obrigatória.')
+    return
+  }
+  if (!arquivoPeticao) {
+    alert('O arquivo de petição é obrigatório.')
+    return
+  }
 
-    setProtocolarDialogVisible(false);
-  };
+  setEnviandoProtocolo(true)
+  try {
+    // 1 — Upload dos arquivos para R2
+    const uploads = []
 
-  const handleConfirmarNaoProtocolar = () => {
+    uploads.push(uploadAnexoOrder(registroProtocolando.id, arquivoPeticao, 'PROTOCOLO'))
+
+    if (arquivoExtra1) {
+      uploads.push(uploadAnexoOrder(registroProtocolando.id, arquivoExtra1, 'PROTOCOLO'))
+    }
+    if (arquivoExtra2) {
+      uploads.push(uploadAnexoOrder(registroProtocolando.id, arquivoExtra2, 'PROTOCOLO'))
+    }
+
+    await Promise.all(uploads)
+
+    // 2 — Salva o protocolo
+    await salvarProtocolar(registroProtocolando.id, {
+      acao: 'protocolar',
+      obs: registroProtocolando.observacoes || '',
+      dataProtocolo
+    })
+
+    setProtocolarDialogVisible(false)
+    setArquivoPeticao(null)
+    setArquivoExtra1(null)
+    setArquivoExtra2(null)
+    carregarDados()
+  } catch (err) {
+    alert('Erro ao confirmar protocolação.')
+  } finally {
+    setEnviandoProtocolo(false)
+  }
+}
+
+
+  const handleConfirmarNaoProtocolar = async () => {
     if (!registroNaoProtocolar || !naoProtocolarOpcao) return;
 
-    console.log('Não protocolar:', {
-      registro: registroNaoProtocolar,
-      opcao: naoProtocolarOpcao,
-      observacao: naoProtocolarObs
-    });
+    if (!naoProtocolarObs.trim()) {
+      alert('Observação é obrigatória.');
+      return;
+    }
 
-    setNaoProtocolarDialogVisible(false);
+    const acao = naoProtocolarOpcao === 'perda' ? 'perda' : 'segredo';
+
+    try {
+      await salvarProtocolar(registroNaoProtocolar.id, {
+        acao,
+        obs: naoProtocolarObs
+      });
+      carregarDados();
+      setNaoProtocolarDialogVisible(false);
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'Erro ao processar.');
+    }
   };
 
   return (
@@ -308,10 +361,7 @@ export function ParaProtocolarPage() {
         </div>
 
         <div className="page-actions">
-          <Button
-            label="Novo"
-            icon="pi pi-plus"
-          />
+          <Button label="Novo" icon="pi pi-plus" />
         </div>
       </div>
 
@@ -597,51 +647,122 @@ export function ParaProtocolarPage() {
               <InputTextarea value={registroProtocolando.observacoes} rows={4} disabled />
             </div>
 
-            <div className="field field-span-2">
-              <label>Data Protocolação</label>
-              <Calendar
-                value={dataProtocolacao}
-                onChange={(e) => setDataProtocolacao(e.value as Date)}
-                dateFormat="dd/mm/yy"
-                showIcon
-              />
-            </div>
+<div className="field field-span-2">
+  <label>
+    Data Protocolação
+    <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>
+  </label>
+  <Calendar
+    value={dataProtocolo ? new Date(dataProtocolo) : null}
+    onChange={(e) =>
+      setDataProtocolo(
+        e.value instanceof Date ? e.value.toISOString().split('T')[0] : ''
+      )
+    }
+    dateFormat="dd/mm/yy"
+    showIcon
+  />
+</div>
 
-            <div className="field field-span-2 field-button">
-              <label>&nbsp;</label>
-              <Button
-                label="Update Petição"
-                icon="pi pi-upload"
-                outlined
-                onClick={() => console.log('Update petição', registroProtocolando)}
-              />
-            </div>
+<div className="field field-span-2">
+  <label>
+    Petição
+    <span style={{ color: '#ef4444', marginLeft: '4px' }}>*obrigatório</span>
+  </label>
+  <label
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      padding: '10px 14px',
+      borderRadius: '8px',
+      border: `2px dashed ${arquivoPeticao ? '#f97316' : '#d1d5db'}`,
+      background: arquivoPeticao ? '#fff7ed' : '#f9fafb',
+      cursor: 'pointer',
+      fontSize: '0.9rem',
+      color: arquivoPeticao ? '#f97316' : '#6b7280',
+    }}
+  >
+    <i className={arquivoPeticao ? 'pi pi-file-check' : 'pi pi-upload'} />
+    <span>{arquivoPeticao ? arquivoPeticao.name : 'Selecionar petição...'}</span>
+    <input
+      type="file"
+      accept=".pdf,.jpg,.jpeg,.png"
+      style={{ display: 'none' }}
+      onChange={(e) => setArquivoPeticao(e.target.files?.[0] ?? null)}
+    />
+  </label>
+</div>
 
-            <div className="field field-span-2 field-button">
-              <label>&nbsp;</label>
-              <Button
-                label="Update Arquivo Extra 1"
-                icon="pi pi-upload"
-                outlined
-                onClick={() => console.log('Update arquivo extra 1', registroProtocolando)}
-              />
-            </div>
+<div className="field field-span-2">
+  <label>Arquivo Extra 1 <span style={{ color: '#9ca3af', fontWeight: 400 }}>(opcional)</span></label>
+  <label
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      padding: '10px 14px',
+      borderRadius: '8px',
+      border: `2px dashed ${arquivoExtra1 ? '#f97316' : '#d1d5db'}`,
+      background: arquivoExtra1 ? '#fff7ed' : '#f9fafb',
+      cursor: 'pointer',
+      fontSize: '0.9rem',
+      color: arquivoExtra1 ? '#f97316' : '#6b7280',
+    }}
+  >
+    <i className={arquivoExtra1 ? 'pi pi-file-check' : 'pi pi-upload'} />
+    <span>{arquivoExtra1 ? arquivoExtra1.name : 'Selecionar arquivo...'}</span>
+    <input
+      type="file"
+      accept=".pdf,.jpg,.jpeg,.png"
+      style={{ display: 'none' }}
+      onChange={(e) => setArquivoExtra1(e.target.files?.[0] ?? null)}
+    />
+  </label>
+</div>
 
-            <div className="field field-span-2 field-button">
-              <label>&nbsp;</label>
-              <Button
-                label="Update Arquivo Extra 2"
-                icon="pi pi-upload"
-                outlined
-                onClick={() => console.log('Update arquivo extra 2', registroProtocolando)}
-              />
-            </div>
+<div className="field field-span-2">
+  <label>Arquivo Extra 2 <span style={{ color: '#9ca3af', fontWeight: 400 }}>(opcional)</span></label>
+  <label
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      padding: '10px 14px',
+      borderRadius: '8px',
+      border: `2px dashed ${arquivoExtra2 ? '#f97316' : '#d1d5db'}`,
+      background: arquivoExtra2 ? '#fff7ed' : '#f9fafb',
+      cursor: 'pointer',
+      fontSize: '0.9rem',
+      color: arquivoExtra2 ? '#f97316' : '#6b7280',
+    }}
+  >
+    <i className={arquivoExtra2 ? 'pi pi-file-check' : 'pi pi-upload'} />
+    <span>{arquivoExtra2 ? arquivoExtra2.name : 'Selecionar arquivo...'}</span>
+    <input
+      type="file"
+      accept=".pdf,.jpg,.jpeg,.png"
+      style={{ display: 'none' }}
+      onChange={(e) => setArquivoExtra2(e.target.files?.[0] ?? null)}
+    />
+  </label>
+</div>
+
+
+
+
           </div>
         )}
 
         <div className="dialog-footer-actions">
           <Button label="Cancelar" outlined onClick={() => setProtocolarDialogVisible(false)} />
-          <Button label="Confirmar Protocolação" icon="pi pi-check" onClick={handleConfirmarProtocolacao} />
+<Button
+  label={enviandoProtocolo ? 'Enviando...' : 'Confirmar Protocolação'}
+  icon="pi pi-check"
+  onClick={handleConfirmarProtocolacao}
+  loading={enviandoProtocolo}
+  disabled={enviandoProtocolo}
+/>
         </div>
       </Dialog>
 
@@ -725,11 +846,14 @@ export function ParaProtocolarPage() {
             </div>
 
             <div className="field field-span-4">
-              <label>Obs</label>
+              <label>
+                Obs <span style={{ color: '#ef4444' }}>*obrigatório</span>
+              </label>
               <InputTextarea
                 value={naoProtocolarObs}
                 onChange={(e) => setNaoProtocolarObs(e.target.value)}
                 rows={4}
+                placeholder="Descreva o motivo..."
               />
             </div>
           </div>

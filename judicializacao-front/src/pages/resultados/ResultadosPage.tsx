@@ -9,11 +9,24 @@ import { Column } from 'primereact/column';
 import { Tag } from 'primereact/tag';
 import { InputText } from 'primereact/inputtext';
 import { FilterMatchMode } from 'primereact/api';
+import { getResultados } from '../../services/api/orders';
 import './ResultadosPage.css';
 
 interface ResultadoProcesso {
   id: number;
   paciente: string;
+  nprocesso: string;
+  procedimento: string;
+  area: string;
+  refPreco: number;
+  valorOrcamento: number;
+  valorGanho: number;
+  dataPedido: string | null;
+  dias: number;
+  statusProcesso: string;
+  statusPerda: string;
+  analiseJuridicaFinal: string;
+  // legados para tabela
   cliente: string;
   valor: number;
   numeroProcesso: string;
@@ -21,6 +34,7 @@ interface ResultadoProcesso {
   status: string;
   resultado: string;
 }
+
 
 interface ResultadoProcessoTableRow extends ResultadoProcesso {
   sequencial: number;
@@ -46,69 +60,41 @@ export function ResultadosPage() {
     resultado: { value: '', matchMode: FilterMatchMode.CONTAINS }
   });
 
-  useEffect(() => {
-    setLoading(true);
+const carregarDados = () => {
+  setLoading(true);
+  getResultados()
+    .then(({ data }) => {
+      setRegistros(data.map((o: any) => ({
+        id: o.id,
+        paciente: o.paciente ?? '',
+        nprocesso: o.nprocesso ?? '',
+        procedimento: o.procedimento ?? '',
+        area: o.area ?? '',
+        refPreco: o.refPreco ?? 0,
+        valorOrcamento: o.valorOrcamento ?? 0,
+        valorGanho: o.valorGanho ?? 0,
+        dataPedido: o.dataPedido,
+        dias: o.dias ?? 0,
+        statusProcesso: o.statusProcesso ?? '',
+        statusPerda: o.statusPerda ?? '',
+        analiseJuridicaFinal: o.analiseJuridicaFinal ?? '',
+        // legados
+        cliente: o.area ?? '',
+        valor: o.valorGanho ?? o.valorOrcamento ?? o.refPreco ?? 0,
+        numeroProcesso: o.nprocesso ?? '',
+        dataProtocolo: o.dataPedido ?? '',
+        status: o.statusProcesso ?? '',
+        resultado: o.statusProcesso === 'Ganho' ? 'Ganho' : 'Perda',
+      })));
+    })
+    .catch(() => console.error('Erro ao carregar resultados'))
+    .finally(() => setLoading(false));
+};
 
-    const mock: ResultadoProcesso[] = [
-      {
-        id: 1,
-        paciente: 'Maria Aparecida Mori',
-        cliente: 'IBG Saúde',
-        valor: 188600,
-        numeroProcesso: '#5004687-38.2023.8.13.0309',
-        dataProtocolo: '2026-03-10',
-        status: 'Concluído',
-        resultado: 'Ganho'
-      },
-      {
-        id: 2,
-        paciente: 'João Pedro Santos',
-        cliente: 'Clínica Alfa',
-        valor: 9200,
-        numeroProcesso: '#5001111-22.2026.8.13.0001',
-        dataProtocolo: '2026-03-05',
-        status: 'Concluído',
-        resultado: 'Perda'
-      },
-      {
-        id: 3,
-        paciente: 'Ana Cláudia Costa',
-        cliente: 'Neuro Gama',
-        valor: 27500,
-        numeroProcesso: '#5007777-88.2026.8.13.0003',
-        dataProtocolo: '2026-02-28',
-        status: 'Concluído',
-        resultado: 'Ganho'
-      },
-      {
-        id: 4,
-        paciente: 'Carlos Eduardo Rocha',
-        cliente: 'Hospital Beta',
-        valor: 21000,
-        numeroProcesso: '#5008888-99.2026.8.13.0004',
-        dataProtocolo: '2026-03-01',
-        status: 'Concluído',
-        resultado: 'Perda'
-      },
-      {
-        id: 5,
-        paciente: 'Fernanda Lopes',
-        cliente: 'Clínica Prisma',
-        valor: 14500,
-        numeroProcesso: '#5009999-00.2026.8.13.0005',
-        dataProtocolo: '2026-03-12',
-        status: 'Concluído',
-        resultado: 'Ganho'
-      }
-    ];
+useEffect(() => { carregarDados(); }, []);
 
-    const timer = setTimeout(() => {
-      setRegistros(mock);
-      setLoading(false);
-    }, 400);
 
-    return () => clearTimeout(timer);
-  }, []);
+
 
   const dataComCamposCalculados = useMemo<ResultadoProcessoTableRow[]>(() => {
     const hoje = new Date();
@@ -126,38 +112,39 @@ export function ResultadosPage() {
     });
   }, [registros]);
 
-  const kpis = useMemo(() => {
-    const totalProcessos = dataComCamposCalculados.length;
+const kpis = useMemo(() => {
+  const totalProcessos = dataComCamposCalculados.length;
 
-    const mediaProcessos = totalProcessos
-      ? Math.round(
-          dataComCamposCalculados.reduce((acc, item) => acc + item.dias, 0) / totalProcessos
-        )
-      : 0;
+  const mediaProcessos = totalProcessos
+    ? Math.round(dataComCamposCalculados.reduce((acc, item) => acc + item.dias, 0) / totalProcessos)
+    : 0;
 
-    const valorTotal = dataComCamposCalculados.reduce((acc, item) => acc + item.valor, 0);
+  const ganhos = dataComCamposCalculados.filter(
+    (item) => item.statusProcesso === 'Ganho'
+  );
+  const perdas = dataComCamposCalculados.filter(
+    (item) => item.statusProcesso === 'Perdido'
+  );
 
-    const ganhosValor = dataComCamposCalculados
-      .filter((item) => item.resultado.toLowerCase() === 'ganho')
-      .reduce((acc, item) => acc + item.valor, 0);
+  const ganhosValor = ganhos.reduce((acc, item) => acc + (item.valorGanho || item.valorOrcamento), 0);
+  const perdasValor = perdas.reduce((acc, item) => acc + item.refPreco, 0);
+  const valorTotal = ganhosValor + perdasValor;
 
-    const perdasValor = dataComCamposCalculados
-      .filter((item) => item.resultado.toLowerCase() === 'perda')
-      .reduce((acc, item) => acc + item.valor, 0);
+  const ganhosPercentual = valorTotal > 0 ? (ganhosValor / valorTotal) * 100 : 0;
+  const perdasPercentual = valorTotal > 0 ? (perdasValor / valorTotal) * 100 : 0;
 
-    const ganhosPercentual = valorTotal > 0 ? (ganhosValor / valorTotal) * 100 : 0;
-    const perdasPercentual = valorTotal > 0 ? (perdasValor / valorTotal) * 100 : 0;
+  return {
+    totalProcessos,
+    mediaProcessos,
+    valorTotal,
+    ganhosValor,
+    perdasValor,
+    ganhosPercentual,
+    perdasPercentual,
+  };
+}, [dataComCamposCalculados]);
 
-    return {
-      totalProcessos,
-      mediaProcessos,
-      valorTotal,
-      ganhosValor,
-      perdasValor,
-      ganhosPercentual,
-      perdasPercentual
-    };
-  }, [dataComCamposCalculados]);
+
 
   const onPage = (event: DataTablePageEvent) => {
     setFirst(event.first);

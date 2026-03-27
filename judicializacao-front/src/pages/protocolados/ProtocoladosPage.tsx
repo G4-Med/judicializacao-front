@@ -13,14 +13,15 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { FilterMatchMode } from 'primereact/api';
 import { Dialog } from 'primereact/dialog';
 import { Timeline } from 'primereact/timeline';
+import { getProtocolados, salvarResultadoProtocolado, adicionarAcompanhamento } from '../../services/api/orders';
+import { InputNumber } from 'primereact/inputnumber';
 import './ProtocoladosPage.css';
 
 interface HistoricoAcompanhamento {
   id: number;
-  data: string;
-  titulo: string;
+  acompanhamento: string;
   descricao: string;
-  autor: string;
+  createDate: string;
 }
 
 interface DocumentoProcesso {
@@ -31,15 +32,25 @@ interface DocumentoProcesso {
 interface Protocolado {
   id: number;
   paciente: string;
+  nprocesso: string;
+  procedimento: string;
+  area: string;
+  refPreco: number;
+  valorOrcamento: number;
+  dataStatusOrcamento: string | null;
+  dias: number;
+  statusProcesso: string;
+  obsProtocolo: string;
+  analiseJuridicaFinal: string;
+  historico: HistoricoAcompanhamento[];
+  // campos legados
   cliente: string;
   valor: number;
   numeroProcesso: string;
-  procedimento: string;
   dataProtocolo: string;
   status: string;
   resultado: string;
   documentos: DocumentoProcesso[];
-  historico: HistoricoAcompanhamento[];
 }
 
 interface ProtocoladoTableRow extends Protocolado {
@@ -74,72 +85,83 @@ export function ProtocoladosPage() {
   const [novoAcompanhamento, setNovoAcompanhamento] = useState('');
   const [parecerJuridico, setParecerJuridico] = useState('');
   const [resultadoSelecionado, setResultadoSelecionado] = useState<ResultadoType>('');
-  const [arquivoAcompanhamento, setArquivoAcompanhamento] = useState<File | null>(null);
 
-  useEffect(() => {
+
+
+  
+  // estado para valor ganho
+  const [valorGanho, setValorGanho] = useState<number | null>(null);
+  // estado para tipo de ação no form
+  const [tipoAcao, setTipoAcao] = useState<'acompanhamento' | 'decisao' | ''>('');
+
+  const carregarDados = () => {
     setLoading(true);
+    getProtocolados()
+      .then(({ data }) => {
+        setRegistros(data.map((o: any) => ({
+          id: o.id,
+          paciente: o.paciente ?? '',
+          nprocesso: o.nprocesso ?? '',
+          procedimento: o.procedimento ?? '',
+          area: o.area ?? '',
+          refPreco: o.refPreco ?? 0,
+          valorOrcamento: o.valorOrcamento ?? 0,
+          dataStatusOrcamento: o.dataStatusOrcamento,
+          dias: o.dias ?? 0,
+          statusProcesso: o.statusProcesso ?? '',
+          obsProtocolo: o.obsProtocolo ?? '',
+          analiseJuridicaFinal: o.analiseJuridicaFinal ?? '',
+          historico: o.historico ?? [],
+          // legados
+          cliente: o.area ?? '',
+          valor: o.valorOrcamento ?? o.refPreco ?? 0,
+          numeroProcesso: o.nprocesso ?? '',
+          dataProtocolo: o.dataStatusOrcamento ?? '',
+          status: 'Protocolado',
+          resultado: 'Em andamento',
+          documentos: [],
+        })));
+      })
+      .catch(() => console.error('Erro ao carregar protocolados'))
+      .finally(() => setLoading(false));
+  };
 
-    const mock: Protocolado[] = [
-      {
-        id: 1,
-        paciente: 'Maria Aparecida Mori',
-        cliente: 'Instituto Brasileiro de Gestão da Saúde - IBG Saúde',
-        valor: 189600,
-        numeroProcesso: '#5004687-38.2023.8.13.0309',
-        procedimento: 'Implante de válvula mitral transcateter (TAVI)',
-        dataProtocolo: '2026-03-10',
-        status: 'Protocolado',
-        resultado: 'Em andamento',
-        documentos: [
-          { label: 'Orçamento', nome: 'orcamento_maria.pdf' },
-          { label: 'Petição', nome: 'peticao_maria.pdf' },
-          { label: 'Documento Adicional 1', nome: 'doc_extra_1.pdf' },
-          { label: 'Documento Adicional 2', nome: 'doc_extra_2.pdf' }
-        ],
-        historico: [
-          {
-            id: 1,
-            data: '2026-03-15',
-            titulo: 'Processo protocolado',
-            descricao: 'Protocolo realizado com sucesso.',
-            autor: 'Advogado (Admin)'
-          },
-          {
-            id: 2,
-            data: '2026-03-15',
-            titulo: 'Decisão do Processo',
-            descricao: 'Processo aguardando manifestação.',
-            autor: 'Advogado (Admin)'
-          }
-        ]
-      },
-      {
-        id: 2,
-        paciente: 'João Pedro Santos',
-        cliente: 'Clínica Alfa',
-        valor: 9200,
-        numeroProcesso: '#5001111-22.2026.8.13.0001',
-        procedimento: 'Herniorrafia inguinal',
-        dataProtocolo: '2026-03-05',
-        status: 'Ativo',
-        resultado: 'Sem resultado',
-        documentos: [
-          { label: 'Orçamento', nome: 'orcamento_joao.pdf' },
-          { label: 'Petição', nome: 'peticao_joao.pdf' },
-          { label: 'Documento Adicional 1', nome: 'doc_extra_1_joao.pdf' },
-          { label: 'Documento Adicional 2', nome: 'doc_extra_2_joao.pdf' }
-        ],
-        historico: []
-      }
-    ];
+  useEffect(() => { carregarDados(); }, []);
 
-    const timer = setTimeout(() => {
-      setRegistros(mock);
-      setLoading(false);
-    }, 400);
+  const handleSalvarAcompanhamento = async () => {
+    if (!registroAtualizando || !novoAcompanhamento.trim()) return;
+    try {
+      await adicionarAcompanhamento(registroAtualizando.id, {
+        acompanhamento: 'Acompanhamento',
+        descricao: novoAcompanhamento,
+      });
+      carregarDados();
+      setNovoAcompanhamento('');
+    } catch (err) {
+      alert('Erro ao salvar acompanhamento.');
+    }
+  };
 
-    return () => clearTimeout(timer);
-  }, []);
+  const handleSalvarDecisao = async () => {
+    if (!registroAtualizando || !resultadoSelecionado) {
+      alert('Selecione Ganho ou Perda antes de salvar.');
+      return;
+    }
+    try {
+      await salvarResultadoProtocolado(registroAtualizando.id, {
+        acao: resultadoSelecionado,
+        analise: parecerJuridico,
+        valorGanho: resultadoSelecionado === 'ganho' ? valorGanho : null,
+      });
+      carregarDados();
+      setUpdateDialogVisible(false);
+    } catch (err) {
+      alert('Erro ao salvar decisão.');
+    }
+  };
+
+
+
 
   const dataComCamposCalculados = useMemo<ProtocoladoTableRow[]>(() => {
     const hoje = new Date();
@@ -200,16 +222,7 @@ export function ProtocoladosPage() {
     return `${dia}/${mes}/${ano}`;
   };
 
-  const formatarDataTimeline = (data: string) => {
-    const [ano, mes, dia] = data.split('-');
-    return `Há ${Math.max(
-      0,
-      Math.floor(
-        (new Date().getTime() - new Date(`${ano}-${mes}-${dia}T00:00:00`).getTime()) /
-          (1000 * 60 * 60 * 24)
-      )
-    )} dias`;
-  };
+
 
   const getStatusSeverity = (
     status: string
@@ -256,7 +269,6 @@ export function ProtocoladosPage() {
           setNovoAcompanhamento('');
           setParecerJuridico('');
           setResultadoSelecionado('');
-          setArquivoAcompanhamento(null);
           setUpdateDialogVisible(true);
         }}
       />
@@ -282,30 +294,8 @@ export function ProtocoladosPage() {
     console.log('Visualizar documento:', nome);
   };
 
-  const handleSalvarAtualizacao = () => {
-    if (!registroAtualizando) return;
 
-    console.log('Salvar atualização', {
-      registro: registroAtualizando,
-      novoAcompanhamento,
-      parecerJuridico,
-      resultadoSelecionado,
-      arquivoAcompanhamento
-    });
 
-    setUpdateDialogVisible(false);
-  };
-
-  const timelineContent = (item: HistoricoAcompanhamento) => {
-    return (
-      <div className="timeline-card">
-        <div className="timeline-date">{formatarDataTimeline(item.data)}</div>
-        <div className="timeline-title">{item.titulo}</div>
-        <div className="timeline-description">{item.descricao}</div>
-        <div className="timeline-author">Resp.: {item.autor}</div>
-      </div>
-    );
-  };
 
   return (
     <div className="protocolados-page">
@@ -527,14 +517,22 @@ export function ProtocoladosPage() {
               </div>
             </section>
 
+
             <section className="update-section">
               <h3>Histórico de Acompanhamento</h3>
-
               {registroAtualizando.historico.length > 0 ? (
                 <Timeline
                   value={registroAtualizando.historico}
                   align="left"
-                  content={timelineContent}
+                  content={(item: HistoricoAcompanhamento) => (
+                    <div className="timeline-card">
+                      <div className="timeline-date">
+                        {item.createDate?.split('T')[0]?.split('-').reverse().join('/') ?? '-'}
+                      </div>
+                      <div className="timeline-title">{item.acompanhamento}</div>
+                      <div className="timeline-description">{item.descricao}</div>
+                    </div>
+                  )}
                   className="processo-timeline"
                 />
               ) : (
@@ -544,90 +542,99 @@ export function ProtocoladosPage() {
 
             <section className="update-section">
               <h3>Adicionar Acompanhamento</h3>
-
-              <div className="update-form-grid">
-                <div className="field field-span-2">
-                  <label>Acompanhamento</label>
-
-                    <div className="resultado-actions">
-                    <Button
-                      label="Acompanhamento"
-                      severity={resultadoSelecionado === 'ganho' ? 'success' : 'secondary'}
-                      outlined={resultadoSelecionado !== 'ganho'}
-                      onClick={() => setResultadoSelecionado('ganho')}
-                    />
-                    <Button
-                      label="Decisão Processo"
-                      severity={resultadoSelecionado === 'perda' ? 'danger' : 'secondary'}
-                      outlined={resultadoSelecionado !== 'perda'}
-                      onClick={() => setResultadoSelecionado('perda')}
-                    />
-                  </div>
-
-                  
-                  <label>Descrição</label>
-
-
-
-                  <InputTextarea
-                    value={novoAcompanhamento}
-                    onChange={(e) => setNovoAcompanhamento(e.target.value)}
-                    rows={5}
-                    placeholder="Digite a atualização do processo..."
-                  />
-                </div>
-
-                <div className="field field-span-2">
-                  <label>Resultado</label>
-
-                  <div className="resultado-actions">
-                    <Button
-                      label="Procedente (Ganho)"
-                      severity={resultadoSelecionado === 'ganho' ? 'success' : 'secondary'}
-                      outlined={resultadoSelecionado !== 'ganho'}
-                      onClick={() => setResultadoSelecionado('ganho')}
-                    />
-                    <Button
-                      label="Improcedente (Perda)"
-                      severity={resultadoSelecionado === 'perda' ? 'danger' : 'secondary'}
-                      outlined={resultadoSelecionado !== 'perda'}
-                      onClick={() => setResultadoSelecionado('perda')}
-                    />
-                  </div>
-
-                  <label className="parecer-label">Análise Jurídica Final</label>
-                  <InputTextarea
-                    value={parecerJuridico}
-                    onChange={(e) => setParecerJuridico(e.target.value)}
-                    rows={5}
-                    placeholder="Descreva, quanto participante, valores das cotações, qual foi a menor, motivo do resultado..."
-                  />
-                </div>
-
-                <div className="field field-span-2">
-                  <label>Anexo (Opcional)</label>
-                  <input
-                    type="file"
-                    onChange={(e) => setArquivoAcompanhamento(e.target.files?.[0] ?? null)}
-                  />
-                </div>
+              <div className="resultado-actions">
+                <Button
+                  label="Acompanhamento"
+                  severity={tipoAcao === 'acompanhamento' ? 'info' : 'secondary'}
+                  outlined={tipoAcao !== 'acompanhamento'}
+                  onClick={() => setTipoAcao('acompanhamento')}
+                />
+                <Button
+                  label="Decisão do Processo"
+                  severity={tipoAcao === 'decisao' ? 'warning' : 'secondary'}
+                  outlined={tipoAcao !== 'decisao'}
+                  onClick={() => setTipoAcao('decisao')}
+                />
               </div>
+
+              {tipoAcao === 'acompanhamento' && (
+                <div className="update-form-grid">
+                  <div className="field field-span-4">
+                    <label>Descrição</label>
+                    <InputTextarea
+                      value={novoAcompanhamento}
+                      onChange={(e) => setNovoAcompanhamento(e.target.value)}
+                      rows={4}
+                      placeholder="Digite a atualização do processo..."
+                    />
+                  </div>
+                  <div className="field field-span-4" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button label="Salvar Acompanhamento" icon="pi pi-check"
+                      onClick={handleSalvarAcompanhamento} />
+                  </div>
+                </div>
+              )}
+
+              {tipoAcao === 'decisao' && (
+                <div className="update-form-grid">
+                  <div className="field field-span-4">
+                    <label>Resultado</label>
+                    <div className="resultado-actions">
+                      <Button
+                        label="Procedente (Ganho)"
+                        severity={resultadoSelecionado === 'ganho' ? 'success' : 'secondary'}
+                        outlined={resultadoSelecionado !== 'ganho'}
+                        onClick={() => {
+                          setResultadoSelecionado('ganho');
+                          setValorGanho(registroAtualizando.valorOrcamento);
+                        }}
+                      />
+                      <Button
+                        label="Improcedente (Perda)"
+                        severity={resultadoSelecionado === 'perda' ? 'danger' : 'secondary'}
+                        outlined={resultadoSelecionado !== 'perda'}
+                        onClick={() => {
+                          setResultadoSelecionado('perda');
+                          setValorGanho(null);
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {resultadoSelecionado !== '' && (
+                    <div className="field field-span-2">
+                      <label>{resultadoSelecionado === 'ganho' ? 'Valor Ganho' : 'Valor da Causa'}</label>
+                      <InputNumber
+                        value={valorGanho ?? undefined}
+                        onValueChange={(e) => setValorGanho(e.value ?? null)}
+                        mode="currency" currency="BRL" locale="pt-BR"
+                      />
+                    </div>
+                  )}
+                  <div className="field field-span-4">
+                    <label>Análise Jurídica Final</label>
+                    <InputTextarea
+                      value={parecerJuridico}
+                      onChange={(e) => setParecerJuridico(e.target.value)}
+                      rows={5}
+                      placeholder="Descreva o parecer jurídico final..."
+                    />
+                  </div>
+
+                  <div className="field field-span-4" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button label="Salvar Decisão" icon="pi pi-check"
+                      severity={resultadoSelecionado === 'ganho' ? 'success' : 'danger'}
+                      onClick={handleSalvarDecisao} />
+                  </div>
+                </div>
+              )}
             </section>
+
+
           </div>
         )}
 
-        <div className="dialog-footer-actions">
-          <Button
-            label="Cancelar"
-            outlined
-            onClick={() => setUpdateDialogVisible(false)}
-          />
-          <Button
-            label="Salvar"
-            icon="pi pi-check"
-            onClick={handleSalvarAtualizacao}
-          />
-        </div>
+
       </Dialog>
     </div>
   );

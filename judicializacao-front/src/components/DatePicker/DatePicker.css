@@ -89,3 +89,15 @@ body.dark-theme .periodo-calendar-box .p-datepicker .p-datepicker-header {
   color: #f8fafc;
   border-color: #334155;
 }
+
+.calendario-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+body.dark-theme .calendario-acoes {
+  border-top-color: #334155;
+}

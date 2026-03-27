@@ -36,18 +36,13 @@ export function MenuSidebar({ visible, onHide }: Props) {
       label: 'Protocolos',
       icon: 'pi pi-file-edit',
       items: [
-        {
-          label: 'Para protocolar',
-          command: () => go('/para-protocolar'),
-        },
-        {
-          label: 'Protocolados',
-          command: () => go('/protocolados'),
-        },
-        {
-          label: 'Segredo de justiça',
-          command: () => go('/segredo-justica'),
-        },
+        { label: 'Jurídico', command: () => go('/juridico') },
+        { label: 'Orçamento Médico', command: () => go('/orcamento-medico') },
+        { label: 'Protocolar', command: () => go('/para-protocolar') },
+        { label: 'Protocolados', command: () => go('/protocolados') },
+        { label: 'Segredo de Justiça', command: () => go('/segredo-justica') },
+        { label: 'Resultados', command: () => go('/resultados') },
+        { label: 'Perdas', command: () => go('/perdas') },
       ],
     },
     {
@@ -64,6 +59,25 @@ export function MenuSidebar({ visible, onHide }: Props) {
         },
       ],
     },
+
+    {
+      label: 'Resultados',
+      icon: 'pi pi-chart-line',
+      items: [
+        { label: 'Resultados', command: () => go('/resultados') },
+        { label: 'Perdas', command: () => go('/perdas') },
+      ],
+    },
+    // 👇 adiciona este bloco novo
+    {
+      label: 'Relatórios',
+      icon: 'pi pi-file-pdf',
+      items: [
+        { label: 'Relatório Resumido', command: () => go('/relatorios/resumido') },
+        { label: 'Relatório Consolidado', command: () => go('/relatorios/consolidado') },
+      ],
+    },
+
     {
       label: 'Admin',
       icon: 'pi pi-cog',

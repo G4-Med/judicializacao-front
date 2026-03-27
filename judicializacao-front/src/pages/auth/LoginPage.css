@@ -1,60 +1,63 @@
-.page {
+.login-page {
+  width: 100%;
   min-height: 100vh;
   display: grid;
   place-items: center;
+  padding: 32px;
   background: #ececf2;
 }
 
-.card {
-  --color-primary: #000000;
+.login-page__card {
+  --login-primary: #000000;
   position: relative;
-  overflow: hidden;
   width: 1020px;
+  max-width: 100%;
   height: 620px;
   border-radius: 32px;
+  overflow: hidden;
   background: #ffffff;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
 }
 
-.card-bg {
+.login-page__card-bg {
   position: absolute;
   z-index: 1;
   top: 0;
   bottom: 0;
-  width: 1400px;
+  width: 2400px;
   height: 740px;
-  background: var(--color-primary);
+  background: var(--login-primary);
 }
 
-.card-bg-1 {
+.login-page__card-bg--left {
   left: 0;
   transform-origin: 0% 100%;
 }
 
-.card-bg-2 {
+.login-page__card-bg--right {
   right: 0;
   left: auto;
   opacity: 0;
   transform-origin: 100% 100%;
 }
 
-.card-bg-1.register {
-  animation: card-bg-register 1.5s both;
+.login-page__card-bg--left.recover {
+  animation: login-card-bg-recover 1.5s both;
 }
 
-.card-bg-1.login {
-  animation: card-bg-login 1.5s both;
+.login-page__card-bg--left.login {
+  animation: login-card-bg-login 1.5s both;
 }
 
-.card-bg-2.register {
-  animation: card-bg2-register 1.5s both;
+.login-page__card-bg--right.recover {
+  animation: login-card-bg2-recover 1.5s both;
 }
 
-.card-bg-2.login {
-  animation: card-bg2-login 1.5s both;
+.login-page__card-bg--right.login {
+  animation: login-card-bg2-login 1.5s both;
 }
 
-.logo {
+.login-page__logo {
   position: absolute;
   top: 120px;
   z-index: 3;
@@ -63,23 +66,23 @@
   opacity: 0;
 }
 
-.logo-1 {
+.login-page__logo--left {
   left: 48px;
   transform: translateX(-60px);
 }
 
-.logo-2 {
+.login-page__logo--right {
   right: 48px;
   transform: translateX(60px);
 }
 
-.logo.active {
+.login-page__logo.is-active {
   opacity: 1;
   transform: translateX(0);
   transition: 0.3s 1.05s;
 }
 
-.form {
+.login-page__panel {
   position: absolute;
   z-index: 3;
   top: 0;
@@ -89,40 +92,38 @@
   place-items: center;
 }
 
-.form.login {
+.login-page__panel--login {
   left: 0;
 }
 
-.form.register {
+.login-page__panel--recover {
   right: 0;
 }
 
-.form form {
+.login-page__form {
   width: 320px;
   opacity: 0;
   transition: 0.3s;
-
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.form.login form {
+.login-page__panel--login .login-page__form {
   transform: translateX(-320px);
 }
 
-.form.register form {
+.login-page__panel--recover .login-page__form {
   transform: translateX(320px);
 }
 
-.form.login.active form,
-.form.register.active form {
+.login-page__panel.is-active .login-page__form {
   opacity: 1;
   transform: translateX(0);
   transition: 0.5s 1s;
 }
 
-form h1 {
+.login-page__title {
   margin: 0 0 20px;
   font-size: 34px;
   font-weight: 700;
@@ -130,12 +131,12 @@ form h1 {
   text-align: center;
 }
 
-.input-box {
+.login-page__input-box {
   width: 100%;
   margin: 14px 0;
 }
 
-.input-box input {
+.login-page__input {
   width: 100%;
   height: 48px;
   border: none;
@@ -147,43 +148,54 @@ form h1 {
   color: #333;
 }
 
-.input-box input::placeholder {
+.login-page__input::placeholder {
   color: #999;
 }
 
-.btn {
+.login-page__button {
   width: 100%;
   height: 48px;
   margin-top: 10px;
   margin-left: 26px;
-
   border: none;
   border-radius: 12px;
-  background: var(--color-primary);
+  background: var(--login-primary);
   color: #fff;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
 }
 
-form p {
+.login-page__button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.login-page__text {
   margin-top: 14px;
   font-size: 13px;
   color: #777;
   text-align: center;
 }
 
-.link-btn {
+.login-page__link-button {
   background: transparent;
   border: none;
   margin-left: 4px;
-  color: var(--color-primary);
+  color: var(--login-primary);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
 }
 
-@keyframes card-bg-register {
+.login-page__error {
+  margin-top: 4px;
+  font-size: 0.85rem;
+  color: red;
+  text-align: center;
+}
+
+@keyframes login-card-bg-recover {
   0% {
     transform: rotate(-45deg);
     opacity: 1;
@@ -199,7 +211,7 @@ form p {
   }
 }
 
-@keyframes card-bg-login {
+@keyframes login-card-bg-login {
   0% {
     transform: rotate(0deg);
     opacity: 0;
@@ -217,7 +229,7 @@ form p {
   }
 }
 
-@keyframes card-bg2-register {
+@keyframes login-card-bg2-recover {
   0%,
   50% {
     transform: rotate(0deg);
@@ -233,7 +245,7 @@ form p {
   }
 }
 
-@keyframes card-bg2-login {
+@keyframes login-card-bg2-login {
   0% {
     transform: rotate(45deg);
     opacity: 1;

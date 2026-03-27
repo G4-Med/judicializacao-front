@@ -1,6 +1,36 @@
-import axios from 'axios';
+import api from './../api';
 
-export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-  timeout: 10000,
-});
+// ── Medico ──────────────────────────────────────────────
+export const getMedicos = () => api.get('/client/medicos/');
+export const getMedico = (id: number) => api.get(`/client/medicos/${id}/`);
+export const createMedico = (data: any) => api.post('/client/medicos/', data);
+export const updateMedico = (id: number, data: any) => api.patch(`/client/medicos/${id}/`, data);
+export const deleteMedico = (id: number) => api.delete(`/client/medicos/${id}/`);
+export const getMedicosCompleto = () => api.get('/client/medico-completo/lista/');
+
+// ── DadosMedico ─────────────────────────────────────────
+export const getDadosMedico = (idMedico: number) => api.get(`/client/dados-medico/?idMedico=${idMedico}`);
+export const createDadosMedico = (data: any) => api.post('/client/dados-medico/', data);
+export const updateDadosMedico = (id: number, data: any) => api.patch(`/client/dados-medico/${id}/`, data);
+
+// ── EmpresaMedico ───────────────────────────────────────
+export const getEmpresaMedico = (idMedico: number) => api.get(`/client/empresa-medico/?idMedico=${idMedico}`);
+export const createEmpresaMedico = (data: any) => api.post('/client/empresa-medico/', data);
+export const updateEmpresaMedico = (id: number, data: any) => api.patch(`/client/empresa-medico/${id}/`, data);
+
+// ── DadosPessoais ───────────────────────────────────────
+export const getDadosPessoais = (idMedico: number) => api.get(`/client/dados-pessoais-medico/?idMedico=${idMedico}`);
+export const createDadosPessoais = (data: any) => api.post('/client/dados-pessoais-medico/', data);
+export const updateDadosPessoais = (id: number, data: any) => api.patch(`/client/dados-pessoais-medico/${id}/`, data);
+
+// ── DadosBancarios ──────────────────────────────────────
+export const getDadosBancarios = (idMedico: number) => api.get(`/client/dados-bancarios/?idMedico=${idMedico}`);
+export const createDadosBancarios = (data: any) => api.post('/client/dados-bancarios/', data);
+export const updateDadosBancarios = (id: number, data: any) => api.patch(`/client/dados-bancarios/${id}/`, data);
+
+
+export const cadastrarUsuarioMedico = (medicoId: number) =>
+  api.post(`/client/cadastrar-usuario-medico/${medicoId}/`);
+
+export const verificarUsuarioMedico = (medicoId: number) =>
+  api.get(`/client/verificar-usuario-medico/${medicoId}/`);

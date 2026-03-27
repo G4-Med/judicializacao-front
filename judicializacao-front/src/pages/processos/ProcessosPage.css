@@ -129,8 +129,8 @@
 }
 
 .processos-table {
-  border-radius: 18px;
-  overflow: hidden;
+  border-radius: 16px;
+  overflow: visible;
 }
 
 body.dark-theme .kpi-card {
@@ -401,4 +401,9 @@ body.dark-theme .processos-table .p-datatable-tfoot > tr > td {
   border-color: #334155;
 }
 /* Fim Dialog para edição de processo */
+
+
+
+
+
 

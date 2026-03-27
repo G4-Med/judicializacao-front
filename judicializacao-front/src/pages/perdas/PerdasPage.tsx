@@ -9,18 +9,30 @@ import { Column } from 'primereact/column';
 import { Tag } from 'primereact/tag';
 import { InputText } from 'primereact/inputtext';
 import { FilterMatchMode } from 'primereact/api';
+import { getPerdas } from '../../services/api/orders';
 import './PerdasPage.css';
 
 interface PerdaProcesso {
   id: number;
   paciente: string;
+  nprocesso: string;
+  procedimento: string;
+  area: string;
+  refPreco: number;
+  valorOrcamento: number;
+  dataPedido: string | null;
+  dias: number;
+  statusProcesso: string;
+  statusPerda: string;
+  justificativaPerda: string;
+  analiseJuridicaFinal: string;
+  // legados
   cliente: string;
   valor: number;
   numeroProcesso: string;
   dataProtocolo: string;
   status: string;
   resultado: string;
-  justificativaPerda: string;
 }
 
 interface PerdaProcessoTableRow extends PerdaProcesso {
@@ -48,98 +60,74 @@ export function PerdasPage() {
     justificativaPerda: { value: '', matchMode: FilterMatchMode.CONTAINS }
   });
 
-  useEffect(() => {
-    setLoading(true);
 
-    const mock: PerdaProcesso[] = [
-      {
-        id: 1,
-        paciente: 'João Pedro Santos',
-        cliente: 'Clínica Alfa',
-        valor: 9200,
-        numeroProcesso: '#5001111-22.2026.8.13.0001',
-        dataProtocolo: '2026-03-05',
-        status: 'Concluído',
+  
+const carregarDados = () => {
+  setLoading(true);
+  getPerdas()
+    .then(({ data }) => {
+      setRegistros(data.map((o: any) => ({
+        id: o.id,
+        paciente: o.paciente ?? '',
+        nprocesso: o.nprocesso ?? '',
+        procedimento: o.procedimento ?? '',
+        area: o.area ?? '',
+        refPreco: o.refPreco ?? 0,
+        valorOrcamento: o.valorOrcamento ?? 0,
+        dataPedido: o.dataPedido,
+        dias: o.dias ?? 0,
+        statusProcesso: o.statusProcesso ?? '',
+        statusPerda: o.statusPerda ?? '',
+        justificativaPerda: o.justificativaPerda ?? '',
+        analiseJuridicaFinal: o.analiseJuridicaFinal ?? '',
+        // legados
+        cliente: o.area ?? '',
+        valor: o.refPreco ?? 0,
+        numeroProcesso: o.nprocesso ?? '',
+        dataProtocolo: o.dataPedido ?? '',
+        status: o.statusProcesso ?? '',
         resultado: 'Perda',
-        justificativaPerda: 'Documentação insuficiente para comprovação do procedimento.'
-      },
-      {
-        id: 2,
-        paciente: 'Carlos Eduardo Rocha',
-        cliente: 'Hospital Beta',
-        valor: 21000,
-        numeroProcesso: '#5008888-99.2026.8.13.0004',
-        dataProtocolo: '2026-03-01',
-        status: 'Concluído',
-        resultado: 'Perda',
-        justificativaPerda: 'Negativa por ausência de cobertura contratual.'
-      },
-      {
-        id: 3,
-        paciente: 'Fernanda Lopes',
-        cliente: 'Clínica Prisma',
-        valor: 14500,
-        numeroProcesso: '#5009999-00.2026.8.13.0005',
-        dataProtocolo: '2026-03-12',
-        status: 'Concluído',
-        resultado: 'Perda',
-        justificativaPerda: 'Prazo processual expirado para juntada do complemento.'
-      }
-    ];
+      })));
+    })
+    .catch(() => console.error('Erro ao carregar perdas'))
+    .finally(() => setLoading(false));
+};
 
-    const timer = setTimeout(() => {
-      setRegistros(mock);
-      setLoading(false);
-    }, 400);
+useEffect(() => { carregarDados(); }, []);  
 
-    return () => clearTimeout(timer);
-  }, []);
 
-  const dataComCamposCalculados = useMemo<PerdaProcessoTableRow[]>(() => {
-    const hoje = new Date();
 
-    return registros.map((item, index) => {
-      const dataBase = new Date(`${item.dataProtocolo}T00:00:00`);
-      const diferencaMs = hoje.getTime() - dataBase.getTime();
-      const dias = Math.max(0, Math.floor(diferencaMs / (1000 * 60 * 60 * 24)));
+const dataComCamposCalculados = useMemo<PerdaProcessoTableRow[]>(() => {
+  return registros.map((item, index) => ({
+    ...item,
+    sequencial: index + 1,
+    dias: item.dias, // já vem calculado do backend
+  }));
+}, [registros]);
 
-      return {
-        ...item,
-        sequencial: index + 1,
-        dias
-      };
-    });
-  }, [registros]);
 
-  const kpis = useMemo(() => {
-    const totalProcessos = dataComCamposCalculados.length;
 
-    const mediaProcessos = totalProcessos
-      ? Math.round(
-          dataComCamposCalculados.reduce((acc, item) => acc + item.dias, 0) / totalProcessos
-        )
-      : 0;
+const kpis = useMemo(() => {
+  const totalProcessos = dataComCamposCalculados.length;
+  const mediaProcessos = totalProcessos
+    ? Math.round(dataComCamposCalculados.reduce((acc, item) => acc + item.dias, 0) / totalProcessos)
+    : 0;
+  const valorTotal = dataComCamposCalculados.reduce((acc, item) => acc + item.refPreco, 0);
 
-    const valorTotal = dataComCamposCalculados.reduce((acc, item) => acc + item.valor, 0);
+  return {
+    totalProcessos,
+    mediaProcessos,
+    valorTotal,
+    ganhosValor: 0,
+    perdasValor: valorTotal,
+    ganhosPercentual: 0,
+    perdasPercentual: valorTotal > 0 ? 100 : 0,
+  };
+}, [dataComCamposCalculados]);
 
-    const ganhosValor = 0;
-    const perdasValor = valorTotal;
 
-    const ganhosPercentual = 0;
-    const perdasPercentual = valorTotal > 0 ? 100 : 0;
 
-    return {
-      totalProcessos,
-      mediaProcessos,
-      valorTotal,
-      ganhosValor,
-      perdasValor,
-      ganhosPercentual,
-      perdasPercentual
-    };
-  }, [dataComCamposCalculados]);
-
-  const onPage = (event: DataTablePageEvent) => {
+const onPage = (event: DataTablePageEvent) => {
     setFirst(event.first);
     setRows(event.rows);
   };
@@ -360,6 +348,15 @@ export function PerdasPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             body={resultadoBodyTemplate}
             style={{ minWidth: '12rem' }}
+          />
+
+          <Column
+            field="statusPerda"
+            header="Tipo de Perda"
+            sortable
+            filter
+            filterElement={(options) => filterElement(options, 'Buscar')}
+            style={{ minWidth: '16rem' }}
           />
 
           <Column

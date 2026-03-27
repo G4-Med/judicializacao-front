@@ -2,13 +2,27 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
 }
 
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+.card {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.clientes-table {
+  width: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+
+.clientes-table .p-datatable-wrapper {
+  width: 100%;
 }
 
 .page-header h1 {
@@ -430,3 +444,20 @@ body.dark-theme .dialog-footer-actions {
     grid-column: span 1;
   }
 }
+
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* força uploads irem pra linha de baixo ocupando tudo */
+.upload-row {
+  grid-column: span 2;
+  display: flex;
+  gap: 1rem;
+}
+
+
+

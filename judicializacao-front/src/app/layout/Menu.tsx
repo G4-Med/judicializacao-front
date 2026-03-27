@@ -29,7 +29,19 @@ export function Menu() {
       icon: 'pi pi-file-edit',
       items: [
         {
-          label: 'Para protocolar',
+          label: 'Jurídico',
+          icon: 'pi pi-angle-right',
+          command: () => navigate('/juridico'),
+          className: location.pathname === '/juridico' ? 'menu-active-item' : '',
+        },
+        {
+          label: 'Orçamento Médico',
+          icon: 'pi pi-angle-right',
+          command: () => navigate('/orcamento-medico'),
+          className: location.pathname === '/orcamento-medico' ? 'menu-active-item' : '',
+        },
+        {
+          label: 'Protocolar',
           icon: 'pi pi-angle-right',
           command: () => navigate('/para-protocolar'),
           className: location.pathname === '/para-protocolar' ? 'menu-active-item' : '',
@@ -41,10 +53,22 @@ export function Menu() {
           className: location.pathname === '/protocolados' ? 'menu-active-item' : '',
         },
         {
-          label: 'Segredo de justiça',
+          label: 'Segredo de Justiça',
           icon: 'pi pi-angle-right',
           command: () => navigate('/segredo-justica'),
           className: location.pathname === '/segredo-justica' ? 'menu-active-item' : '',
+        },
+        {
+          label: 'Resultados',
+          icon: 'pi pi-angle-right',
+          command: () => navigate('/resultados'),
+          className: location.pathname === '/resultados' ? 'menu-active-item' : '',
+        },
+        {
+          label: 'Perdas',
+          icon: 'pi pi-angle-right',
+          command: () => navigate('/perdas'),
+          className: location.pathname === '/perdas' ? 'menu-active-item' : '',
         },
       ],
     },
@@ -66,6 +90,45 @@ export function Menu() {
         },
       ],
     },
+    
+    {
+      label: 'Resultados',
+      icon: 'pi pi-chart-line',
+      items: [
+        {
+          label: 'Resultados',
+          icon: 'pi pi-angle-right',
+          command: () => navigate('/resultados'),
+          className: location.pathname === '/resultados' ? 'menu-active-item' : '',
+        },
+        {
+          label: 'Perdas',
+          icon: 'pi pi-angle-right',
+          command: () => navigate('/perdas'),
+          className: location.pathname === '/perdas' ? 'menu-active-item' : '',
+        },
+      ],
+    },
+    // 👇 adiciona este bloco novo
+    {
+      label: 'Relatórios',
+      icon: 'pi pi-file-pdf',
+      items: [
+        {
+          label: 'Relatório Resumido',
+          icon: 'pi pi-angle-right',
+          command: () => navigate('/relatorios/resumido'),
+          className: location.pathname === '/relatorios/resumido' ? 'menu-active-item' : '',
+        },
+        {
+          label: 'Relatório Consolidado',
+          icon: 'pi pi-angle-right',
+          command: () => navigate('/relatorios/consolidado'),
+          className: location.pathname === '/relatorios/consolidado' ? 'menu-active-item' : '',
+        },
+      ],
+    },
+
     {
       label: 'Admin',
       icon: 'pi pi-cog',

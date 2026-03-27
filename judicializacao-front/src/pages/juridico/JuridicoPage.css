@@ -1,0 +1,113 @@
+.juridico-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.juridico-page .page-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #1f2937;
+}
+
+.juridico-page .page-header p {
+  margin: 6px 0 0;
+  color: #6b7280;
+}
+
+.juridico-page .kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.juridico-page .kpi-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px 18px 14px;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.juridico-page .kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #4b5563;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.juridico-page .kpi-header i { color: #fb923c; font-size: 1.05rem; }
+
+.juridico-page .kpi-value {
+  font-size: 2rem;
+  font-weight: 500;
+  color: #f97316;
+  line-height: 1;
+}
+
+.juridico-page .card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.juridico-form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.juridico-form-grid .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.juridico-form-grid .field label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.juridico-form-grid .p-inputtext,
+.juridico-form-grid .p-dropdown,
+.juridico-form-grid .p-inputtextarea {
+  width: 100%;
+}
+
+.juridico-form-grid .p-inputtext,
+.juridico-form-grid .p-dropdown { height: 42px; }
+
+.juridico-form-grid .p-inputtext:disabled { background: #f8fafc; color: #94a3b8; }
+
+.dialog-footer-actions {
+  margin-top: 22px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.dialog-footer-actions .p-button { min-width: 110px; }
+
+body.dark-theme .juridico-page .kpi-card {
+  background: #1f2a3d;
+  border-color: #334155;
+}
+
+body.dark-theme .juridico-page .kpi-header { color: #cbd5e1; }
+body.dark-theme .juridico-page .kpi-value { color: #fb923c; }
+
+body.dark-theme .juridico-page .card {
+  background: #1e293b;
+  border-color: #334155;
+}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Calendar } from 'primereact/calendar';
+import { Button } from 'primereact/button';
 import './DatePicker.css';
 
 type TipoPeriodo = 'anterior' | 'atual' | 'customizado';
@@ -37,7 +38,6 @@ function getUltimoDiaMesAnterior() {
 
 function formatarDataExtensa(data: Date | null) {
   if (!data) return '';
-
   return data.toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: 'long',
@@ -47,17 +47,10 @@ function formatarDataExtensa(data: Date | null) {
 
 function formatarPeriodo(dataInicio: Date | null, dataFim: Date | null) {
   if (!dataInicio || !dataFim) return 'Selecione um período';
-
-  const inicio = formatarDataExtensa(dataInicio);
-  const fim = formatarDataExtensa(dataFim);
-
-  return `${inicio} a ${fim}`;
+  return `${formatarDataExtensa(dataInicio)} a ${formatarDataExtensa(dataFim)}`;
 }
 
-export function DatePickerPeriodo({
-  value,
-  onChange
-}: DatePickerPeriodoProps) {
+export function DatePickerPeriodo({ value, onChange }: DatePickerPeriodoProps) {
   const [tipoSelecionado, setTipoSelecionado] = useState<TipoPeriodo>(
     value?.tipo ?? 'atual'
   );
@@ -68,23 +61,16 @@ export function DatePickerPeriodo({
       : [getPrimeiroDiaMesAtual(), getUltimoDiaMesAtual()]
   );
 
+  const [rangePendente, setRangePendente] = useState<(Date | null)[]>(rangeCustomizado);
+  const [calendarioAberto, setCalendarioAberto] = useState(false);
+
   const periodoCalculado = useMemo<PeriodoSelecionado>(() => {
     if (tipoSelecionado === 'anterior') {
-      return {
-        tipo: 'anterior',
-        dataInicio: getPrimeiroDiaMesAnterior(),
-        dataFim: getUltimoDiaMesAnterior()
-      };
+      return { tipo: 'anterior', dataInicio: getPrimeiroDiaMesAnterior(), dataFim: getUltimoDiaMesAnterior() };
     }
-
     if (tipoSelecionado === 'atual') {
-      return {
-        tipo: 'atual',
-        dataInicio: getPrimeiroDiaMesAtual(),
-        dataFim: getUltimoDiaMesAtual()
-      };
+      return { tipo: 'atual', dataInicio: getPrimeiroDiaMesAtual(), dataFim: getUltimoDiaMesAtual() };
     }
-
     return {
       tipo: 'customizado',
       dataInicio: rangeCustomizado[0] ?? null,
@@ -96,10 +82,25 @@ export function DatePickerPeriodo({
     onChange?.(periodoCalculado);
   }, [periodoCalculado, onChange]);
 
-  const textoPeriodo = formatarPeriodo(
-    periodoCalculado.dataInicio,
-    periodoCalculado.dataFim
-  );
+  const handleAbrirCustomizado = () => {
+    setTipoSelecionado('customizado');
+    setRangePendente(rangeCustomizado);
+    setCalendarioAberto(true);
+  };
+
+  const handleAplicar = () => {
+    if (rangePendente[0] && rangePendente[1]) {
+      setRangeCustomizado(rangePendente);
+    }
+    setCalendarioAberto(false);
+  };
+
+  const handleCancelar = () => {
+    setRangePendente(rangeCustomizado);
+    setCalendarioAberto(false);
+  };
+
+  const textoPeriodo = formatarPeriodo(periodoCalculado.dataInicio, periodoCalculado.dataFim);
 
   return (
     <div className="date-picker-periodo">
@@ -107,7 +108,7 @@ export function DatePickerPeriodo({
         <button
           type="button"
           className={tipoSelecionado === 'anterior' ? 'active' : ''}
-          onClick={() => setTipoSelecionado('anterior')}
+          onClick={() => { setTipoSelecionado('anterior'); setCalendarioAberto(false); }}
         >
           Anterior
         </button>
@@ -115,7 +116,7 @@ export function DatePickerPeriodo({
         <button
           type="button"
           className={tipoSelecionado === 'atual' ? 'active' : ''}
-          onClick={() => setTipoSelecionado('atual')}
+          onClick={() => { setTipoSelecionado('atual'); setCalendarioAberto(false); }}
         >
           Atual
         </button>
@@ -123,7 +124,7 @@ export function DatePickerPeriodo({
         <button
           type="button"
           className={tipoSelecionado === 'customizado' ? 'active' : ''}
-          onClick={() => setTipoSelecionado('customizado')}
+          onClick={handleAbrirCustomizado}
         >
           Customizado
         </button>
@@ -131,16 +132,30 @@ export function DatePickerPeriodo({
 
       <div className="periodo-label">{textoPeriodo}</div>
 
-      {tipoSelecionado === 'customizado' && (
+      {tipoSelecionado === 'customizado' && calendarioAberto && (
         <div className="periodo-calendar-box">
           <Calendar
-            value={rangeCustomizado}
-            onChange={(e) => setRangeCustomizado((e.value as Date[]) || [])}
+            value={rangePendente}
+            onChange={(e) => setRangePendente((e.value as Date[]) || [])}
             selectionMode="range"
             inline
             numberOfMonths={2}
             readOnlyInput
           />
+
+          <div className="calendario-acoes">
+            <Button
+              label="Cancelar"
+              text
+              severity="secondary"
+              onClick={handleCancelar}
+            />
+            <Button
+              label="Aplicar"
+              onClick={handleAplicar}
+              disabled={!rangePendente[0] || !rangePendente[1]}
+            />
+          </div>
         </div>
       )}
     </div>

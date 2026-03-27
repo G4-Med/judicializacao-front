@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
+import { getOrders, getStatusOrders, atualizarOrder, getMedicosCompleto, getAnexosOrder } from '../../services/api/orders';
 import type {
   DataTableFilterMeta,
   DataTablePageEvent,
@@ -41,11 +42,21 @@ interface Processo {
   valorGanho: number | null;
   nprocesso: string;
   empresa: string;
+  statusPerda: string;
+  dataStatusPerda: string;
+  idMedico: number | null;
 }
 
 interface ProcessoTableRow extends Processo {
   sequencial: number;
   dias: number;
+}
+
+interface Anexo {
+  id: number
+  linkImagem: string
+  tipo: string
+  createDate: string
 }
 
 export function ProcessosPage() {
@@ -61,6 +72,18 @@ export function ProcessosPage() {
   const rowActionMenuRef = useRef<TieredMenu>(null);
   const [editDialogVisible, setEditDialogVisible] = useState(false);
   const [processoEditando, setProcessoEditando] = useState<ProcessoTableRow | null>(null);
+  const [medicosOptions, setMedicosOptions] = useState<{label: string, value: number}[]>([]);
+  const [medicos, setMedicos] = useState<any[]>([]);
+  const [anexos, setAnexos] = useState<Anexo[]>([])
+  const [loadingAnexos, setLoadingAnexos] = useState(false)
+  const [anexosOrcamento, setAnexosOrcamento] = useState<any[]>([]);
+  const [loadingAnexosOrcamento, setLoadingAnexosOrcamento] = useState(false);
+  const [previewVisible, setPreviewVisible] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string>('')
+  const [previewTipo, setPreviewTipo] = useState<'pdf' | 'imagem' | 'outro'>('outro')
+  const [previewNome, setPreviewNome] = useState<string>('')
+  const [anexosProtocolo, setAnexosProtocolo] = useState<any[]>([]);
+  const [loadingAnexosProtocolo, setLoadingAnexosProtocolo] = useState(false);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -76,27 +99,30 @@ export function ProcessosPage() {
     statusMedico: { value: '', matchMode: FilterMatchMode.CONTAINS }
   });
 
+  const [statusOptions, setStatusOptions] = useState<{
+    statusProcesso: string[];
+    statusJuridico: string[];
+    statusOrcamento: string[];
+    statusPerda: string[];
+  }>({
+    statusProcesso: [],
+    statusJuridico: [],
+    statusOrcamento: [],
+    statusPerda: [],
+  });
 
-  const medicoOptions = [
-    { label: 'BRUNO FAJARDO', value: 'BRUNO FAJARDO' },
-    { label: 'VITOR GROPPO', value: 'VITOR GROPPO' },
-    { label: 'IBG', value: 'IBG' }
-  ];
+  
 
-  const statusJuridicoOptions = [
-    { label: 'Aguardando protocolo', value: 'Aguardando protocolo' },
-    { label: 'Protocolado', value: 'Protocolado' },
-    { label: 'Em petição', value: 'Em petição' },
-    { label: 'Indeferido', value: 'Indeferido' },
-    { label: 'Triagem', value: 'Triagem' }
-  ];
+  
 
-  const statusOrcamentoOptions = [
-    { label: 'Aguardando cotação', value: 'Aguardando cotação' },
-    { label: 'Cotado', value: 'Cotado' },
-    { label: 'Não cotar', value: 'Não cotar' },
-    { label: 'Orçamento enviado', value: 'Orçamento enviado' }
-  ];
+  // Troque statusJuridicoOptions por:
+  const statusJuridicoOpts = statusOptions.statusJuridico.map(s => ({ label: s, value: s }));
+
+  // Troque statusOrcamentoOptions por:
+  const statusOrcamentoOpts = statusOptions.statusOrcamento.map(s => ({ label: s, value: s }));
+
+  // statusPerda novo:
+  const statusPerdaOpts = statusOptions.statusPerda.map(s => ({ label: s, value: s }));
 
   const massActionItems: MenuItem[] = [
     {
@@ -279,141 +305,68 @@ export function ProcessosPage() {
     );
   };
 
+
+  
+
+  // No useEffect, carregue junto com os processos:
   useEffect(() => {
     setLoading(true);
-
-    const mock: Processo[] = [
-      {
-        id: 1,
-        paciente: 'Maria Helena Souza',
-        idade: 54,
-        procedimento: 'Artroplastia total de joelho',
-        refPreco: 18500,
-        medico: 'BRUNO FAJARDO',
-        area: 'Ortopedia',
-        subarea: 'Joelho',
-        dataSolicitacao: '2026-03-10',
-        status: 'Pendente',
-        statusJuridico: 'Aguardando protocolo',
-        dataStatusJuridico: '2026-03-10',
-        statusMedico: 'Em análise',
-        statusOrcamento: 'Aguardando cotação',
-        dataStatusOrcamento: '2026-03-10',
-        valorOrcamento: null,
-        justificativaPerda: '',
-        situacao: 'Em aberto',
-        dataSituacao: '2026-03-10',
-        valorGanho: null,
-        nprocesso: 'PROC-0001',
-        empresa: 'G4MED'
-      },
-      {
-        id: 2,
-        paciente: 'João Pedro Santos',
-        idade: 37,
-        procedimento: 'Herniorrafia inguinal',
-        refPreco: 9200,
-        medico: 'Dra. Camila Freitas',
-        area: 'Cirurgia Geral',
-        subarea: 'Geral',
-        dataSolicitacao: '2026-03-05',
-        status: 'Protocolado',
-        statusJuridico: 'Aguardando protocolo',
-        dataStatusJuridico: '2026-03-10',
-        statusMedico: 'Em análise',
-        statusOrcamento: 'Aguardando cotação',
-        dataStatusOrcamento: '2026-03-10',
-        valorOrcamento: null,
-        justificativaPerda: '',
-        situacao: 'Em aberto',
-        dataSituacao: '2026-03-10',
-        valorGanho: null,
-        nprocesso: 'PROC-0001',
-        empresa: 'G4MED'
-      },
-      {
-        id: 3,
-        paciente: 'Ana Cláudia Costa',
-        idade: 62,
-        procedimento: 'Cirurgia bariátrica',
-        refPreco: 27500,
-        medico: 'Dr. Felipe Andrade',
-        area: 'Gastro',
-        subarea: 'Geral',
-        dataSolicitacao: '2026-02-28',
-        status: 'Em andamento',
-        statusJuridico: 'Em petição',
-        dataStatusJuridico: '2026-03-10',
-        statusMedico: 'Em análise',
-        statusOrcamento: 'Aguardando cotação',
-        dataStatusOrcamento: '2026-03-10',
-        valorOrcamento: null,
-        justificativaPerda: '',
-        situacao: 'Em aberto',
-        dataSituacao: '2026-03-10',
-        valorGanho: null,
-        nprocesso: 'PROC-0001',
-        empresa: 'G4MED'
-      },
-      {
-        id: 4,
-        paciente: 'Carlos Eduardo Rocha',
-        idade: 45,
-        procedimento: 'Discectomia lombar',
-        refPreco: 21000,
-        medico: 'Dra. Juliana Alves',
-        area: 'Neurocirurgia',
-        subarea: 'Geral',
-        dataSolicitacao: '2026-03-01',
-        status: 'Perdido',
-        statusJuridico: 'Indeferido',
-        dataStatusJuridico: '2026-03-10',
-        statusMedico: 'Em análise',
-        statusOrcamento: 'Aguardando cotação',
-        dataStatusOrcamento: '2026-03-10',
-        valorOrcamento: null,
-        justificativaPerda: '',
-        situacao: 'Em aberto',
-        dataSituacao: '2026-03-10',
-        valorGanho: null,
-        nprocesso: 'PROC-0001',
-        empresa: 'G4MED'
-      },
-      {
-        id: 5,
-        paciente: 'Fernanda Lopes',
-        idade: 29,
-        procedimento: 'Mamoplastia redutora',
-        refPreco: 14500,
-        medico: 'Dr. Henrique Prado',
-        area: 'Plástica',
-        subarea: 'Geral',
-        dataSolicitacao: '2026-03-12',
-        status: 'Pendente',
-        statusJuridico: 'Triagem',
-        dataStatusJuridico: '2026-03-10',
-        statusMedico: 'Em análise',
-        statusOrcamento: 'Aguardando cotação',
-        dataStatusOrcamento: '2026-03-10',
-        valorOrcamento: null,
-        justificativaPerda: '',
-        situacao: 'Em aberto',
-        dataSituacao: '2026-03-10',
-        valorGanho: null,
-        nprocesso: 'PROC-0001',
-        empresa: 'G4MED'
-      }
-    ];
+    Promise.all([getOrders(), getStatusOrders(), getMedicosCompleto()])
+     .then(([ordersRes, statusRes, medicosRes]) => {
+        console.log('ordersRes', ordersRes.data);
+        console.log('statusRes', statusRes.data);
+        console.log('medicosRes', medicosRes.data);
+        setStatusOptions(statusRes.data);
+        setMedicos(medicosRes.data);
 
 
-    const timer = setTimeout(() => {
-      setProcessos(mock);
-      setLoading(false);
-    }, 400);
+        setMedicosOptions(medicosRes.data.map((m: any) => ({
+          label: m.nomeSistema,
+          value: m.id,
+        })));
+        console.log('Médicos carregados:', medicosRes.data);
 
-    return () => clearTimeout(timer);
+
+        setProcessos(ordersRes.data.map((o: any) => ({
+          id: o.id,
+          paciente: o.paciente ?? '',
+          idade: o.dataNascimento ? calcularIdade(o.dataNascimento) : 0,
+          procedimento: o.procedimento ?? '',
+          refPreco: o.refPreco ?? 0,
+          medico: medicosRes.data.find((m: any) => m.id === o.idMedico)?.nomeSistema ?? '',
+          area: o.area ?? '',
+          subarea: o.subarea ?? '',
+          dataSolicitacao: o.dataPedido ?? '',
+          status: o.statusProcesso ?? '',
+          statusJuridico: o.statusJuridico ?? '',
+          dataStatusJuridico: o.dataStatusJuridico ?? '',
+          statusMedico: o.statusOrcamento ?? '',
+          statusOrcamento: o.statusOrcamento ?? '',
+          dataStatusOrcamento: o.dataStatusOrcamento ?? '',
+          valorOrcamento: o.valorOrcamento,
+          justificativaPerda: o.justificativaPerda ?? '',
+          valorGanho: o.valorGanho,
+          nprocesso: o.nprocesso ?? '',
+          empresa: medicosRes.data.find((m: any) => m.id === o.idMedico)?.razaoSocial ?? '',
+          statusPerda: o.statusPerda ?? '',
+          dataStatusPerda: o.dataStatusPerda ?? '',
+          idMedico: o.idMedico ?? null,
+        })));
+      })
+      .catch(() => console.error('Erro ao carregar processos'))
+      .finally(() => setLoading(false));
   }, []);
 
+
+  function calcularIdade(dataNascimento: string): number {
+    if (!dataNascimento) return 0;
+    const hoje = new Date();
+    const nasc = new Date(dataNascimento);
+    let idade = hoje.getFullYear() - nasc.getFullYear();
+    const m = hoje.getMonth() - nasc.getMonth();
+    if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+    return idade;
+  }
 
 
   const handleMassAction = (action: string) => {
@@ -422,6 +375,7 @@ export function ProcessosPage() {
     console.log('Ação em massa:', action, selectedProcessos);
   };
 
+  
 
   const dataComCamposCalculados = useMemo<ProcessoTableRow[]>(() => {
     const hoje = new Date();
@@ -456,10 +410,17 @@ export function ProcessosPage() {
     });
   };
 
-  const formatarData = (data: string) => {
-    const [ano, mes, dia] = data.split('-');
+
+  const formatarData = (data?: string | null) => {
+    if (!data) return '';
+
+    const partes = data.split('-');
+    if (partes.length !== 3) return '';
+
+    const [ano, mes, dia] = partes;
     return `${dia}/${mes}/${ano}`;
   };
+
 
   const getStatusSeverity = (status: string): 'success' | 'info' | 'warning' | 'danger' | 'secondary' | 'contrast' => {
     const valor = status.toLowerCase();
@@ -498,12 +459,35 @@ export function ProcessosPage() {
         severity="secondary"
         aria-label={`Editar processo ${rowData.id}`}
         onClick={() => {
-          setProcessoEditando({ ...rowData });
-          setEditDialogVisible(true);
+          setProcessoEditando({ ...rowData })
+          setEditDialogVisible(true)
+
+          // 👇 carrega os anexos do tipo RELATORIO
+          setAnexos([])
+          setLoadingAnexos(true)
+          getAnexosOrder(rowData.id, 'RELATORIO')
+            .then((res) => setAnexos(res.data.anexos))
+            .catch(() => setAnexos([]))
+            .finally(() => setLoadingAnexos(false))
+
+            // Busca anexos ORCAMENTO
+            setLoadingAnexosOrcamento(true);
+            getAnexosOrder(rowData.id, 'ORCAMENTO')
+              .then((res: any) => setAnexosOrcamento(res.data.anexos))
+              .catch(() => setAnexosOrcamento([]))
+              .finally(() => setLoadingAnexosOrcamento(false));
+
+
+            // Busca anexos PROTOCOLO
+            setLoadingAnexosProtocolo(true);
+            getAnexosOrder(rowData.id, 'PROTOCOLO')
+              .then((res: any) => setAnexosProtocolo(res.data.anexos))
+              .catch(() => setAnexosProtocolo([]))
+              .finally(() => setLoadingAnexosProtocolo(false));
         }}
       />
-    );
-  };
+    )
+  }
 
   
 
@@ -564,14 +548,156 @@ export function ProcessosPage() {
     });
   };
 
-  const handleSalvarEdicao = () => {
+
+  const handleSalvarEdicao = async () => {
     if (!processoEditando) return;
+    try {
 
-    console.log('Salvar processo:', processoEditando);
 
-    // depois vamos integrar com backend
-    setEditDialogVisible(false);
+    const payload: any = {
+      paciente: processoEditando.paciente,
+      procedimento: processoEditando.procedimento,
+      area: processoEditando.area,
+      subarea: processoEditando.subarea,
+      statusJuridico: processoEditando.statusJuridico || null,
+      statusOrcamento: processoEditando.statusOrcamento || null,
+      statusPerda: processoEditando.statusPerda || null,
+      justificativaPerda: processoEditando.justificativaPerda || null,
+      nprocesso: processoEditando.nprocesso || null,
+      valorOrcamento: processoEditando.valorOrcamento,
+      valorGanho: processoEditando.valorGanho,
+      idMedico: processoEditando.idMedico,
+    };
+
+    console.log('🚀 PAYLOAD ENVIADO PARA API:', payload);      
+
+
+      await atualizarOrder(processoEditando.id, {
+        paciente: processoEditando.paciente,
+        procedimento: processoEditando.procedimento,
+        area: processoEditando.area,
+        subarea: processoEditando.subarea,
+        statusJuridico: processoEditando.statusJuridico || null,
+        statusOrcamento: processoEditando.statusOrcamento || null,
+        statusPerda: processoEditando.statusPerda || null,
+        justificativaPerda: processoEditando.justificativaPerda || null,
+        nprocesso: processoEditando.nprocesso || null,
+        valorOrcamento: processoEditando.valorOrcamento,
+        valorGanho: processoEditando.valorGanho,
+        idMedico: processoEditando.idMedico,
+      });
+
+      // Recarrega a lista
+      const { data } = await getOrders();
+      setProcessos(data.map((o: any) => ({
+        id: o.id,
+        paciente: o.paciente ?? '',
+        idade: o.dataNascimento ? calcularIdade(o.dataNascimento) : 0,
+        procedimento: o.procedimento ?? '',
+        refPreco: o.refPreco ?? 0,
+        medico: medicos.find((m: any) => m.id === o.idMedico)?.nomeSistema ?? '',
+        area: o.area ?? '',
+        subarea: o.subarea ?? '',
+        dataSolicitacao: o.dataPedido ?? '',
+        status: o.statusProcesso ?? '',
+        statusJuridico: o.statusJuridico ?? '',
+        dataStatusJuridico: o.dataStatusJuridico ?? '',
+        statusMedico: o.statusOrcamento ?? '',
+        statusOrcamento: o.statusOrcamento ?? '',
+        dataStatusOrcamento: o.dataStatusOrcamento ?? '',
+        valorOrcamento: o.valorOrcamento,
+        justificativaPerda: o.justificativaPerda ?? '',
+        valorGanho: o.valorGanho,
+        nprocesso: o.nprocesso ?? '',
+        empresa: medicos.find((m: any) => m.id === o.idMedico)?.razaoSocial ?? '',
+        statusPerda: o.statusPerda ?? '',
+        dataStatusPerda: o.dataStatusPerda ?? '',
+      })));
+
+      setEditDialogVisible(false);
+    } catch (err) {
+      console.error('Erro ao salvar processo:', err);
+      alert('Erro ao salvar. Tente novamente.');
+    }
   };
+
+  console.log('processos:', processos.length);
+  console.log('dataComCamposCalculados:', dataComCamposCalculados.length);
+
+
+
+ const renderAnexos = (lista: any[], loading: boolean, titulo: string) => (
+  <div className="field field-span-4" style={{ marginTop: '1rem' }}>
+    <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>
+      <i className="pi pi-paperclip" style={{ marginRight: '6px' }} />
+      {titulo}
+    </label>
+
+    {loading && (
+      <span style={{ fontSize: '0.9rem', color: '#888' }}>
+        <i className="pi pi-spin pi-spinner" style={{ marginRight: '6px' }} />
+        Carregando arquivos...
+      </span>
+    )}
+
+    {!loading && lista.length === 0 && (
+      <span style={{ fontSize: '0.9rem', color: '#aaa' }}>
+        Nenhum arquivo anexado.
+      </span>
+    )}
+
+    {!loading && lista.length > 0 && (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {lista.map((anexo, index) => {
+          const nomeArquivo = anexo.linkImagem.split('/').pop() || `Arquivo ${index + 1}`
+          const extensao = nomeArquivo.split('.').pop()?.toLowerCase()
+          const icone = extensao === 'pdf'
+            ? 'pi pi-file-pdf'
+            : ['jpg', 'jpeg', 'png'].includes(extensao ?? '')
+              ? 'pi pi-image'
+              : 'pi pi-file'
+          const tipo: 'pdf' | 'imagem' | 'outro' = extensao === 'pdf'
+            ? 'pdf'
+            : ['jpg', 'jpeg', 'png'].includes(extensao ?? '')
+              ? 'imagem'
+              : 'outro'
+
+          return (
+            <div
+              key={anexo.id}
+              onClick={() => {
+                setPreviewUrl(anexo.linkImagem)
+                setPreviewNome(nomeArquivo)
+                setPreviewTipo(tipo)
+                setPreviewVisible(true)
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb',
+                textDecoration: 'none',
+                color: '#374151',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#f3f4f6' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+            >
+              <i className={icone} style={{ fontSize: '1.1rem', color: '#f97316' }} />
+              <span style={{ flex: 1 }}>{nomeArquivo}</span>
+              <i className="pi pi-eye" style={{ color: '#9ca3af', fontSize: '0.85rem' }} />
+            </div>
+          )
+        })}
+      </div>
+    )}
+  </div>
+)
+  
+
 
   return (
 
@@ -861,10 +987,24 @@ export function ProcessosPage() {
               <div className="field field-span-2">
                 <label>Médico</label>
                 <Dropdown
-                  value={processoEditando.medico}
-                  options={medicoOptions}
-                  onChange={(e) => updateProcessoEditando('medico', e.value)}
+                  value={processoEditando.idMedico}
+                  options={medicosOptions}
+                  onChange={(e) => {
+                    const medicoSelecionado = medicos.find((m: any) => m.id === e.value);
+
+                    setProcessoEditando(prev => prev ? {
+                      ...prev,
+                      idMedico: e.value,
+                      medico: medicoSelecionado?.nomeSistema ?? '',
+                      empresa: medicoSelecionado?.razaoSocial ?? '',
+                    } : null);
+                  }}
                   placeholder="Selecione"
+                  disabled={processoEditando.status !== 'Aguardando Orçamento'}
+                  tooltip={processoEditando.status !== 'Aguardando Orçamento'
+                    ? 'Disponível apenas quando status é Aguardando Orçamento'
+                    : undefined}
+                  tooltipOptions={{ position: 'top' }}
                 />
               </div>
 
@@ -908,7 +1048,7 @@ export function ProcessosPage() {
                 <label>Status Jurídico</label>
                 <Dropdown
                   value={processoEditando.statusJuridico}
-                  options={statusJuridicoOptions}
+                  options={statusJuridicoOpts}
                   onChange={(e) => updateProcessoEditando('statusJuridico', e.value)}
                   placeholder="Selecione"
                 />
@@ -923,7 +1063,7 @@ export function ProcessosPage() {
                 <label>Status Orçamento</label>
                 <Dropdown
                   value={processoEditando.statusOrcamento}
-                  options={statusOrcamentoOptions}
+                  options={statusOrcamentoOpts}
                   onChange={(e) => updateProcessoEditando('statusOrcamento', e.value)}
                   placeholder="Selecione"
                 />
@@ -945,35 +1085,50 @@ export function ProcessosPage() {
                 />
               </div>
 
-              <div className="field field-span-1">
-                <label>Situação</label>
-                <InputText value={processoEditando.situacao} disabled />
-              </div>
 
-              <div className="field field-span-1">
-                <label>Data Situação</label>
-                <InputText value={formatarData(processoEditando.dataSituacao)} disabled />
-              </div>
-
-              <div className="field field-span-4">
-                <label>Justificativa Perda</label>
-                <InputText value={processoEditando.justificativaPerda} disabled />
+              <div className="field field-span-2">
+                <label>Status Perda</label>
+                <Dropdown
+                  value={processoEditando.statusPerda}
+                  options={statusPerdaOpts}
+                  onChange={(e) => updateProcessoEditando('statusPerda', e.value)}
+                  placeholder="Selecione"
+                />
               </div>
 
               <div className="field field-span-2">
-                <label>Valor Ganho</label>
-                <InputNumber
-                  value={processoEditando.valorGanho ?? undefined}
-                  mode="currency"
-                  currency="BRL"
-                  locale="pt-BR"
+                <label>Justificativa Perda</label>
+                <InputText
+                  value={processoEditando.justificativaPerda}
+                  onChange={(e) => updateProcessoEditando('justificativaPerda', e.target.value)}
+                />
+              </div>
+
+              <div className="field field-span-2">
+                <label>Data Status Perda</label>
+                <InputText
+                  value={formatarData(processoEditando.dataStatusPerda)}
                   disabled
                 />
               </div>
 
               <div className="field field-span-2">
                 <label>Nº Processo</label>
-                <InputText value={processoEditando.nprocesso} disabled />
+                <InputText
+                  value={processoEditando.nprocesso}
+                  onChange={(e) => updateProcessoEditando('nprocesso', e.target.value)}
+                />
+              </div>
+
+              <div className="field field-span-2">
+                <label>Valor Ganho</label>
+                <InputNumber
+                  value={processoEditando.valorGanho ?? undefined}
+                  onValueChange={(e) => updateProcessoEditando('valorGanho', e.value)}
+                  mode="currency"
+                  currency="BRL"
+                  locale="pt-BR"
+                />
               </div>
 
               <div className="field field-span-4">
@@ -982,6 +1137,141 @@ export function ProcessosPage() {
               </div>
             </div>
           )}
+
+
+          {/* Inicio Anexos */}
+          {/* <div className="field field-span-4" style={{ marginTop: '1rem' }}>
+            <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>
+              <i className="pi pi-paperclip" style={{ marginRight: '6px' }} />
+              Relatórios Anexados
+            </label>
+
+            {loadingAnexos && (
+              <span style={{ fontSize: '0.9rem', color: '#888' }}>
+                <i className="pi pi-spin pi-spinner" style={{ marginRight: '6px' }} />
+                Carregando arquivos...
+              </span>
+            )}
+
+            {!loadingAnexos && anexos.length === 0 && (
+              <span style={{ fontSize: '0.9rem', color: '#aaa' }}>
+                Nenhum relatório anexado.
+              </span>
+            )}
+
+            {!loadingAnexos && anexos.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {anexos.map((anexo, index) => {
+                const nomeArquivo = anexo.linkImagem.split('/').pop() || `Arquivo ${index + 1}`
+                const extensao = nomeArquivo.split('.').pop()?.toLowerCase()
+                const icone = extensao === 'pdf'
+                  ? 'pi pi-file-pdf'
+                  : ['jpg', 'jpeg', 'png'].includes(extensao ?? '')
+                    ? 'pi pi-image'
+                    : 'pi pi-file'
+
+              return (
+                <a
+                  key={anexo.id}
+                  href={anexo.linkImagem}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #e5e7eb',
+                    textDecoration: 'none',
+                    color: '#374151',
+                    fontSize: '0.9rem',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#f3f4f6'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent'
+                  }}
+                >
+                    <i className={icone} style={{ fontSize: '1.1rem', color: '#f97316' }} />
+                    <span style={{ flex: 1 }}>{nomeArquivo}</span>
+                    <i className="pi pi-download" style={{ color: '#9ca3af', fontSize: '0.85rem' }} />
+                  </a>
+                )
+              })}
+
+              </div>
+            )}
+          </div> */}
+
+          {/* Dialog Preview de Arquivo */}
+          <Dialog
+            header={previewNome}
+            visible={previewVisible}
+            style={{ width: '80vw', maxWidth: '1100px', height: '90vh' }}
+            modal
+            onHide={() => setPreviewVisible(false)}
+            footer={
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                <a
+                  href={previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                >
+                  <Button label="Baixar" icon="pi pi-download" outlined />
+                </a>
+                <Button label="Fechar" onClick={() => setPreviewVisible(false)} />
+              </div>
+            }
+          >
+            <div style={{ height: 'calc(90vh - 120px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {previewTipo === 'pdf' && (
+                <iframe
+                  src={previewUrl}
+                  style={{ width: '100%', height: '100%', border: 'none', borderRadius: '8px' }}
+                  title={previewNome}
+                />
+              )}
+
+              {previewTipo === 'imagem' && (
+                <img
+                  src={previewUrl}
+                  alt={previewNome}
+                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '8px' }}
+                />
+              )}
+
+              {previewTipo === 'outro' && (
+                <div style={{ textAlign: 'center', color: '#6b7280' }}>
+                  <i className="pi pi-file" style={{ fontSize: '3rem', marginBottom: '12px', display: 'block' }} />
+                  <p>Este tipo de arquivo não pode ser visualizado inline.</p>
+                  <a href={previewUrl} target="_blank" rel="noopener noreferrer" download>
+                    <Button label="Baixar arquivo" icon="pi pi-download" />
+                  </a>
+                </div>
+              )}
+            </div>
+          </Dialog>
+
+          {renderAnexos(anexos, loadingAnexos, 'Relatórios Anexados')}
+          {/* Fim Anexos */}
+
+
+          {/* Inicio Orçamentos */}
+
+
+          {renderAnexos(anexosOrcamento, loadingAnexosOrcamento, 'Orçamentos Anexados')}
+          {/* Fim dos Orçamentos */}
+
+
+          {/* Inicio Protocolos */}
+          {renderAnexos(anexosProtocolo, loadingAnexosProtocolo, 'Protocolos Anexados')}
+          {/* Fim dos Protocolos */}
+          
+
 
           <div className="dialog-footer-actions">
             <Button
