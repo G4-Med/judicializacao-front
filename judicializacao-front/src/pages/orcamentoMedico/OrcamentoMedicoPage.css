@@ -16,6 +16,12 @@
   color: #6b7280;
 }
 
+.status-tag-custom {
+  font-weight: 700;
+  border-width: 1px;
+  border-style: solid;
+}
+
 .orcamento-medico-page .kpi-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -105,6 +111,13 @@
   gap: 24px;
 }
 
+.orcamento-dialog-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(360px, 0.88fr);
+  gap: 22px;
+  align-items: start;
+}
+
 .secao-orcamento h3 {
   font-size: 0.95rem;
   font-weight: 700;
@@ -133,6 +146,212 @@
   text-align: right;
 }
 
+.orcamento-preview {
+  position: sticky;
+  top: 0;
+  transform: scale(0.98);
+  transform-origin: top center;
+}
+
+.orcamento-documento {
+  position: relative;
+  aspect-ratio: 595.5 / 842.25;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.14);
+}
+
+.orcamento-documento__fundo,
+.orcamento-documento__fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.orcamento-documento__fundo {
+  border: 0;
+  opacity: 0.94;
+  pointer-events: none;
+}
+
+.orcamento-documento__fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px;
+  color: #6b7280;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+}
+
+.orcamento-documento__conteudo {
+  position: absolute;
+  inset: 24.2% 11.5% 13.1% 11.5%;
+  display: flex;
+  flex-direction: column;
+  color: #111827;
+  pointer-events: none;
+}
+
+.orcamento-documento__cabecalho {
+  text-align: center;
+  font-size: clamp(0.56rem, 0.96vw, 0.82rem);
+}
+
+.orcamento-documento__titulo-central {
+  font-size: clamp(0.74rem, 1.16vw, 0.96rem);
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 0.95;
+  white-space: nowrap;
+}
+
+.orcamento-documento__procedimento {
+  margin-top: 0.08rem;
+  font-weight: 700;
+  font-size: clamp(0.54rem, 0.84vw, 0.68rem);
+  line-height: 1;
+}
+
+.orcamento-documento__meta-central {
+  margin-top: 0.04rem;
+  font-size: clamp(0.44rem, 0.68vw, 0.54rem);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.orcamento-documento__cabecalho h3 {
+  margin: 0;
+  font-size: clamp(0.62rem, 1.1vw, 0.96rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.orcamento-documento__cabecalho p {
+  margin: 0.18rem 0;
+  line-height: 1.2;
+}
+
+.orcamento-documento__linha-meta {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 0.15rem;
+}
+
+.orcamento-documento__linha-meta--dupla {
+  justify-content: space-between;
+}
+
+.orcamento-documento__regra {
+  border-top: 1px solid #6b7280;
+  margin: 0.2rem 0 0.14rem;
+}
+
+.orcamento-documento__subtexto {
+  font-size: clamp(0.34rem, 0.52vw, 0.42rem);
+  line-height: 1;
+}
+
+.orcamento-documento__miolo {
+  display: grid;
+  grid-template-columns: 1.02fr 0.98fr;
+  gap: 0.42rem;
+  margin-top: 0.12rem;
+  font-size: clamp(0.38rem, 0.56vw, 0.48rem);
+}
+
+.orcamento-documento__bloco,
+.orcamento-documento__checklist {
+  margin-bottom: 0.12rem;
+}
+
+.orcamento-documento__titulo-bloco {
+  font-weight: 800;
+  margin-bottom: 0.03rem;
+  line-height: 1.02;
+  font-size: 1.1em;
+}
+
+.orcamento-documento__linha-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.12rem;
+  border-bottom: 1px solid rgba(107, 114, 128, 0.45);
+  padding: 0.01rem 0;
+  line-height: 1;
+  font-size: 1.08em;
+}
+
+.orcamento-documento__linha-item span {
+  flex: 1;
+}
+
+.orcamento-documento__linha-item strong {
+  white-space: nowrap;
+}
+
+.orcamento-documento__subtotal {
+  text-align: right;
+  margin-top: 0.04rem;
+  font-weight: 700;
+  line-height: 1;
+  font-size: 1.08em;
+}
+
+.orcamento-documento__linha-check {
+  line-height: 1;
+  margin-bottom: 0.03rem;
+  font-size: 1.08em;
+}
+
+.orcamento-documento__linha-vazia {
+  color: #6b7280;
+  font-style: italic;
+  line-height: 1;
+  font-size: 1.04em;
+}
+
+.orcamento-documento__rodape-centro {
+  margin-top: 0.08rem;
+  padding-top: 0.08rem;
+  border-top: 1px solid #6b7280;
+}
+
+.orcamento-documento__total {
+  text-align: center;
+  font-size: clamp(0.62rem, 0.94vw, 0.78rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.orcamento-documento__infos-finais {
+  margin-top: 0.03rem;
+  display: flex;
+  justify-content: space-between;
+  font-size: clamp(0.3rem, 0.46vw, 0.38rem);
+  line-height: 1;
+}
+
+.orcamento-documento__assinatura {
+  margin-top: auto;
+  text-align: center;
+  font-size: clamp(0.42rem, 0.64vw, 0.56rem);
+  line-height: 1;
+}
+
+.orcamento-documento__assinatura img {
+  display: block;
+  margin: 0.04rem auto 0;
+  max-width: 34%;
+  max-height: 3rem;
+  object-fit: contain;
+}
+
 .dialog-footer-actions {
   margin-top: 22px;
   display: flex;
@@ -153,3 +372,24 @@ body.dark-theme .orcamento-medico-page .card {
   border-color: #334155;
 }
 body.dark-theme .secao-orcamento h3 { color: #f8fafc; }
+
+@media (max-width: 1080px) {
+  .orcamento-dialog-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .orcamento-preview {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .orcamento-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .orcamento-valor {
+    width: 100%;
+  }
+}

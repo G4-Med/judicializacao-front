@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { DataTable } from 'primereact/datatable';
-import { getOrders, getStatusOrders, atualizarOrder, getMedicosCompleto, getAnexosOrder } from '../../services/api/orders';
+import { getOrders, getStatusOrders, atualizarOrder, getMedicosCompleto, getAnexosOrder, criarOrderProcess, processarOrderProcess, salvarJuridico, uploadArquivoIntegracao, marcarSemProfissional } from '../../services/api/orders';
 import type {
   DataTableFilterMeta,
   DataTablePageEvent,
@@ -10,6 +11,7 @@ import { Column } from 'primereact/column';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
+import { InputTextarea } from 'primereact/inputtextarea';
 import { FilterMatchMode } from 'primereact/api';
 import { TieredMenu } from 'primereact/tieredmenu';
 import type { MenuItem } from 'primereact/menuitem';
@@ -17,7 +19,52 @@ import { useRef } from 'react';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { InputNumber } from 'primereact/inputnumber';
+import { getStatusTagStyle } from '../../utils/statusTag';
+import { EnviarOrcamentoDialog } from '../orcamentoMedico/EnviarOrcamentoDialog';
 import './ProcessosPage.css';
+
+const STATUS_PROCESSO_FALLBACK = [
+  'Aguardando Juridico',
+  'Aguardando Orçamento',
+  'Aguardando Protocolar',
+  'Aguardando Resposta',
+  'Aguardando Resposta - Segredo de Justiça',
+  'Ganho',
+  'Perda',
+];
+
+const STATUS_JURIDICO_FALLBACK = [
+  'Cotar',
+  'Não Cotar',
+  'Segredo de Justiça',
+];
+
+const STATUS_ORCAMENTO_FALLBACK = [
+  'Solicitado ao Medico',
+  'Solicitar Exames',
+  'Orçamento Enviado',
+  'Perda pelo Medico',
+];
+
+const STATUS_PERDA_FALLBACK = [
+  'Perda Pelo Juridico',
+  'Perda pelo Medico',
+  'Perda por falta de especialista',
+  'Perda pelo Orçamento',
+];
+
+const STATUS_PROCESSOS_ATIVOS = [
+  'Aguardando Juridico',
+  'Aguardando Orçamento',
+  'Aguardando Protocolar',
+  'Aguardando Resposta',
+  'Aguardando Resposta - Segredo de Justiça',
+];
+
+const STATUS_PROCESSOS_BAIXADOS = [
+  'Ganho',
+  'Perda',
+];
 
 interface Processo {
   id: number;
@@ -59,6 +106,64 @@ interface Anexo {
   createDate: string
 }
 
+interface EmailPayload {
+  assunto: string;
+  observacoes: string;
+  remetente: string;
+  origem: string;
+  corpo: string;
+}
+
+interface OrderProcessJson {
+  paciente: string;
+  dataNascimento: string;
+  procedimento: string;
+  refPreco: number;
+  area: string;
+  subarea: string;
+  dataPedido: string;
+  email: EmailPayload;
+  anexos: string[];
+}
+
+interface ManualProcessForm {
+  paciente: string;
+  dataNascimento: string;
+  procedimento: string;
+  refPreco: number | null;
+  area: string;
+  subarea: string;
+  dataPedido: string;
+  emailAssunto: string;
+  emailObservacoes: string;
+  emailRemetente: string;
+  emailCorpo: string;
+}
+
+interface ProcessAttachmentInput {
+  id: number;
+  file: File | null;
+}
+
+const createAttachmentInput = (): ProcessAttachmentInput => ({
+  id: Date.now() + Math.floor(Math.random() * 1000),
+  file: null,
+});
+
+const createManualProcessForm = (): ManualProcessForm => ({
+  paciente: '',
+  dataNascimento: '',
+  procedimento: '',
+  refPreco: null,
+  area: '',
+  subarea: '',
+  dataPedido: '',
+  emailAssunto: '',
+  emailObservacoes: '',
+  emailRemetente: '',
+  emailCorpo: '',
+});
+
 export function ProcessosPage() {
   const [loading, setLoading] = useState(false);
   const [processos, setProcessos] = useState<Processo[]>([]);
@@ -84,19 +189,30 @@ export function ProcessosPage() {
   const [previewNome, setPreviewNome] = useState<string>('')
   const [anexosProtocolo, setAnexosProtocolo] = useState<any[]>([]);
   const [loadingAnexosProtocolo, setLoadingAnexosProtocolo] = useState(false);
+  const [novoProcessoTipoVisible, setNovoProcessoTipoVisible] = useState(false);
+  const [novoProcessoManualVisible, setNovoProcessoManualVisible] = useState(false);
+  const [novoProcessoJsonVisible, setNovoProcessoJsonVisible] = useState(false);
+  const [enviandoNovoProcesso, setEnviandoNovoProcesso] = useState(false);
+  const [buscandoPedidos, setBuscandoPedidos] = useState(false);
+  const [executandoAcaoMassa, setExecutandoAcaoMassa] = useState(false);
+  const [enviarOrcamentoVisible, setEnviarOrcamentoVisible] = useState(false);
+  const [manualProcessForm, setManualProcessForm] = useState<ManualProcessForm>(createManualProcessForm);
+  const [manualAttachments, setManualAttachments] = useState<ProcessAttachmentInput[]>([createAttachmentInput()]);
+  const [jsonProcessInput, setJsonProcessInput] = useState('');
+  const [jsonAttachments, setJsonAttachments] = useState<ProcessAttachmentInput[]>([createAttachmentInput()]);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     idade: { value: '', matchMode: FilterMatchMode.CONTAINS },
     procedimento: { value: '', matchMode: FilterMatchMode.CONTAINS },
     refPreco: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    medico: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    medico: { value: null, matchMode: FilterMatchMode.EQUALS },
     area: { value: '', matchMode: FilterMatchMode.CONTAINS },
     dataSolicitacao: { value: '', matchMode: FilterMatchMode.CONTAINS },
     dias: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    status: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    statusJuridico: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    statusMedico: { value: '', matchMode: FilterMatchMode.CONTAINS }
+    status: { value: null, matchMode: FilterMatchMode.EQUALS },
+    statusJuridico: { value: null, matchMode: FilterMatchMode.EQUALS },
+    statusMedico: { value: null, matchMode: FilterMatchMode.EQUALS }
   });
 
   const [statusOptions, setStatusOptions] = useState<{
@@ -115,16 +231,175 @@ export function ProcessosPage() {
 
   
 
-  // Troque statusJuridicoOptions por:
-  const statusJuridicoOpts = statusOptions.statusJuridico.map(s => ({ label: s, value: s }));
+  const statusProcessoOpts = (statusOptions.statusProcesso.length ? statusOptions.statusProcesso : STATUS_PROCESSO_FALLBACK)
+    .map((s) => ({ label: s, value: s }));
+  const statusJuridicoOpts = (statusOptions.statusJuridico.length ? statusOptions.statusJuridico : STATUS_JURIDICO_FALLBACK)
+    .map((s) => ({ label: s, value: s }));
+  const statusOrcamentoOpts = (statusOptions.statusOrcamento.length ? statusOptions.statusOrcamento : STATUS_ORCAMENTO_FALLBACK)
+    .map((s) => ({ label: s, value: s }));
+  const medicosFilterOptions = useMemo(
+    () => medicos.map((m: any) => ({ label: m.nomeSistema, value: m.nomeSistema })),
+    [medicos]
+  );
 
-  // Troque statusOrcamentoOptions por:
-  const statusOrcamentoOpts = statusOptions.statusOrcamento.map(s => ({ label: s, value: s }));
+  const mapOrdersToProcessos = (ordersData: any[], medicosData: any[]) => (
+    ordersData.map((o: any) => ({
+      id: o.id,
+      paciente: o.paciente ?? '',
+      idade: o.dataNascimento ? calcularIdade(o.dataNascimento) : 0,
+      procedimento: o.procedimento ?? '',
+      refPreco: o.refPreco ?? 0,
+      medico: medicosData.find((m: any) => m.id === o.idMedico)?.nomeSistema ?? '',
+      area: o.area ?? '',
+      subarea: o.subarea ?? '',
+      dataSolicitacao: o.dataPedido ?? '',
+      status: o.statusProcesso ?? '',
+      statusJuridico: o.statusJuridico ?? '',
+      dataStatusJuridico: o.dataStatusJuridico ?? '',
+      statusMedico: o.statusOrcamento ?? '',
+      statusOrcamento: o.statusOrcamento ?? '',
+      dataStatusOrcamento: o.dataStatusOrcamento ?? '',
+      valorOrcamento: o.valorOrcamento,
+      justificativaPerda: o.justificativaPerda ?? '',
+      situacao: o.situacao ?? '',
+      dataSituacao: o.dataSituacao ?? '',
+      valorGanho: o.valorGanho,
+      nprocesso: o.nprocesso ?? '',
+      empresa: medicosData.find((m: any) => m.id === o.idMedico)?.razaoSocial ?? '',
+      statusPerda: o.statusPerda ?? '',
+      dataStatusPerda: o.dataStatusPerda ?? '',
+      idMedico: o.idMedico ?? null,
+    }))
+  );
 
-  // statusPerda novo:
-  const statusPerdaOpts = statusOptions.statusPerda.map(s => ({ label: s, value: s }));
+  const handleRowAction = async (
+    action: string,
+    rowData: ProcessoTableRow | null,
+    extraValue?: string | number
+  ) => {
+    if (!rowData) return;
 
-  const massActionItems: MenuItem[] = [
+    try {
+      if (action === 'juridico' && typeof extraValue === 'string') {
+        await salvarJuridico(rowData.id, {
+          nprocesso: rowData.nprocesso || null,
+          statusJuridico: extraValue,
+          orcamentos: null,
+          obs: extraValue === 'Não Cotar' ? 'Juridico falou para nao cotar' : null,
+        });
+        setProcessoMenuSelecionado(null);
+        await carregarDados();
+        alert(`Status jurídico atualizado para "${extraValue}".`);
+        return;
+      }
+
+      if (action === 'medico' && typeof extraValue === 'number') {
+        await atualizarOrder(rowData.id, {
+          idMedico: extraValue,
+        });
+        setProcessoMenuSelecionado(null);
+        await carregarDados();
+        const medicoSelecionado = medicos.find((medico: any) => medico.id === extraValue);
+        alert(`Médico definido como "${medicoSelecionado?.nomeSistema ?? 'Selecionado'}".`);
+        return;
+      }
+
+      if (action === 'sem_profissional') {
+        await marcarSemProfissional(rowData.id);
+        setProcessoMenuSelecionado(null);
+        await carregarDados();
+        alert('Perda por falta de profissional registrada com sucesso.');
+        return;
+      }
+
+      if (action === 'criar_orcamento') {
+        setProcessoMenuSelecionado(rowData);
+        setEnviarOrcamentoVisible(true);
+        return;
+      }
+
+      if (action === 'copiar_linha') {
+        let linhasAnexos = 'Nenhum anexo';
+
+        try {
+          const res: any = await getAnexosOrder(rowData.id, 'RELATORIO');
+          const listaAnexos: any[] = res.data.anexos;
+          if (listaAnexos.length > 0) {
+            linhasAnexos = listaAnexos.map((anexo: any) => anexo.linkImagem).join('\n');
+          }
+        } catch {
+          linhasAnexos = 'Erro ao carregar anexos';
+        }
+
+        const hoje = new Date();
+        const dataRef = rowData.dataStatusJuridico
+          ? new Date(`${rowData.dataStatusJuridico}T00:00:00`)
+          : null;
+        const diasEmAberto = dataRef
+          ? Math.max(0, Math.floor((hoje.getTime() - dataRef.getTime()) / (1000 * 60 * 60 * 24)))
+          : rowData.dias;
+
+        const orcamentos = rowData.justificativaPerda?.trim() || 'Nenhum orçamento registrado';
+
+        const texto = `[#] SOLICITAÇÃO DE ORÇAMENTO
+----------------------------------------
+Paciente: ${rowData.paciente}
+Idade: ${rowData.idade}
+Procedimento: ${rowData.procedimento}
+Área: ${rowData.area}
+Subárea: ${rowData.subarea}
+Data Solicitação: ${formatarData(rowData.dataStatusJuridico)}
+Status: ${rowData.statusOrcamento}
+Dias em Aberto: ${diasEmAberto} dias
+Orçamentos:
+${orcamentos}
+Anexos:
+${linhasAnexos}
+----------------------------------------`;
+
+        const copiar = async (conteudo: string) => {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(conteudo);
+            return;
+          }
+
+          const textarea = document.createElement('textarea');
+          textarea.value = conteudo;
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.focus();
+          textarea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textarea);
+        };
+
+        await copiar(texto);
+        alert('Copiado! Cole no WhatsApp.');
+        return;
+      }
+
+      console.log('Ação da linha:', {
+        action,
+        processo: rowData
+      });
+    } catch (error) {
+      console.error('Erro na ação da linha:', error);
+      alert('Erro ao executar ação da linha.');
+    }
+  };
+
+
+
+  const rowActionItems: MenuItem[] = useMemo(() => [
+    {
+      label: 'Definir Médico',
+      icon: 'pi pi-user-edit',
+      items: medicos.map((medico: any) => ({
+        label: medico.nomeSistema,
+        command: () => handleRowAction('medico', processoMenuSelecionado, medico.id)
+      }))
+    },
     {
       label: 'Jurídico',
       icon: 'pi pi-briefcase',
@@ -132,121 +407,17 @@ export function ProcessosPage() {
         {
           label: 'Cotar',
           icon: 'pi pi-check',
-          command: () => handleMassAction('cotar')
-        },
-        {
-          label: 'Não Cotar',
-          icon: 'pi pi-times',
-          command: () => handleMassAction('nao_cotar')
+          command: () => handleRowAction('juridico', processoMenuSelecionado, 'Cotar')
         },
         {
           label: 'Segredo de Justiça',
           icon: 'pi pi-lock',
-          command: () => handleMassAction('segredo_justica')
-        }
-      ]
-    },
-    {
-      label: 'Definir Médico',
-      icon: 'pi pi-user-edit',
-      items: [
-        {
-          label: 'BRUNO FAJARDO',
-          command: () => handleMassAction('bruno_fajardo')
-        },
-        {
-          label: 'VITOR GROPPO',
-          command: () => handleMassAction('vitor_groppo')
-        },
-        {
-          label: 'IBG',
-          command: () => handleMassAction('ibg')
-        }
-      ]
-    },
-    {
-      label: 'Solicitar Médico',
-      icon: 'pi pi-send',
-      items: [
-        {
-          label: 'Solicitado ao médico',
-          command: () => handleMassAction('solicitado_medico')
-        },
-        {
-          label: 'Solicitado Exames',
-          command: () => handleMassAction('solicitado_exames')
-        },
-        {
-          label: 'Médico Recusou',
-          command: () => handleMassAction('medico_recusou')
-        }
-      ]
-    }
-  ];
-
-  const handleRowAction = (action: string, rowData: ProcessoTableRow | null) => {
-    if (!rowData) return;
-
-    console.log('Ação da linha:', {
-      action,
-      processo: rowData
-    });
-  };
-
-
-
-  const rowActionItems: MenuItem[] = [
-    {
-      label: 'Definir Médico',
-      icon: 'pi pi-user-edit',
-      items: [
-        {
-          label: 'BRUNO FAJARDO',
-          command: () => handleRowAction('bruno_fajardo', processoMenuSelecionado)
-        },
-        {
-          label: 'VITOR GROPPO',
-          command: () => handleRowAction('vitor_groppo', processoMenuSelecionado)
-        },
-        {
-          label: 'IBG',
-          command: () => handleRowAction('ibg', processoMenuSelecionado)
-        }
-      ]
-    },
-    {
-      label: 'Jurídico',
-      icon: 'pi pi-briefcase',
-      items: [
-        {
-          label: 'Cotar',
-          command: () => handleRowAction('cotar', processoMenuSelecionado)
+          command: () => handleRowAction('juridico', processoMenuSelecionado, 'Segredo de Justiça')
         },
         {
           label: 'Não Cotar',
-          command: () => handleRowAction('nao_cotar', processoMenuSelecionado)
-        },
-        {
-          label: 'Segredo de Justiça',
-          command: () => handleRowAction('segredo_justica', processoMenuSelecionado)
-        }
-      ]
-    },
-    {
-      label: 'Solicitar Médico',
-      icon: 'pi pi-send',
-      items: [
-        {
-          label: 'Solicitado ao médico',
-          command: () => handleRowAction('solicitado_medico', processoMenuSelecionado)
-        },
-        {
-          label: 'Solicitado Exames',
-          command: () => handleRowAction('solicitado_exames', processoMenuSelecionado)
-        },
-        {
-          label: 'Médico Recusou',
-          command: () => handleRowAction('medico_recusou', processoMenuSelecionado)
+          icon: 'pi pi-times',
+          command: () => handleRowAction('juridico', processoMenuSelecionado, 'Não Cotar')
         }
       ]
     },
@@ -285,8 +456,13 @@ export function ProcessosPage() {
       label: 'Enviar Perda',
       icon: 'pi pi-times-circle',
       command: () => handleRowAction('enviar_perda', processoMenuSelecionado)
+    },
+    {
+      label: 'Perda por falta de profissional',
+      icon: 'pi pi-user-minus',
+      command: () => handleRowAction('sem_profissional', processoMenuSelecionado)
     }
-  ];
+  ], [medicos, processoMenuSelecionado]);
 
 
   const acoesBodyTemplate = (rowData: ProcessoTableRow) => {
@@ -308,15 +484,19 @@ export function ProcessosPage() {
 
   
 
-  // No useEffect, carregue junto com os processos:
-  useEffect(() => {
+  const carregarDados = async () => {
     setLoading(true);
-    Promise.all([getOrders(), getStatusOrders(), getMedicosCompleto()])
-     .then(([ordersRes, statusRes, medicosRes]) => {
+    try {
+      const [ordersRes, statusRes, medicosRes] = await Promise.all([getOrders(), getStatusOrders(), getMedicosCompleto()]);
         console.log('ordersRes', ordersRes.data);
         console.log('statusRes', statusRes.data);
         console.log('medicosRes', medicosRes.data);
-        setStatusOptions(statusRes.data);
+        setStatusOptions({
+          statusProcesso: statusRes.data?.statusProcesso?.length ? statusRes.data.statusProcesso : STATUS_PROCESSO_FALLBACK,
+          statusJuridico: statusRes.data?.statusJuridico?.length ? statusRes.data.statusJuridico : STATUS_JURIDICO_FALLBACK,
+          statusOrcamento: statusRes.data?.statusOrcamento?.length ? statusRes.data.statusOrcamento : STATUS_ORCAMENTO_FALLBACK,
+          statusPerda: statusRes.data?.statusPerda?.length ? statusRes.data.statusPerda : STATUS_PERDA_FALLBACK,
+        });
         setMedicos(medicosRes.data);
 
 
@@ -325,36 +505,17 @@ export function ProcessosPage() {
           value: m.id,
         })));
         console.log('Médicos carregados:', medicosRes.data);
+        setProcessos(mapOrdersToProcessos(ordersRes.data, medicosRes.data));
+    } catch {
+      console.error('Erro ao carregar processos');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-
-        setProcessos(ordersRes.data.map((o: any) => ({
-          id: o.id,
-          paciente: o.paciente ?? '',
-          idade: o.dataNascimento ? calcularIdade(o.dataNascimento) : 0,
-          procedimento: o.procedimento ?? '',
-          refPreco: o.refPreco ?? 0,
-          medico: medicosRes.data.find((m: any) => m.id === o.idMedico)?.nomeSistema ?? '',
-          area: o.area ?? '',
-          subarea: o.subarea ?? '',
-          dataSolicitacao: o.dataPedido ?? '',
-          status: o.statusProcesso ?? '',
-          statusJuridico: o.statusJuridico ?? '',
-          dataStatusJuridico: o.dataStatusJuridico ?? '',
-          statusMedico: o.statusOrcamento ?? '',
-          statusOrcamento: o.statusOrcamento ?? '',
-          dataStatusOrcamento: o.dataStatusOrcamento ?? '',
-          valorOrcamento: o.valorOrcamento,
-          justificativaPerda: o.justificativaPerda ?? '',
-          valorGanho: o.valorGanho,
-          nprocesso: o.nprocesso ?? '',
-          empresa: medicosRes.data.find((m: any) => m.id === o.idMedico)?.razaoSocial ?? '',
-          statusPerda: o.statusPerda ?? '',
-          dataStatusPerda: o.dataStatusPerda ?? '',
-          idMedico: o.idMedico ?? null,
-        })));
-      })
-      .catch(() => console.error('Erro ao carregar processos'))
-      .finally(() => setLoading(false));
+  // No useEffect, carregue junto com os processos:
+  useEffect(() => {
+    carregarDados();
   }, []);
 
 
@@ -369,11 +530,100 @@ export function ProcessosPage() {
   }
 
 
-  const handleMassAction = (action: string) => {
-    if (!selectedProcessos.length) return;
+  const handleMassAction = async (
+    tipo: 'juridico' | 'medico' | 'sem_profissional',
+    valor?: string | number
+  ) => {
+    if (!selectedProcessos.length) {
+      alert('Selecione ao menos um processo.');
+      return;
+    }
 
-    console.log('Ação em massa:', action, selectedProcessos);
+    setExecutandoAcaoMassa(true);
+    try {
+      if (tipo === 'juridico') {
+        await Promise.all(
+          selectedProcessos.map((processo) =>
+            salvarJuridico(processo.id, {
+              nprocesso: processo.nprocesso || null,
+              statusJuridico: valor,
+              orcamentos: null,
+              obs: valor === 'Não Cotar' ? 'Juridico falou para nao cotar' : null,
+            })
+          )
+        );
+      }
+
+      if (tipo === 'medico') {
+        const medicoSelecionado = medicos.find((m: any) => m.id === valor);
+
+        await Promise.all(
+          selectedProcessos.map((processo) =>
+            atualizarOrder(processo.id, {
+              idMedico: valor,
+            })
+          )
+        );
+
+        alert(`${selectedProcessos.length} processo(s) atualizado(s) com o médico ${medicoSelecionado?.nomeSistema ?? ''}.`);
+      } else if (tipo === 'juridico') {
+        alert(`${selectedProcessos.length} processo(s) atualizado(s) no jurídico.`);
+      }
+
+      if (tipo === 'sem_profissional') {
+        await Promise.all(
+          selectedProcessos.map((processo) => marcarSemProfissional(processo.id))
+        );
+
+        alert(`${selectedProcessos.length} processo(s) marcado(s) com perda por falta de profissional.`);
+      }
+
+      setSelectedProcessos([]);
+      await carregarDados();
+    } catch (error) {
+      console.error('Erro na ação em massa:', error);
+      alert('Erro ao executar ação em massa.');
+    } finally {
+      setExecutandoAcaoMassa(false);
+    }
   };
+
+  const massActionItems: MenuItem[] = useMemo(() => [
+    {
+      label: 'Jurídico',
+      icon: 'pi pi-briefcase',
+      items: [
+        {
+          label: 'Cotar',
+          icon: 'pi pi-check',
+          command: () => handleMassAction('juridico', 'Cotar')
+        },
+        {
+          label: 'Segredo de Justiça',
+          icon: 'pi pi-lock',
+          command: () => handleMassAction('juridico', 'Segredo de Justiça')
+        },
+        {
+          label: 'Não Cotar',
+          icon: 'pi pi-times',
+          command: () => handleMassAction('juridico', 'Não Cotar')
+        }
+      ]
+    },
+    {
+      label: 'Definir Médico',
+      icon: 'pi pi-user-edit',
+      items: medicos.map((medico: any) => ({
+        label: medico.nomeSistema,
+        command: () => handleMassAction('medico', medico.id)
+      }))
+    },
+    {
+      label: 'Perda por falta de profissional',
+      icon: 'pi pi-user-minus',
+      command: () => handleMassAction('sem_profissional')
+    }
+  ], [medicos, selectedProcessos]);
 
   
 
@@ -422,27 +672,12 @@ export function ProcessosPage() {
   };
 
 
-  const getStatusSeverity = (status: string): 'success' | 'info' | 'warning' | 'danger' | 'secondary' | 'contrast' => {
-    const valor = status.toLowerCase();
-
-    if (['protocolado', 'aprovado', 'deferido', 'concluído', 'concluido'].includes(valor)) return 'success';
-    if (['pendente', 'triagem', 'em análise', 'em analise', 'aguardando protocolo', 'aguardando laudo'].includes(valor)) return 'warning';
-    if (['em andamento', 'em petição', 'em peticao'].includes(valor)) return 'info';
-    if (['indeferido', 'perdido', 'negado'].includes(valor)) return 'danger';
-
-    return 'secondary';
-  };
-
   const statusBodyTemplate = (rowData: ProcessoTableRow, field: 'status' | 'statusJuridico' | 'statusMedico') => {
-    return <Tag value={rowData[field]} severity={getStatusSeverity(rowData[field])} />;
+    return <Tag value={rowData[field]} style={getStatusTagStyle(rowData[field])} className="status-tag-custom" />;
   };
 
   const precoBodyTemplate = (rowData: ProcessoTableRow) => {
     return formatarMoeda(rowData.refPreco);
-  };
-
-  const dataBodyTemplate = (rowData: ProcessoTableRow) => {
-    return formatarData(rowData.dataSolicitacao);
   };
 
   const diasBodyTemplate = (rowData: ProcessoTableRow) => {
@@ -462,7 +697,7 @@ export function ProcessosPage() {
           setProcessoEditando({ ...rowData })
           setEditDialogVisible(true)
 
-          // 👇 carrega os anexos do tipo RELATORIO
+          // carrega os anexos do tipo RELATORIO
           setAnexos([])
           setLoadingAnexos(true)
           getAnexosOrder(rowData.id, 'RELATORIO')
@@ -502,37 +737,349 @@ export function ProcessosPage() {
     );
   };
 
+  const dropdownFilterElement = (
+    options: any,
+    placeholder: string,
+    itens: { label: string; value: string }[]
+  ) => {
+    return (
+      <Dropdown
+        value={options.value ?? null}
+        options={itens}
+        onChange={(e) => options.filterApplyCallback(e.value)}
+        placeholder={placeholder}
+        showClear
+        className="processos-filter-dropdown"
+      />
+    );
+  };
+
+  const resetNovoProcessoManual = () => {
+    setManualProcessForm(createManualProcessForm());
+    setManualAttachments([createAttachmentInput()]);
+  };
+
+  const resetNovoProcessoJson = () => {
+    setJsonProcessInput('');
+    setJsonAttachments([createAttachmentInput()]);
+  };
+
+  const abrirNovoProcessoManual = () => {
+    setNovoProcessoTipoVisible(false);
+    resetNovoProcessoManual();
+    setNovoProcessoManualVisible(true);
+  };
+
+  const abrirNovoProcessoJson = () => {
+    setNovoProcessoTipoVisible(false);
+    resetNovoProcessoJson();
+    setNovoProcessoJsonVisible(true);
+  };
+
+  const updateManualProcessForm = (field: keyof ManualProcessForm, value: string | number | null) => {
+    setManualProcessForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const updateAttachmentAt = (
+    setter: Dispatch<SetStateAction<ProcessAttachmentInput[]>>,
+    id: number,
+    file: File | null
+  ) => {
+    setter((prev) => prev.map((item) => (item.id === id ? { ...item, file } : item)));
+  };
+
+  const addAttachmentField = (
+    setter: Dispatch<SetStateAction<ProcessAttachmentInput[]>>
+  ) => {
+    setter((prev) => [...prev, createAttachmentInput()]);
+  };
+
+  const removeAttachmentField = (
+    setter: Dispatch<SetStateAction<ProcessAttachmentInput[]>>,
+    id: number
+  ) => {
+    setter((prev) => {
+      if (prev.length === 1) {
+        return [{ ...prev[0], file: null }];
+      }
+      return prev.filter((item) => item.id !== id);
+    });
+  };
+
+  const uploadAttachments = async (attachments: ProcessAttachmentInput[]) => {
+    const arquivos = attachments
+      .map((item) => item.file)
+      .filter((file): file is File => Boolean(file));
+
+    const urls = await Promise.all(
+      arquivos.map(async (file) => {
+        const { data } = await uploadArquivoIntegracao(file);
+        return data.url as string;
+      })
+    );
+
+    return urls;
+  };
+
+  const validateManualForm = (form: ManualProcessForm) => {
+    const missingFields: string[] = [];
+
+    if (!form.paciente.trim()) missingFields.push('Paciente');
+    if (!form.dataNascimento.trim()) missingFields.push('Data de Nascimento');
+    if (!form.procedimento.trim()) missingFields.push('Procedimento');
+    if (form.refPreco === null || Number.isNaN(form.refPreco)) missingFields.push('Ref. Preço');
+    if (!form.area.trim()) missingFields.push('Área');
+    if (!form.subarea.trim()) missingFields.push('Subárea');
+    if (!form.dataPedido.trim()) missingFields.push('Data do Pedido');
+    if (!form.emailRemetente.trim()) missingFields.push('E-mail Remetente');
+
+    return missingFields;
+  };
+
+  const isValidEmailPayload = (email: Record<string, any>) => {
+    return typeof email?.assunto === 'string'
+      && typeof email?.observacoes === 'string'
+      && typeof email?.remetente === 'string'
+      && typeof email?.origem === 'string'
+      && typeof email?.corpo === 'string';
+  };
+
+  const decodeEscapedUnicodeString = (value: string) => {
+    if (!value.includes('\\u') && !value.includes('\\n') && !value.includes('\\t')) {
+      return value;
+    }
+
+    try {
+      return value
+        .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+        .replace(/\\n/g, '\n')
+        .replace(/\\t/g, '\t')
+        .replace(/\\"/g, '"');
+    } catch {
+      return value;
+    }
+  };
+
+  const normalizeJsonPayloadStrings = (value: unknown): unknown => {
+    if (typeof value === 'string') {
+      return decodeEscapedUnicodeString(value);
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((item) => normalizeJsonPayloadStrings(item));
+    }
+
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, itemValue]) => [key, normalizeJsonPayloadStrings(itemValue)])
+      );
+    }
+
+    return value;
+  };
+
+  const removeAccentsFromString = (value: string) =>
+    value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  const normalizePayloadForStorage = (value: unknown): unknown => {
+    if (typeof value === 'string') {
+      return removeAccentsFromString(value);
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((item) => normalizePayloadForStorage(item));
+    }
+
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, itemValue]) => [key, normalizePayloadForStorage(itemValue)])
+      );
+    }
+
+    return value;
+  };
+
+  const validateOrderProcessJson = (payload: any) => {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      return 'O JSON precisa ser um objeto.';
+    }
+
+    const requiredStringFields: Array<[keyof OrderProcessJson, string]> = [
+      ['paciente', 'paciente'],
+      ['dataNascimento', 'dataNascimento'],
+      ['procedimento', 'procedimento'],
+      ['area', 'area'],
+      ['subarea', 'subarea'],
+      ['dataPedido', 'dataPedido'],
+    ];
+
+    for (const [field, label] of requiredStringFields) {
+      if (typeof payload[field] !== 'string' || !payload[field].trim()) {
+        return `O campo ${label} é obrigatório e deve ser texto.`;
+      }
+    }
+
+    if (typeof payload.refPreco !== 'number') {
+      return 'O campo refPreco é obrigatório e deve ser numérico.';
+    }
+
+    if (!isValidEmailPayload(payload.email)) {
+      return 'O campo email deve conter assunto, observacoes, remetente, origem e corpo.';
+    }
+
+    if (!Array.isArray(payload.anexos)) {
+      return 'O campo anexos deve ser uma lista.';
+    }
+
+    return null;
+  };
+
+  const handleEnviarNovoProcessoManual = async () => {
+    const missingFields = validateManualForm(manualProcessForm);
+    if (missingFields.length > 0) {
+      alert(`Preencha os campos obrigatórios: ${missingFields.join(', ')}`);
+      return;
+    }
+
+    setEnviandoNovoProcesso(true);
+    try {
+      const anexos = await uploadAttachments(manualAttachments);
+      const payload: OrderProcessJson = {
+        paciente: manualProcessForm.paciente.trim(),
+        dataNascimento: manualProcessForm.dataNascimento.trim(),
+        procedimento: manualProcessForm.procedimento.trim(),
+        refPreco: Number(manualProcessForm.refPreco ?? 0),
+        area: manualProcessForm.area.trim(),
+        subarea: manualProcessForm.subarea.trim(),
+        dataPedido: manualProcessForm.dataPedido.trim(),
+        email: {
+          assunto: manualProcessForm.emailAssunto.trim(),
+          observacoes: manualProcessForm.emailObservacoes.trim(),
+          remetente: manualProcessForm.emailRemetente.trim(),
+          origem: 'manual',
+          corpo: manualProcessForm.emailCorpo.trim(),
+        },
+        anexos,
+      };
+
+      await criarOrderProcess({
+        json: normalizePayloadForStorage(payload) as Record<string, any>,
+        processado: false,
+      });
+
+      setNovoProcessoManualVisible(false);
+      resetNovoProcessoManual();
+      alert('Novo processo enviado para a fila com sucesso.');
+    } catch (error) {
+      console.error('Erro ao criar order process manual:', error);
+      alert('Erro ao enviar o novo processo manual.');
+    } finally {
+      setEnviandoNovoProcesso(false);
+    }
+  };
+
+  const handleEnviarNovoProcessoJson = async () => {
+    let parsedPayload: any;
+
+    try {
+      parsedPayload = JSON.parse(jsonProcessInput);
+    } catch {
+      alert('O JSON informado é inválido.');
+      return;
+    }
+
+    parsedPayload = normalizeJsonPayloadStrings(parsedPayload);
+
+    const validationError = validateOrderProcessJson(parsedPayload);
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
+    setEnviandoNovoProcesso(true);
+    try {
+      const anexos = await uploadAttachments(jsonAttachments);
+      const payload: OrderProcessJson = {
+        ...parsedPayload,
+        anexos: [...parsedPayload.anexos, ...anexos],
+      };
+
+      setJsonProcessInput(JSON.stringify(payload, null, 2));
+
+      await criarOrderProcess({
+        json: normalizePayloadForStorage(payload) as Record<string, any>,
+        processado: false,
+      });
+
+      setNovoProcessoJsonVisible(false);
+      resetNovoProcessoJson();
+      alert('Novo processo JSON enviado para a fila com sucesso.');
+    } catch (error) {
+      console.error('Erro ao criar order process por JSON:', error);
+      alert('Erro ao enviar o novo processo por JSON.');
+    } finally {
+      setEnviandoNovoProcesso(false);
+    }
+  };
+
+  const handleBuscarPedidos = async () => {
+    setBuscandoPedidos(true);
+    try {
+      const { data } = await processarOrderProcess();
+      await carregarDados();
+
+      if (data?.total_processados) {
+        alert(`${data.total_processados} pedido(s) processado(s) com sucesso.`);
+      } else {
+        alert(data?.message || 'Nenhum pedido pendente para processar.');
+      }
+    } catch (error) {
+      console.error('Erro ao processar pedidos pendentes:', error);
+      alert('Erro ao buscar pedidos pendentes.');
+    } finally {
+      setBuscandoPedidos(false);
+    }
+  };
+
 
 
   const kpis = useMemo(() => {
+    const totalProcessos = dataComCamposCalculados.length;
+    const processosAtivos = dataComCamposCalculados.filter((item) =>
+      STATUS_PROCESSOS_ATIVOS.includes(item.status)
+    ).length;
+    const processosBaixados = dataComCamposCalculados.filter((item) =>
+      STATUS_PROCESSOS_BAIXADOS.includes(item.status)
+    ).length;
+    const qtdeOrcamentoEnviado = dataComCamposCalculados.filter(
+      (item) => item.statusOrcamento === 'Orçamento Enviado'
+    ).length;
+    const percentualRespostas = totalProcessos > 0
+      ? (qtdeOrcamentoEnviado / totalProcessos) * 100
+      : 0;
+
     return {
-      pedidosPendentes: dataComCamposCalculados.filter(
-        (item) => item.status.toLowerCase() === 'pendente'
-      ).length,
-
+      totalProcessos,
+      processosAtivos,
+      processosBaixados,
+      percentualRespostas,
       aguardandoJuridico: dataComCamposCalculados.filter(
-        (item) =>
-          item.statusJuridico.toLowerCase().includes('aguardando') ||
-          item.statusJuridico.toLowerCase().includes('triagem')
+        (item) => item.status === 'Aguardando Juridico'
       ).length,
-
       aguardandoOrcamento: dataComCamposCalculados.filter(
-        (item) =>
-          item.statusJuridico.toLowerCase().includes('cotar') ||
-          item.statusJuridico.toLowerCase().includes('orçamento') ||
-          item.statusJuridico.toLowerCase().includes('orcamento')
+        (item) => item.status === 'Aguardando Orçamento'
       ).length,
-
-      enviadoAoMedico: dataComCamposCalculados.filter(
-        (item) =>
-          item.statusMedico.toLowerCase().includes('análise') ||
-          item.statusMedico.toLowerCase().includes('analise') ||
-          item.statusMedico.toLowerCase().includes('aprovado')
+      aguardandoProtocolar: dataComCamposCalculados.filter(
+        (item) => item.status === 'Aguardando Protocolar'
       ).length,
-
-      aguardandoExames: dataComCamposCalculados.filter(
-        (item) => item.statusMedico.toLowerCase().includes('exames')
-      ).length
+      aguardandoRespostas: dataComCamposCalculados.filter(
+        (item) =>
+          item.status === 'Aguardando Resposta' ||
+          item.status === 'Aguardando Resposta - Segredo de Justiça'
+      ).length,
     };
   }, [dataComCamposCalculados]);
 
@@ -569,7 +1116,7 @@ export function ProcessosPage() {
       idMedico: processoEditando.idMedico,
     };
 
-    console.log('🚀 PAYLOAD ENVIADO PARA API:', payload);      
+    console.log('PAYLOAD ENVIADO PARA API:', payload);      
 
 
       await atualizarOrder(processoEditando.id, {
@@ -587,32 +1134,7 @@ export function ProcessosPage() {
         idMedico: processoEditando.idMedico,
       });
 
-      // Recarrega a lista
-      const { data } = await getOrders();
-      setProcessos(data.map((o: any) => ({
-        id: o.id,
-        paciente: o.paciente ?? '',
-        idade: o.dataNascimento ? calcularIdade(o.dataNascimento) : 0,
-        procedimento: o.procedimento ?? '',
-        refPreco: o.refPreco ?? 0,
-        medico: medicos.find((m: any) => m.id === o.idMedico)?.nomeSistema ?? '',
-        area: o.area ?? '',
-        subarea: o.subarea ?? '',
-        dataSolicitacao: o.dataPedido ?? '',
-        status: o.statusProcesso ?? '',
-        statusJuridico: o.statusJuridico ?? '',
-        dataStatusJuridico: o.dataStatusJuridico ?? '',
-        statusMedico: o.statusOrcamento ?? '',
-        statusOrcamento: o.statusOrcamento ?? '',
-        dataStatusOrcamento: o.dataStatusOrcamento ?? '',
-        valorOrcamento: o.valorOrcamento,
-        justificativaPerda: o.justificativaPerda ?? '',
-        valorGanho: o.valorGanho,
-        nprocesso: o.nprocesso ?? '',
-        empresa: medicos.find((m: any) => m.id === o.idMedico)?.razaoSocial ?? '',
-        statusPerda: o.statusPerda ?? '',
-        dataStatusPerda: o.dataStatusPerda ?? '',
-      })));
+      await carregarDados();
 
       setEditDialogVisible(false);
     } catch (err) {
@@ -696,6 +1218,40 @@ export function ProcessosPage() {
     )}
   </div>
 )
+
+  const renderAttachmentInputs = (
+    attachments: ProcessAttachmentInput[],
+    setter: Dispatch<SetStateAction<ProcessAttachmentInput[]>>
+  ) => (
+    <div className="novo-processo-anexos">
+      {attachments.map((attachment, index) => (
+        <div key={attachment.id} className="novo-processo-anexo-row">
+          <input
+            type="file"
+            onChange={(e) => updateAttachmentAt(setter, attachment.id, e.target.files?.[0] ?? null)}
+            className="novo-processo-anexo-input"
+          />
+          <Button
+            icon="pi pi-trash"
+            severity="danger"
+            outlined
+            rounded
+            onClick={() => removeAttachmentField(setter, attachment.id)}
+            disabled={attachments.length === 1 && !attachment.file}
+            tooltip={`Remover anexo ${index + 1}`}
+          />
+        </div>
+      ))}
+
+      <Button
+        type="button"
+        icon="pi pi-plus"
+        label="Adicionar anexo"
+        outlined
+        onClick={() => addAttachmentField(setter)}
+      />
+    </div>
+  )
   
 
 
@@ -713,17 +1269,28 @@ export function ProcessosPage() {
         <TieredMenu model={massActionItems} popup ref={massActionMenuRef} id="mass_action_menu" />
 
       <Button
-        label="Ações em massa"
+        label={executandoAcaoMassa ? 'Processando...' : 'Ações em massa'}
         icon="pi pi-bars"
         outlined
         onClick={(event) => massActionMenuRef.current?.toggle(event)}
         aria-controls="mass_action_menu"
         aria-haspopup
+        loading={executandoAcaoMassa}
+        disabled={executandoAcaoMassa}
       />
+
+        <Button
+          label={buscandoPedidos ? 'Buscando...' : 'Buscar pedidos'}
+          icon="pi pi-download"
+          outlined
+          onClick={handleBuscarPedidos}
+          loading={buscandoPedidos}
+        />
 
         <Button
           label="Novo processo"
           icon="pi pi-plus"
+          onClick={() => setNovoProcessoTipoVisible(true)}
         />
       </div>
       </div>
@@ -731,15 +1298,39 @@ export function ProcessosPage() {
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-header">
-            <span>Pedidos Pendentes</span>
-            <i className="pi pi-clock"></i>
+            <span>Total de Processos</span>
+            <i className="pi pi-briefcase"></i>
           </div>
-          <div className="kpi-value">{kpis.pedidosPendentes}</div>
+          <div className="kpi-value">{kpis.totalProcessos}</div>
         </div>
 
         <div className="kpi-card">
           <div className="kpi-header">
-            <span>Aguardando Jurídico</span>
+            <span>Processos Ativos</span>
+            <i className="pi pi-sync"></i>
+          </div>
+          <div className="kpi-value">{kpis.processosAtivos}</div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>Processos Baixados</span>
+            <i className="pi pi-check-circle"></i>
+          </div>
+          <div className="kpi-value">{kpis.processosBaixados}</div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>% de Respostas</span>
+            <i className="pi pi-percentage"></i>
+          </div>
+          <div className="kpi-value">{`${kpis.percentualRespostas.toFixed(1)}%`}</div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>Qtde Aguardando Jurídico</span>
             <i className="pi pi-briefcase"></i>
           </div>
           <div className="kpi-value">{kpis.aguardandoJuridico}</div>
@@ -747,7 +1338,7 @@ export function ProcessosPage() {
 
         <div className="kpi-card">
           <div className="kpi-header">
-            <span>Aguardando Orçamento</span>
+            <span>Qtde Aguardando Orçamento</span>
             <i className="pi pi-file-edit"></i>
           </div>
           <div className="kpi-value">{kpis.aguardandoOrcamento}</div>
@@ -755,18 +1346,18 @@ export function ProcessosPage() {
 
         <div className="kpi-card">
           <div className="kpi-header">
-            <span>Enviado ao Médico</span>
-            <i className="pi pi-send"></i>
+            <span>Qtde Aguardando Protocolar</span>
+            <i className="pi pi-inbox"></i>
           </div>
-          <div className="kpi-value">{kpis.enviadoAoMedico}</div>
+          <div className="kpi-value">{kpis.aguardandoProtocolar}</div>
         </div>
 
         <div className="kpi-card">
           <div className="kpi-header">
-            <span>Aguardando Exames</span>
-            <i className="pi pi-search"></i>
+            <span>Qtde Aguardando Respostas</span>
+            <i className="pi pi-clock"></i>
           </div>
-          <div className="kpi-value">{kpis.aguardandoExames}</div>
+          <div className="kpi-value">{kpis.aguardandoRespostas}</div>
         </div>
       </div>
 
@@ -775,6 +1366,20 @@ export function ProcessosPage() {
         popup
         ref={rowActionMenuRef}
         id="row_action_menu"
+      />
+
+      <EnviarOrcamentoDialog
+        visible={enviarOrcamentoVisible}
+        processo={processoMenuSelecionado}
+        onHide={() => {
+          setEnviarOrcamentoVisible(false);
+          setProcessoMenuSelecionado(null);
+        }}
+        onSuccess={async () => {
+          setEnviarOrcamentoVisible(false);
+          setProcessoMenuSelecionado(null);
+          await carregarDados();
+        }}
       />
 
       <div className="card">
@@ -811,6 +1416,14 @@ export function ProcessosPage() {
             body={(rowData: ProcessoTableRow) => rowData.sequencial}
           />
 
+
+        <Column
+            header="Ações"
+            body={acoesBodyTemplate}
+            style={{ minWidth: '7rem' }}
+            bodyStyle={{ textAlign: 'center' }}
+          />
+
           <Column
             field="paciente"
             header="Paciente"
@@ -820,14 +1433,14 @@ export function ProcessosPage() {
             style={{ minWidth: '16rem' }}
           />
 
-          <Column
+          {/* <Column
             field="idade"
             header="Idade"
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '7rem' }}
-          />
+          /> */}
 
           <Column
             field="procedimento"
@@ -853,7 +1466,7 @@ export function ProcessosPage() {
             header="Médico"
             sortable
             filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
+            filterElement={(options) => dropdownFilterElement(options, 'Selecione', medicosFilterOptions)}
             style={{ minWidth: '14rem' }}
           />
 
@@ -866,7 +1479,7 @@ export function ProcessosPage() {
             style={{ minWidth: '10rem' }}
           />
 
-          <Column
+          {/* <Column
             field="dataSolicitacao"
             header="Data da Solicitação"
             sortable
@@ -874,7 +1487,7 @@ export function ProcessosPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             body={dataBodyTemplate}
             style={{ minWidth: '12rem' }}
-          />
+          /> */}
 
           <Column
             field="dias"
@@ -891,7 +1504,7 @@ export function ProcessosPage() {
             header="Status"
             sortable
             filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
+            filterElement={(options) => dropdownFilterElement(options, 'Selecione', statusProcessoOpts)}
             body={(rowData: ProcessoTableRow) => statusBodyTemplate(rowData, 'status')}
             style={{ minWidth: '12rem' }}
           />
@@ -901,7 +1514,7 @@ export function ProcessosPage() {
             header="Status Jurídico"
             sortable
             filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
+            filterElement={(options) => dropdownFilterElement(options, 'Selecione', statusJuridicoOpts)}
             body={(rowData: ProcessoTableRow) => statusBodyTemplate(rowData, 'statusJuridico')}
             style={{ minWidth: '14rem' }}
           />
@@ -911,17 +1524,12 @@ export function ProcessosPage() {
             header="Status Médico"
             sortable
             filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
+            filterElement={(options) => dropdownFilterElement(options, 'Selecione', statusOrcamentoOpts)}
             body={(rowData: ProcessoTableRow) => statusBodyTemplate(rowData, 'statusMedico')}
             style={{ minWidth: '14rem' }}
           />
 
-          <Column
-            header="Ações"
-            body={acoesBodyTemplate}
-            style={{ minWidth: '7rem' }}
-            bodyStyle={{ textAlign: 'center' }}
-          />
+
 
           <Column
             header="Editar"
@@ -930,6 +1538,199 @@ export function ProcessosPage() {
             bodyStyle={{ textAlign: 'center' }}
           />
         </DataTable>
+
+        <Dialog
+          header="Novo Processo"
+          visible={novoProcessoTipoVisible}
+          style={{ width: '34rem', maxWidth: '96vw' }}
+          modal
+          onHide={() => setNovoProcessoTipoVisible(false)}
+        >
+          <div className="novo-processo-tipo-dialog">
+            <Button
+              label="Novo Processo Manual"
+              icon="pi pi-file-edit"
+              className="novo-processo-tipo-button"
+              onClick={abrirNovoProcessoManual}
+            />
+            <Button
+              label="Novo Processo por Json"
+              icon="pi pi-code"
+              outlined
+              className="novo-processo-tipo-button"
+              onClick={abrirNovoProcessoJson}
+            />
+          </div>
+        </Dialog>
+
+        <Dialog
+          header="Novo Processo Manual"
+          visible={novoProcessoManualVisible}
+          style={{ width: '74rem', maxWidth: '96vw' }}
+          modal
+          onHide={() => setNovoProcessoManualVisible(false)}
+          className="processo-edit-dialog"
+        >
+          <div className="processo-form-grid-v2">
+            <div className="field field-span-2">
+              <label>Paciente *</label>
+              <InputText
+                value={manualProcessForm.paciente}
+                onChange={(e) => updateManualProcessForm('paciente', e.target.value)}
+              />
+            </div>
+
+            <div className="field field-span-1">
+              <label>Data de Nascimento *</label>
+              <InputText
+                value={manualProcessForm.dataNascimento}
+                onChange={(e) => updateManualProcessForm('dataNascimento', e.target.value)}
+                placeholder="dd/mm/aaaa"
+              />
+            </div>
+
+            <div className="field field-span-1">
+              <label>Data do Pedido *</label>
+              <InputText
+                value={manualProcessForm.dataPedido}
+                onChange={(e) => updateManualProcessForm('dataPedido', e.target.value)}
+                placeholder="dd/mm/aaaa hh:mm"
+              />
+            </div>
+
+            <div className="field field-span-4">
+              <label>Procedimento *</label>
+              <InputTextarea
+                value={manualProcessForm.procedimento}
+                onChange={(e) => updateManualProcessForm('procedimento', e.target.value)}
+                rows={3}
+                autoResize
+              />
+            </div>
+
+            <div className="field field-span-1">
+              <label>Ref. Preço *</label>
+              <InputNumber
+                value={manualProcessForm.refPreco ?? undefined}
+                onValueChange={(e) => updateManualProcessForm('refPreco', e.value ?? null)}
+                mode="currency"
+                currency="BRL"
+                locale="pt-BR"
+              />
+            </div>
+
+            <div className="field field-span-1">
+              <label>Área *</label>
+              <InputText
+                value={manualProcessForm.area}
+                onChange={(e) => updateManualProcessForm('area', e.target.value)}
+              />
+            </div>
+
+            <div className="field field-span-2">
+              <label>Subárea *</label>
+              <InputText
+                value={manualProcessForm.subarea}
+                onChange={(e) => updateManualProcessForm('subarea', e.target.value)}
+              />
+            </div>
+
+            <div className="field field-span-2">
+              <label>Email Assunto</label>
+              <InputText
+                value={manualProcessForm.emailAssunto}
+                onChange={(e) => updateManualProcessForm('emailAssunto', e.target.value)}
+              />
+            </div>
+
+            <div className="field field-span-2">
+              <label>Email Observações</label>
+              <InputText
+                value={manualProcessForm.emailObservacoes}
+                onChange={(e) => updateManualProcessForm('emailObservacoes', e.target.value)}
+              />
+            </div>
+
+            <div className="field field-span-4">
+              <label>Email Remetente *</label>
+              <InputText
+                value={manualProcessForm.emailRemetente}
+                onChange={(e) => updateManualProcessForm('emailRemetente', e.target.value)}
+                placeholder="Nome <email@dominio.com>"
+              />
+            </div>
+
+            <div className="field field-span-4">
+              <label>Email Corpo</label>
+              <InputTextarea
+                value={manualProcessForm.emailCorpo}
+                onChange={(e) => updateManualProcessForm('emailCorpo', e.target.value)}
+                rows={6}
+                autoResize
+              />
+            </div>
+
+            <div className="field field-span-4">
+              <label>Anexos</label>
+              {renderAttachmentInputs(manualAttachments, setManualAttachments)}
+            </div>
+          </div>
+
+          <div className="dialog-footer-actions">
+            <Button
+              label="Cancelar"
+              outlined
+              onClick={() => setNovoProcessoManualVisible(false)}
+            />
+            <Button
+              label={enviandoNovoProcesso ? 'Enviando...' : 'Enviar'}
+              icon="pi pi-check"
+              onClick={handleEnviarNovoProcessoManual}
+              loading={enviandoNovoProcesso}
+            />
+          </div>
+        </Dialog>
+
+        <Dialog
+          header="Novo Processo por Json"
+          visible={novoProcessoJsonVisible}
+          style={{ width: '70rem', maxWidth: '96vw' }}
+          modal
+          onHide={() => setNovoProcessoJsonVisible(false)}
+          className="processo-edit-dialog"
+        >
+          <div className="processo-form-grid-v2">
+            <div className="field field-span-4">
+              <label>Json do Processo *</label>
+              <InputTextarea
+                value={jsonProcessInput}
+                onChange={(e) => setJsonProcessInput(e.target.value)}
+                rows={14}
+                autoResize
+                placeholder='Cole aqui o JSON do processo'
+              />
+            </div>
+
+            <div className="field field-span-4">
+              <label>Anexos</label>
+              {renderAttachmentInputs(jsonAttachments, setJsonAttachments)}
+            </div>
+          </div>
+
+          <div className="dialog-footer-actions">
+            <Button
+              label="Cancelar"
+              outlined
+              onClick={() => setNovoProcessoJsonVisible(false)}
+            />
+            <Button
+              label={enviandoNovoProcesso ? 'Enviando...' : 'Enviar'}
+              icon="pi pi-check"
+              onClick={handleEnviarNovoProcessoJson}
+              loading={enviandoNovoProcesso}
+            />
+          </div>
+        </Dialog>
 
 
         {/* Inicio Dialog para edição de processo */}
@@ -1030,7 +1831,7 @@ export function ProcessosPage() {
               </div>
 
               <div className="field field-span-1">
-                <label>Data do Pedido</label>
+                <label>Data da Solicitação</label>
                 <InputText value={formatarData(processoEditando.dataSolicitacao)} disabled />
               </div>
 
@@ -1039,19 +1840,21 @@ export function ProcessosPage() {
                 <div className="tag-readonly tag-box">
                   <Tag
                     value={processoEditando.status}
-                    severity={getStatusSeverity(processoEditando.status)}
+                    style={getStatusTagStyle(processoEditando.status)}
+                    className="status-tag-custom"
                   />
                 </div>
               </div>
 
               <div className="field field-span-1">
                 <label>Status Jurídico</label>
-                <Dropdown
-                  value={processoEditando.statusJuridico}
-                  options={statusJuridicoOpts}
-                  onChange={(e) => updateProcessoEditando('statusJuridico', e.value)}
-                  placeholder="Selecione"
-                />
+                <div className="tag-readonly tag-box">
+                  <Tag
+                    value={processoEditando.statusJuridico || '-'}
+                    style={getStatusTagStyle(processoEditando.statusJuridico || '')}
+                    className="status-tag-custom"
+                  />
+                </div>
               </div>
 
               <div className="field field-span-1">
@@ -1061,12 +1864,13 @@ export function ProcessosPage() {
 
               <div className="field field-span-1">
                 <label>Status Orçamento</label>
-                <Dropdown
-                  value={processoEditando.statusOrcamento}
-                  options={statusOrcamentoOpts}
-                  onChange={(e) => updateProcessoEditando('statusOrcamento', e.value)}
-                  placeholder="Selecione"
-                />
+                <div className="tag-readonly tag-box">
+                  <Tag
+                    value={processoEditando.statusOrcamento || '-'}
+                    style={getStatusTagStyle(processoEditando.statusOrcamento || '')}
+                    className="status-tag-custom"
+                  />
+                </div>
               </div>
 
               <div className="field field-span-1">
@@ -1086,13 +1890,22 @@ export function ProcessosPage() {
               </div>
 
 
-              <div className="field field-span-2">
+              <div className="field field-span-1">
                 <label>Status Perda</label>
-                <Dropdown
-                  value={processoEditando.statusPerda}
-                  options={statusPerdaOpts}
-                  onChange={(e) => updateProcessoEditando('statusPerda', e.value)}
-                  placeholder="Selecione"
+                <div className="tag-readonly tag-box">
+                  <Tag
+                    value={processoEditando.statusPerda || '-'}
+                    style={getStatusTagStyle(processoEditando.statusPerda || '')}
+                    className="status-tag-custom"
+                  />
+                </div>
+              </div>
+
+              <div className="field field-span-1">
+                <label>Data Status Perda</label>
+                <InputText
+                  value={formatarData(processoEditando.dataStatusPerda)}
+                  disabled
                 />
               </div>
 
@@ -1104,15 +1917,9 @@ export function ProcessosPage() {
                 />
               </div>
 
-              <div className="field field-span-2">
-                <label>Data Status Perda</label>
-                <InputText
-                  value={formatarData(processoEditando.dataStatusPerda)}
-                  disabled
-                />
-              </div>
 
-              <div className="field field-span-2">
+
+              <div className="field field-span-1">
                 <label>Nº Processo</label>
                 <InputText
                   value={processoEditando.nprocesso}
@@ -1120,7 +1927,7 @@ export function ProcessosPage() {
                 />
               </div>
 
-              <div className="field field-span-2">
+              <div className="field field-span-1">
                 <label>Valor Ganho</label>
                 <InputNumber
                   value={processoEditando.valorGanho ?? undefined}
@@ -1131,7 +1938,7 @@ export function ProcessosPage() {
                 />
               </div>
 
-              <div className="field field-span-4">
+              <div className="field field-span-2">
                 <label>Empresa</label>
                 <InputText value={processoEditando.empresa} disabled />
               </div>
@@ -1298,3 +2105,5 @@ export function ProcessosPage() {
 
   );
 }
+
+

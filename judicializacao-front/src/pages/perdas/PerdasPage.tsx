@@ -9,7 +9,8 @@ import { Column } from 'primereact/column';
 import { Tag } from 'primereact/tag';
 import { InputText } from 'primereact/inputtext';
 import { FilterMatchMode } from 'primereact/api';
-import { getPerdas } from '../../services/api/orders';
+import { getPerdas, getOrders, getMedicosCompleto } from '../../services/api/orders';
+import { getStatusTagStyle } from '../../utils/statusTag';
 import './PerdasPage.css';
 
 interface PerdaProcesso {
@@ -31,8 +32,8 @@ interface PerdaProcesso {
   valor: number;
   numeroProcesso: string;
   dataProtocolo: string;
-  status: string;
   resultado: string;
+  idMedico?: number | null;
 }
 
 interface PerdaProcessoTableRow extends PerdaProcesso {
@@ -55,8 +56,8 @@ export function PerdasPage() {
     valor: { value: '', matchMode: FilterMatchMode.CONTAINS },
     numeroProcesso: { value: '', matchMode: FilterMatchMode.CONTAINS },
     dias: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    status: { value: '', matchMode: FilterMatchMode.CONTAINS },
     resultado: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    statusPerda: { value: '', matchMode: FilterMatchMode.CONTAINS },
     justificativaPerda: { value: '', matchMode: FilterMatchMode.CONTAINS }
   });
 
@@ -64,30 +65,43 @@ export function PerdasPage() {
   
 const carregarDados = () => {
   setLoading(true);
-  getPerdas()
-    .then(({ data }) => {
-      setRegistros(data.map((o: any) => ({
-        id: o.id,
-        paciente: o.paciente ?? '',
-        nprocesso: o.nprocesso ?? '',
-        procedimento: o.procedimento ?? '',
-        area: o.area ?? '',
-        refPreco: o.refPreco ?? 0,
-        valorOrcamento: o.valorOrcamento ?? 0,
-        dataPedido: o.dataPedido,
-        dias: o.dias ?? 0,
-        statusProcesso: o.statusProcesso ?? '',
-        statusPerda: o.statusPerda ?? '',
-        justificativaPerda: o.justificativaPerda ?? '',
-        analiseJuridicaFinal: o.analiseJuridicaFinal ?? '',
-        // legados
-        cliente: o.area ?? '',
-        valor: o.refPreco ?? 0,
-        numeroProcesso: o.nprocesso ?? '',
-        dataProtocolo: o.dataPedido ?? '',
-        status: o.statusProcesso ?? '',
-        resultado: 'Perda',
-      })));
+  Promise.all([getPerdas(), getOrders(), getMedicosCompleto()])
+    .then(([perdasRes, ordersRes, medicosRes]) => {
+      const ordersLookup = (ordersRes.data as any[]).reduce<Record<number, any>>((acc, order) => {
+        acc[order.id] = order;
+        return acc;
+      }, {});
+
+      setRegistros(
+        perdasRes.data.map((o: any) => {
+          const orderCompleta = ordersLookup[o.id];
+          const medicoId = o.idMedico ?? orderCompleta?.idMedico ?? null;
+          const medico = medicosRes.data.find((item: any) => item.id === medicoId);
+          const valorOrcamento = o.valorOrcamento ?? orderCompleta?.valorOrcamento ?? 0;
+
+          return {
+            id: o.id,
+            paciente: o.paciente ?? '',
+            nprocesso: o.nprocesso ?? '',
+            procedimento: o.procedimento ?? '',
+            area: o.area ?? '',
+            refPreco: o.refPreco ?? 0,
+            valorOrcamento,
+            dataPedido: o.dataPedido,
+            dias: o.dias ?? 0,
+            statusProcesso: o.statusProcesso ?? '',
+            statusPerda: o.statusPerda ?? '',
+            justificativaPerda: o.justificativaPerda ?? '',
+            analiseJuridicaFinal: o.analiseJuridicaFinal ?? '',
+            cliente: medico?.razaoSocial ?? '',
+            valor: valorOrcamento || o.refPreco || 0,
+            numeroProcesso: o.nprocesso ?? '',
+            dataProtocolo: o.dataPedido ?? '',
+            resultado: 'Perda',
+            idMedico: medicoId,
+          };
+        })
+      );
     })
     .catch(() => console.error('Erro ao carregar perdas'))
     .finally(() => setLoading(false));
@@ -112,7 +126,10 @@ const kpis = useMemo(() => {
   const mediaProcessos = totalProcessos
     ? Math.round(dataComCamposCalculados.reduce((acc, item) => acc + item.dias, 0) / totalProcessos)
     : 0;
-  const valorTotal = dataComCamposCalculados.reduce((acc, item) => acc + item.refPreco, 0);
+  const valorTotal = dataComCamposCalculados.reduce(
+    (acc, item) => acc + (item.valorOrcamento || item.refPreco || 0),
+    0
+  );
 
   return {
     totalProcessos,
@@ -178,12 +195,22 @@ const onPage = (event: DataTablePageEvent) => {
     <span className="dias-cell">{rowData.dias}</span>
   );
 
-  const statusBodyTemplate = (rowData: PerdaProcessoTableRow) => (
-    <Tag value={rowData.status} severity={getStatusSeverity(rowData.status)} />
+  const resultadoBodyTemplate = (rowData: PerdaProcessoTableRow) => (
+    <Tag
+      value={rowData.resultado}
+      severity={getResultadoSeverity(rowData.resultado)}
+      style={getStatusTagStyle(rowData.resultado)}
+      className="status-tag-custom"
+    />
   );
 
-  const resultadoBodyTemplate = (rowData: PerdaProcessoTableRow) => (
-    <Tag value={rowData.resultado} severity={getResultadoSeverity(rowData.resultado)} />
+  const statusPerdaBodyTemplate = (rowData: PerdaProcessoTableRow) => (
+    <Tag
+      value={rowData.statusPerda}
+      severity={getStatusSeverity(rowData.statusPerda)}
+      style={getStatusTagStyle(rowData.statusPerda)}
+      className="status-tag-custom"
+    />
   );
 
   const filterElement = (options: any, placeholder: string) => {
@@ -331,16 +358,6 @@ const onPage = (event: DataTablePageEvent) => {
           />
 
           <Column
-            field="status"
-            header="Status"
-            sortable
-            filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
-            body={statusBodyTemplate}
-            style={{ minWidth: '12rem' }}
-          />
-
-          <Column
             field="resultado"
             header="Resultado"
             sortable
@@ -352,10 +369,11 @@ const onPage = (event: DataTablePageEvent) => {
 
           <Column
             field="statusPerda"
-            header="Tipo de Perda"
+            header="Status Perda"
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
+            body={statusPerdaBodyTemplate}
             style={{ minWidth: '16rem' }}
           />
 

@@ -9,6 +9,7 @@ export const getJuridico = () => api.get('/orders/juridico/');
 export const salvarJuridico = (id: number, data: any) => api.post(`/orders/juridico/${id}/salvar/`, data);
 export const getOrcamentoMedico = () => api.get('/orders/orcamento-medico/');
 export const salvarOrcamentoMedico = (id: number, data: any) => api.post(`/orders/orcamento-medico/${id}/salvar/`, data);
+export const marcarSemProfissional = (id: number) => api.post(`/orders/orcamento-medico/${id}/sem-profissional/`);
 export const getParaProtocolar = () => api.get('/orders/para-protocolar/');
 export const salvarProtocolar = (id: number, data: any) => api.post(`/orders/para-protocolar/${id}/salvar/`, data);
 export const getSegredoJustica = () => api.get('/orders/segredo-justica/');
@@ -36,4 +37,21 @@ export const getAnexosOrder = (orderId: number, tipo?: string) => {
 };
 
 
+export const getBaseOrcamento = (medicoId: number) =>
+  api.get(`/client/medico/${medicoId}/base-orcamento/`);
+
+export const criarOrderProcess = (payload: { json: Record<string, any>; processado: boolean }) =>
+  api.post('/integracoes/order-process/', payload);
+
+export const processarOrderProcess = () =>
+  api.post('/integracoes/processar/', {});
+
+export const uploadArquivoIntegracao = (file: File) => {
+  const form = new FormData();
+  form.append('file', file);
+
+  return api.post('/integracoes/upload/', form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+};
 

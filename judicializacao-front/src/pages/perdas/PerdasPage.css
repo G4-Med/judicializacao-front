@@ -12,3 +12,9 @@
   font-size: 0.78rem;
   font-weight: 700;
 }
+
+.status-tag-custom {
+  font-weight: 700;
+  border-width: 1px;
+  border-style: solid;
+}

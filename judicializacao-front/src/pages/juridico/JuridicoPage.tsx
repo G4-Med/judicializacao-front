@@ -59,6 +59,7 @@ export function JuridicoPage() {
   const [editDialogVisible, setEditDialogVisible] = useState(false);
   const [processoEditando, setProcessoEditando] = useState<ProcessoJuridicoRow | null>(null);
   const [obsObrigatorio, setObsObrigatorio] = useState(false);
+  const [nprocessoObrigatorio, setNprocessoObrigatorio] = useState(false);
   const [nprocesso, setNprocesso] = useState('');
   const [statusJuridico, setStatusJuridico] = useState('');
   const [orcamentos, setOrcamentos] = useState('');
@@ -66,10 +67,16 @@ export function JuridicoPage() {
   const [statusJuridicoOpts, setStatusJuridicoOpts] = useState<{label: string, value: string}[]>([]);
   const [anexos, setAnexos] = useState<Anexo[]>([])
   const [loadingAnexos, setLoadingAnexos] = useState(false)
+  const [previewVisible, setPreviewVisible] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string>('')
+  const [previewTipo, setPreviewTipo] = useState<'pdf' | 'imagem' | 'outro'>('outro')
+  const [previewNome, setPreviewNome] = useState<string>('')
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    idade: { value: '', matchMode: FilterMatchMode.CONTAINS },
     procedimento: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    dias: { value: '', matchMode: FilterMatchMode.CONTAINS },
   });
 
   const carregarDados = () => {
@@ -120,6 +127,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
   setOrcamentos('');
   setObs('');
   setObsObrigatorio(false);
+  setNprocessoObrigatorio(false);
   setEditDialogVisible(true);
 
   // 👇 adiciona isso
@@ -133,6 +141,11 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
 
   const handleSalvar = async () => {
     if (!processoEditando) return;
+
+    if (statusJuridico === 'Cotar' && !nprocesso.trim()) {
+      setNprocessoObrigatorio(true);
+      return;
+    }
 
     if (statusJuridico === 'Não Cotar' && !obs.trim()) {
       setObsObrigatorio(true);
@@ -167,6 +180,13 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
 
   const formatarMoeda = (valor: number) =>
     valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  const abrirPreview = (url: string, nome: string, tipo: 'pdf' | 'imagem' | 'outro') => {
+    setPreviewUrl(url);
+    setPreviewNome(nome);
+    setPreviewTipo(tipo);
+    setPreviewVisible(true);
+  };
 
   const filterElement = (options: any, placeholder: string) => (
     <InputText
@@ -230,10 +250,24 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
           <Column field="paciente" header="Paciente" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }} />
-          <Column field="idade" header="Idade" sortable style={{ minWidth: '7rem' }} />
+          <Column
+            field="idade"
+            header="Idade"
+            sortable
+            filter
+            filterElement={(o) => filterElement(o, 'Buscar')}
+            style={{ minWidth: '7rem' }}
+          />
           <Column field="procedimento" header="Procedimento" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '18rem' }} />
-          <Column field="dias" header="Dias Solicitados" sortable style={{ minWidth: '10rem' }} />
+          <Column
+            field="dias"
+            header="Dias Solicitados"
+            sortable
+            filter
+            filterElement={(o) => filterElement(o, 'Buscar')}
+            style={{ minWidth: '10rem' }}
+          />
           <Column header="Editar" body={editarBodyTemplate}
             style={{ minWidth: '7rem' }} bodyStyle={{ textAlign: 'center' }} />
         </DataTable>
@@ -311,14 +345,16 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                       : ['jpg', 'jpeg', 'png'].includes(extensao ?? '')
                         ? 'pi pi-image'
                         : 'pi pi-file'
+                    const tipo: 'pdf' | 'imagem' | 'outro' = extensao === 'pdf'
+                      ? 'pdf'
+                      : ['jpg', 'jpeg', 'png'].includes(extensao ?? '')
+                        ? 'imagem'
+                        : 'outro'
 
                     return (
-                        <a
+                        <button
                         key={anexo.id}
-                        href={anexo.linkImagem}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download
+                        type="button"
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -326,17 +362,20 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                           padding: '8px 12px',
                           borderRadius: '8px',
                           border: '1px solid #e5e7eb',
-                          textDecoration: 'none',
+                          background: 'transparent',
                           color: '#374151',
                           fontSize: '0.9rem',
+                          width: '100%',
+                          cursor: 'pointer',
                         }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = '#f3f4f6' }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                        onClick={() => abrirPreview(anexo.linkImagem, nomeArquivo, tipo)}
                       >
                         <i className={icone} style={{ fontSize: '1.1rem', color: '#f97316' }} />
                         <span style={{ flex: 1 }}>{nomeArquivo}</span>
-                        <i className="pi pi-download" style={{ color: '#9ca3af', fontSize: '0.85rem' }} />
-                      </a>
+                        <i className="pi pi-eye" style={{ color: '#9ca3af', fontSize: '0.85rem' }} />
+                      </button>
                     )
                   })}
                 </div>
@@ -349,9 +388,18 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
               <label>Número do Processo</label>
               <InputText
                 value={nprocesso}
-                onChange={(e) => setNprocesso(e.target.value)}
+                onChange={(e) => {
+                  setNprocesso(e.target.value);
+                  if (e.target.value.trim()) setNprocessoObrigatorio(false);
+                }}
                 placeholder="Ex: 0012345-67.2026.8.13.0000"
+                className={nprocessoObrigatorio ? 'p-invalid' : ''}
               />
+              {nprocessoObrigatorio && (
+                <small style={{ color: '#ef4444' }}>
+                  Número do Processo é obrigatório quando o status é "Cotar"
+                </small>
+              )}
             </div>
 
             <div className="field field-span-2">
@@ -361,6 +409,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                 options={statusJuridicoOpts}
                 onChange={(e) => {
                   setStatusJuridico(e.value);
+                  if (e.value !== 'Cotar') setNprocessoObrigatorio(false);
                   if (e.value !== 'Não Cotar') setObsObrigatorio(false);
                 }}
                 placeholder="Selecione"
@@ -408,6 +457,60 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
         <div className="dialog-footer-actions">
           <Button label="Cancelar" outlined onClick={() => setEditDialogVisible(false)} />
           <Button label="Salvar" icon="pi pi-check" onClick={handleSalvar} />
+        </div>
+      </Dialog>
+
+      <Dialog
+        header={previewNome}
+        visible={previewVisible}
+        style={{ width: '80vw', maxWidth: '1100px', height: '90vh' }}
+        modal
+        onHide={() => setPreviewVisible(false)}
+        footer={
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+            <a
+              href={previewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              download
+              style={{ textDecoration: 'none' }}
+            >
+              <Button label="Baixar" icon="pi pi-download" outlined />
+            </a>
+            <Button label="Fechar" onClick={() => setPreviewVisible(false)} />
+          </div>
+        }
+      >
+        <div style={{ height: 'calc(90vh - 160px)' }}>
+          {previewTipo === 'pdf' && (
+            <iframe
+              src={previewUrl}
+              title={previewNome}
+              style={{ width: '100%', height: '100%', border: 'none', borderRadius: '8px' }}
+            />
+          )}
+
+          {previewTipo === 'imagem' && (
+            <div style={{ width: '100%', height: '100%', overflow: 'auto', textAlign: 'center' }}>
+              <img
+                src={previewUrl}
+                alt={previewNome}
+                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+              />
+            </div>
+          )}
+
+          {previewTipo === 'outro' && (
+            <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ textAlign: 'center' }}>
+                <i className="pi pi-file" style={{ fontSize: '2rem', color: '#9ca3af', marginBottom: '12px' }} />
+                <p style={{ marginBottom: '12px' }}>Visualização não disponível para este tipo de arquivo.</p>
+                <a href={previewUrl} target="_blank" rel="noopener noreferrer" download>
+                  Baixar arquivo
+                </a>
+              </div>
+            </div>
+          )}
         </div>
       </Dialog>
     </div>

@@ -34,3 +34,11 @@ export const cadastrarUsuarioMedico = (medicoId: number) =>
 
 export const verificarUsuarioMedico = (medicoId: number) =>
   api.get(`/client/verificar-usuario-medico/${medicoId}/`);
+
+export const getBaseOrcamento = (medicoId: number) =>
+  api.get(`/client/medico/${medicoId}/base-orcamento/`);
+
+export const salvarBaseOrcamento = (medicoId: number, formData: FormData) =>
+  api.post(`/client/medico/${medicoId}/base-orcamento/salvar/`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });

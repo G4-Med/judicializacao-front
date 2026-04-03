@@ -37,6 +37,22 @@
   font-weight: 700;
 }
 
+.status-tag-custom {
+  font-weight: 700;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.processos-filter-dropdown {
+  width: 100%;
+}
+
+.processos-filter-dropdown .p-dropdown-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .dias-cell {
   font-weight: 600;
   color: #111827;
@@ -89,7 +105,7 @@
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
 }
 
@@ -189,7 +205,8 @@ body.dark-theme .card {
 
 
 body.dark-theme .processos-table .p-column-filter,
-body.dark-theme .processos-table .p-inputtext {
+body.dark-theme .processos-table .p-inputtext,
+body.dark-theme .processos-table .processos-filter-dropdown {
   background: #0f172a;
   color: #f8fafc;
   border-color: #334155;
@@ -197,6 +214,11 @@ body.dark-theme .processos-table .p-inputtext {
 
 body.dark-theme .processos-table .p-inputtext::placeholder {
   color: #94a3b8;
+}
+
+body.dark-theme .processos-table .processos-filter-dropdown .p-dropdown-label,
+body.dark-theme .processos-table .processos-filter-dropdown .p-dropdown-trigger {
+  color: #f8fafc;
 }
 
 body.dark-theme .processos-table .p-column-filter-menu-button,
@@ -242,6 +264,10 @@ body.dark-theme .processos-table .p-button.p-button-outlined {
 body.dark-theme .processos-table .p-button.p-button-outlined:hover {
   background: #334155;
   border-color: #94a3b8;
+}
+
+body.dark-theme .dias-cell {
+  color: #f8fafc;
 }
 
 
@@ -305,7 +331,8 @@ body.dark-theme .page-header p {
 .processo-form-grid-v2 .p-inputtext,
 .processo-form-grid-v2 .p-dropdown,
 .processo-form-grid-v2 .p-inputnumber,
-.processo-form-grid-v2 .p-inputnumber-input {
+.processo-form-grid-v2 .p-inputnumber-input,
+.processo-form-grid-v2 .p-inputtextarea {
   width: 100%;
 }
 
@@ -342,6 +369,46 @@ body.dark-theme .page-header p {
   min-width: 110px;
 }
 
+.novo-processo-tipo-dialog {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding-top: 8px;
+}
+
+.novo-processo-tipo-button {
+  min-height: 72px;
+  justify-content: center;
+}
+
+.novo-processo-anexos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.novo-processo-anexo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.novo-processo-anexo-input {
+  flex: 1;
+  height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+body.dark-theme .processo-form-grid-v2 .p-inputtextarea,
+body.dark-theme .novo-processo-anexo-input {
+  background: #0f172a;
+  color: #f8fafc;
+  border-color: #334155;
+}
+
 @media (max-width: 1100px) {
   .processo-form-grid-v2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -350,6 +417,17 @@ body.dark-theme .page-header p {
   .field-span-3,
   .field-span-4 {
     grid-column: span 2;
+  }
+}
+
+@media (max-width: 720px) {
+  .novo-processo-tipo-dialog {
+    grid-template-columns: 1fr;
+  }
+
+  .novo-processo-anexo-row {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 

@@ -11,13 +11,16 @@ import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { FilterMatchMode } from 'primereact/api';
-import { getSegredoJustica, salvarResultadoSegredo } from '../../services/api/orders';
+import { getSegredoJustica, salvarResultadoSegredo, getAnexosOrder } from '../../services/api/orders';
 import { Dialog } from 'primereact/dialog';
+import { getStatusTagStyle } from '../../utils/statusTag';
 import './SegredoJusticaPage.css';
 
 interface DocumentoProcesso {
   label: string;
   nome: string;
+  url: string;
+  tipo: 'pdf' | 'imagem' | 'outro';
 }
 
 interface SegredoJustica {
@@ -73,6 +76,10 @@ export function SegredoJusticaPage() {
 
   const [resultadoSelecionado, setResultadoSelecionado] = useState<ResultadoType>('');
   const [parecerJuridico, setParecerJuridico] = useState('');
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [previewTipo, setPreviewTipo] = useState<'pdf' | 'imagem' | 'outro'>('outro');
+  const [previewNome, setPreviewNome] = useState('');
 
 
 const carregarDados = () => {
@@ -126,10 +133,6 @@ useEffect(() => { carregarDados(); }, []);
 
   const kpis = useMemo(() => {
     const totalProcessos = dataComCamposCalculados.length;
-    const ativos = dataComCamposCalculados.filter((item) =>
-      ['ativo', 'em andamento', 'protocolado'].includes(item.status.toLowerCase())
-    ).length;
-
     const mediaProcessos = totalProcessos
       ? Math.round(
           dataComCamposCalculados.reduce((acc, item) => acc + item.dias, 0) / totalProcessos
@@ -137,12 +140,13 @@ useEffect(() => { carregarDados(); }, []);
       : 0;
 
     const valorTotal = dataComCamposCalculados.reduce((acc, item) => acc + item.valor, 0);
+    const mediaValorProcessos = totalProcessos ? valorTotal / totalProcessos : 0;
 
     return {
       totalProcessos,
-      ativos,
       mediaProcessos,
-      valorTotal
+      valorTotal,
+      mediaValorProcessos,
     };
   }, [dataComCamposCalculados]);
 
@@ -167,40 +171,11 @@ useEffect(() => { carregarDados(); }, []);
     return `${dia}/${mes}/${ano}`;
   };
 
-  const getStatusSeverity = (
-    status: string
-  ): 'success' | 'info' | 'warning' | 'danger' | 'secondary' | 'contrast' => {
-    const valor = status.toLowerCase();
-
-    if (['ativo', 'protocolado', 'concluído', 'concluido'].includes(valor)) return 'success';
-    if (['em andamento', 'sem resultado'].includes(valor)) return 'info';
-    if (['pendente', 'aguardando'].includes(valor)) return 'warning';
-    if (['perdido', 'indeferido'].includes(valor)) return 'danger';
-
-    return 'secondary';
-  };
-
-  const getResultadoSeverity = (
-    resultado: string
-  ): 'success' | 'info' | 'warning' | 'danger' | 'secondary' | 'contrast' => {
-    const valor = resultado.toLowerCase();
-
-    if (['ganho', 'procedente'].includes(valor)) return 'success';
-    if (['perda', 'improcedente'].includes(valor)) return 'danger';
-    if (['em andamento'].includes(valor)) return 'warning';
-
-    return 'secondary';
-  };
-
   const precoBodyTemplate = (rowData: SegredoJusticaTableRow) => formatarMoeda(rowData.valor);
   const diasBodyTemplate = (rowData: SegredoJusticaTableRow) => <span className="dias-cell">{rowData.dias}</span>;
   const statusBodyTemplate = (rowData: SegredoJusticaTableRow) => (
-    <Tag value={rowData.status} severity={getStatusSeverity(rowData.status)} />
+    <Tag value={rowData.statusProcesso} style={getStatusTagStyle(rowData.statusProcesso)} className="status-tag-custom" />
   );
-  const resultadoBodyTemplate = (rowData: SegredoJusticaTableRow) => (
-    <Tag value={rowData.resultado} severity={getResultadoSeverity(rowData.resultado)} />
-  );
-
   const atualizarBodyTemplate = (rowData: SegredoJusticaTableRow) => {
     return (
       <Button
@@ -208,9 +183,38 @@ useEffect(() => { carregarDados(); }, []);
         icon="pi pi-refresh"
         outlined
         onClick={() => {
-          setRegistroAtualizando({ ...rowData });
+          setRegistroAtualizando({ ...rowData, documentos: [] });
           setResultadoSelecionado('');
           setParecerJuridico('');
+          getAnexosOrder(rowData.id, 'ORCAMENTO')
+            .then((res: any) => {
+              const anexos: any[] = res.data.anexos ?? [];
+              const documentos = anexos.map((anexo, index) => {
+                const nome = anexo.linkImagem.split('/').pop() || `Orçamento ${index + 1}`;
+                const extensao = nome.split('.').pop()?.toLowerCase();
+                const tipo: 'pdf' | 'imagem' | 'outro' = extensao === 'pdf'
+                  ? 'pdf'
+                  : ['jpg', 'jpeg', 'png', 'webp'].includes(extensao ?? '')
+                    ? 'imagem'
+                    : 'outro';
+
+                return {
+                  label: `Orçamento ${index + 1}`,
+                  nome,
+                  url: anexo.linkImagem,
+                  tipo,
+                };
+              });
+
+              setRegistroAtualizando((atual) =>
+                atual && atual.id === rowData.id ? { ...atual, documentos } : atual
+              );
+            })
+            .catch(() => {
+              setRegistroAtualizando((atual) =>
+                atual && atual.id === rowData.id ? { ...atual, documentos: [] } : atual
+              );
+            });
           setUpdateDialogVisible(true);
         }}
       />
@@ -228,12 +232,19 @@ useEffect(() => { carregarDados(); }, []);
     );
   };
 
-  const handleBaixarDocumento = (nome: string) => {
-    console.log('Baixar documento:', nome);
+  const abrirPreview = (url: string, nome: string, tipo: 'pdf' | 'imagem' | 'outro') => {
+    setPreviewUrl(url);
+    setPreviewNome(nome);
+    setPreviewTipo(tipo);
+    setPreviewVisible(true);
   };
 
-  const handleVisualizarDocumento = (nome: string) => {
-    console.log('Visualizar documento:', nome);
+  const handleBaixarDocumento = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleVisualizarDocumento = (url: string, nome: string, tipo: 'pdf' | 'imagem' | 'outro') => {
+    abrirPreview(url, nome, tipo);
   };
 
   const handleSalvarAtualizacao = async () => {
@@ -281,15 +292,7 @@ useEffect(() => { carregarDados(); }, []);
 
         <div className="kpi-card">
           <div className="kpi-header">
-            <span>Ativos</span>
-            <i className="pi pi-check-circle"></i>
-          </div>
-          <div className="kpi-value">{kpis.ativos}</div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span>Média/Processos</span>
+            <span>Média de dias dos Processos</span>
             <i className="pi pi-chart-line"></i>
           </div>
           <div className="kpi-value">{kpis.mediaProcessos}</div>
@@ -302,6 +305,15 @@ useEffect(() => { carregarDados(); }, []);
           </div>
           <div className="kpi-value">{formatarMoeda(kpis.valorTotal)}</div>
         </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>Média Valor Processos</span>
+            <i className="pi pi-wallet"></i>
+          </div>
+          <div className="kpi-value">{formatarMoeda(kpis.mediaValorProcessos)}</div>
+        </div>
+
       </div>
 
       <div className="card">
@@ -366,15 +378,6 @@ useEffect(() => { carregarDados(); }, []);
           />
 
           <Column
-            field="numeroProcesso"
-            header="Processo"
-            sortable
-            filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
-            style={{ minWidth: '16rem' }}
-          />
-
-          <Column
             field="dias"
             header="Dias"
             sortable
@@ -385,22 +388,12 @@ useEffect(() => { carregarDados(); }, []);
           />
 
           <Column
-            field="status"
+            field="statusProcesso"
             header="Status"
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             body={statusBodyTemplate}
-            style={{ minWidth: '12rem' }}
-          />
-
-          <Column
-            field="resultado"
-            header="Resultado"
-            sortable
-            filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
-            body={resultadoBodyTemplate}
             style={{ minWidth: '12rem' }}
           />
 
@@ -452,29 +445,50 @@ useEffect(() => { carregarDados(); }, []);
             </section>
 
             <section className="update-section">
-              <h3>Documentos do Processo</h3>
+              <h3>Orçamento do Pedido</h3>
 
-              <div className="documentos-grid">
-                {registroAtualizando.documentos.map((doc) => (
-                  <div key={doc.nome} className="documento-item">
-                    <span>{doc.label}</span>
-                    <div className="documento-actions">
-                      <Button
-                        label="Ver PDF"
-                        icon="pi pi-eye"
-                        text
-                        onClick={() => handleVisualizarDocumento(doc.nome)}
-                      />
-                      <Button
-                        label="Baixar"
-                        icon="pi pi-download"
-                        text
-                        onClick={() => handleBaixarDocumento(doc.nome)}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {registroAtualizando.documentos.length === 0 && (
+                <div className="timeline-empty">Nenhum orçamento anexado.</div>
+              )}
+
+              {registroAtualizando.documentos.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {registroAtualizando.documentos.map((doc, index) => {
+                    const icone = doc.tipo === 'pdf'
+                      ? 'pi pi-file-pdf'
+                      : doc.tipo === 'imagem'
+                        ? 'pi pi-image'
+                        : 'pi pi-file';
+
+                    return (
+                      <button
+                        key={`${doc.nome}-${index}`}
+                        type="button"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #e5e7eb',
+                          background: 'transparent',
+                          color: '#374151',
+                          fontSize: '0.9rem',
+                          width: '100%',
+                          cursor: 'pointer',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#f3f4f6'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        onClick={() => handleVisualizarDocumento(doc.url, doc.nome, doc.tipo)}
+                      >
+                        <i className={icone} style={{ fontSize: '1.1rem', color: '#f97316' }} />
+                        <span style={{ flex: 1, textAlign: 'left' }}>{doc.nome || `Orçamento ${index + 1}`}</span>
+                        <i className="pi pi-eye" style={{ color: '#9ca3af', fontSize: '0.85rem' }} />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </section>
 
             <section className="update-section">
@@ -521,6 +535,54 @@ useEffect(() => { carregarDados(); }, []);
             icon="pi pi-check"
             onClick={handleSalvarAtualizacao}
           />
+        </div>
+      </Dialog>
+
+      <Dialog
+        header={previewNome}
+        visible={previewVisible}
+        style={{ width: '80vw', maxWidth: '1100px' }}
+        modal
+        onHide={() => setPreviewVisible(false)}
+      >
+        <div style={{ minHeight: '70vh' }}>
+          {previewTipo === 'pdf' && (
+            <iframe
+              src={previewUrl}
+              title={previewNome}
+              width="100%"
+              height="700px"
+              style={{ border: 'none', borderRadius: '8px' }}
+            />
+          )}
+
+          {previewTipo === 'imagem' && (
+            <img
+              src={previewUrl}
+              alt={previewNome}
+              style={{ maxWidth: '100%', maxHeight: '70vh', display: 'block', margin: '0 auto' }}
+            />
+          )}
+
+          {previewTipo === 'outro' && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+              <Button
+                label="Baixar arquivo"
+                icon="pi pi-download"
+                onClick={() => handleBaixarDocumento(previewUrl)}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="dialog-footer-actions">
+          <Button
+            label="Baixar"
+            icon="pi pi-download"
+            outlined
+            onClick={() => handleBaixarDocumento(previewUrl)}
+          />
+          <Button label="Fechar" onClick={() => setPreviewVisible(false)} />
         </div>
       </Dialog>
     </div>

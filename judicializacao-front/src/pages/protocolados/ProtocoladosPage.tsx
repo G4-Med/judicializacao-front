@@ -13,8 +13,9 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { FilterMatchMode } from 'primereact/api';
 import { Dialog } from 'primereact/dialog';
 import { Timeline } from 'primereact/timeline';
-import { getProtocolados, salvarResultadoProtocolado, adicionarAcompanhamento } from '../../services/api/orders';
+import { getProtocolados, salvarResultadoProtocolado, adicionarAcompanhamento, getAnexosOrder } from '../../services/api/orders';
 import { InputNumber } from 'primereact/inputnumber';
+import { getStatusTagStyle } from '../../utils/statusTag';
 import './ProtocoladosPage.css';
 
 interface HistoricoAcompanhamento {
@@ -27,6 +28,8 @@ interface HistoricoAcompanhamento {
 interface DocumentoProcesso {
   label: string;
   nome: string;
+  url: string;
+  tipo: 'pdf' | 'imagem' | 'outro';
 }
 
 interface Protocolado {
@@ -93,12 +96,25 @@ export function ProtocoladosPage() {
   const [valorGanho, setValorGanho] = useState<number | null>(null);
   // estado para tipo de ação no form
   const [tipoAcao, setTipoAcao] = useState<'acompanhamento' | 'decisao' | ''>('');
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [previewTipo, setPreviewTipo] = useState<'pdf' | 'imagem' | 'outro'>('outro');
+  const [previewNome, setPreviewNome] = useState('');
 
-  const carregarDados = () => {
+  const fecharDialogAtualizacao = () => {
+    setUpdateDialogVisible(false);
+    setTipoAcao('');
+    setNovoAcompanhamento('');
+    setParecerJuridico('');
+    setResultadoSelecionado('');
+    setValorGanho(null);
+  };
+
+  const carregarDados = async () => {
     setLoading(true);
-    getProtocolados()
-      .then(({ data }) => {
-        setRegistros(data.map((o: any) => ({
+    try {
+      const { data } = await getProtocolados();
+      const registrosMapeados = data.map((o: any) => ({
           id: o.id,
           paciente: o.paciente ?? '',
           nprocesso: o.nprocesso ?? '',
@@ -120,13 +136,19 @@ export function ProtocoladosPage() {
           status: 'Protocolado',
           resultado: 'Em andamento',
           documentos: [],
-        })));
-      })
-      .catch(() => console.error('Erro ao carregar protocolados'))
-      .finally(() => setLoading(false));
+        }));
+
+      setRegistros(registrosMapeados);
+      return registrosMapeados;
+    } catch {
+      console.error('Erro ao carregar protocolados');
+      return [];
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { carregarDados(); }, []);
+  useEffect(() => { void carregarDados(); }, []);
 
   const handleSalvarAcompanhamento = async () => {
     if (!registroAtualizando || !novoAcompanhamento.trim()) return;
@@ -135,8 +157,17 @@ export function ProtocoladosPage() {
         acompanhamento: 'Acompanhamento',
         descricao: novoAcompanhamento,
       });
-      carregarDados();
+      const registrosAtualizados = await carregarDados();
+      const registroAtualizado = registrosAtualizados.find(
+        (item: Protocolado) => item.id === registroAtualizando.id
+      );
+      if (registroAtualizado) {
+        setRegistroAtualizando((atual) =>
+          atual ? { ...atual, ...registroAtualizado } as ProtocoladoTableRow : atual
+        );
+      }
       setNovoAcompanhamento('');
+      setTipoAcao('');
     } catch (err) {
       alert('Erro ao salvar acompanhamento.');
     }
@@ -153,8 +184,9 @@ export function ProtocoladosPage() {
         analise: parecerJuridico,
         valorGanho: resultadoSelecionado === 'ganho' ? valorGanho : null,
       });
-      carregarDados();
-      setUpdateDialogVisible(false);
+      await carregarDados();
+      setTipoAcao('');
+      fecharDialogAtualizacao();
     } catch (err) {
       alert('Erro ao salvar decisão.');
     }
@@ -181,10 +213,6 @@ export function ProtocoladosPage() {
 
   const kpis = useMemo(() => {
     const totalProcessos = dataComCamposCalculados.length;
-    const ativos = dataComCamposCalculados.filter((item) =>
-      ['protocolado', 'ativo', 'em andamento'].includes(item.status.toLowerCase())
-    ).length;
-
     const mediaProcessos = totalProcessos
       ? Math.round(
           dataComCamposCalculados.reduce((acc, item) => acc + item.dias, 0) / totalProcessos
@@ -192,12 +220,13 @@ export function ProtocoladosPage() {
       : 0;
 
     const valorTotal = dataComCamposCalculados.reduce((acc, item) => acc + item.valor, 0);
+    const mediaValorProcessos = totalProcessos ? valorTotal / totalProcessos : 0;
 
     return {
       totalProcessos,
-      ativos,
       mediaProcessos,
-      valorTotal
+      valorTotal,
+      mediaValorProcessos,
     };
   }, [dataComCamposCalculados]);
 
@@ -224,19 +253,6 @@ export function ProtocoladosPage() {
 
 
 
-  const getStatusSeverity = (
-    status: string
-  ): 'success' | 'info' | 'warning' | 'danger' | 'secondary' | 'contrast' => {
-    const valor = status.toLowerCase();
-
-    if (['protocolado', 'ativo', 'concluído', 'concluido'].includes(valor)) return 'success';
-    if (['em andamento', 'sem resultado'].includes(valor)) return 'info';
-    if (['pendente', 'aguardando'].includes(valor)) return 'warning';
-    if (['perdido', 'indeferido'].includes(valor)) return 'danger';
-
-    return 'secondary';
-  };
-
   const getResultadoSeverity = (
     resultado: string
   ): 'success' | 'info' | 'warning' | 'danger' | 'secondary' | 'contrast' => {
@@ -252,7 +268,7 @@ export function ProtocoladosPage() {
   const precoBodyTemplate = (rowData: ProtocoladoTableRow) => formatarMoeda(rowData.valor);
   const diasBodyTemplate = (rowData: ProtocoladoTableRow) => <span className="dias-cell">{rowData.dias}</span>;
   const statusBodyTemplate = (rowData: ProtocoladoTableRow) => (
-    <Tag value={rowData.status} severity={getStatusSeverity(rowData.status)} />
+    <Tag value={rowData.status} style={getStatusTagStyle(rowData.status)} className="status-tag-custom" />
   );
   const resultadoBodyTemplate = (rowData: ProtocoladoTableRow) => (
     <Tag value={rowData.resultado} severity={getResultadoSeverity(rowData.resultado)} />
@@ -265,10 +281,39 @@ export function ProtocoladosPage() {
         icon="pi pi-refresh"
         outlined
         onClick={() => {
-          setRegistroAtualizando({ ...rowData });
+          setRegistroAtualizando({ ...rowData, documentos: [] });
           setNovoAcompanhamento('');
           setParecerJuridico('');
           setResultadoSelecionado('');
+          getAnexosOrder(rowData.id, 'ORCAMENTO')
+            .then((res: any) => {
+              const anexos: any[] = res.data.anexos ?? [];
+              const documentos = anexos.map((anexo, index) => {
+                const nome = anexo.linkImagem.split('/').pop() || `Orçamento ${index + 1}`;
+                const extensao = nome.split('.').pop()?.toLowerCase();
+                const tipo: 'pdf' | 'imagem' | 'outro' = extensao === 'pdf'
+                  ? 'pdf'
+                  : ['jpg', 'jpeg', 'png', 'webp'].includes(extensao ?? '')
+                    ? 'imagem'
+                    : 'outro';
+
+                return {
+                  label: `Orçamento ${index + 1}`,
+                  nome,
+                  url: anexo.linkImagem,
+                  tipo,
+                };
+              });
+
+              setRegistroAtualizando((atual) =>
+                atual && atual.id === rowData.id ? { ...atual, documentos } : atual
+              );
+            })
+            .catch(() => {
+              setRegistroAtualizando((atual) =>
+                atual && atual.id === rowData.id ? { ...atual, documentos: [] } : atual
+              );
+            });
           setUpdateDialogVisible(true);
         }}
       />
@@ -286,12 +331,19 @@ export function ProtocoladosPage() {
     );
   };
 
-  const handleBaixarDocumento = (nome: string) => {
-    console.log('Baixar documento:', nome);
+  const abrirPreview = (url: string, nome: string, tipo: 'pdf' | 'imagem' | 'outro') => {
+    setPreviewUrl(url);
+    setPreviewNome(nome);
+    setPreviewTipo(tipo);
+    setPreviewVisible(true);
   };
 
-  const handleVisualizarDocumento = (nome: string) => {
-    console.log('Visualizar documento:', nome);
+  const handleBaixarDocumento = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleVisualizarDocumento = (url: string, nome: string, tipo: 'pdf' | 'imagem' | 'outro') => {
+    abrirPreview(url, nome, tipo);
   };
 
 
@@ -324,15 +376,7 @@ export function ProtocoladosPage() {
 
         <div className="kpi-card">
           <div className="kpi-header">
-            <span>Ativos</span>
-            <i className="pi pi-check-circle"></i>
-          </div>
-          <div className="kpi-value">{kpis.ativos}</div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span>Média/Processos</span>
+            <span>Média de dias dos Processos</span>
             <i className="pi pi-chart-line"></i>
           </div>
           <div className="kpi-value">{kpis.mediaProcessos}</div>
@@ -345,6 +389,15 @@ export function ProtocoladosPage() {
           </div>
           <div className="kpi-value">{formatarMoeda(kpis.valorTotal)}</div>
         </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>Média Valor Processos</span>
+            <i className="pi pi-wallet"></i>
+          </div>
+          <div className="kpi-value">{formatarMoeda(kpis.mediaValorProcessos)}</div>
+        </div>
+
       </div>
 
       <div className="card">
@@ -461,7 +514,7 @@ export function ProtocoladosPage() {
         visible={updateDialogVisible}
         style={{ width: '72rem', maxWidth: '96vw' }}
         modal
-        onHide={() => setUpdateDialogVisible(false)}
+        onHide={fecharDialogAtualizacao}
         className="protocolado-update-dialog"
       >
         {registroAtualizando && (
@@ -474,7 +527,7 @@ export function ProtocoladosPage() {
               <Button
                 label="Voltar"
                 outlined
-                onClick={() => setUpdateDialogVisible(false)}
+                onClick={fecharDialogAtualizacao}
               />
             </div>
 
@@ -492,29 +545,50 @@ export function ProtocoladosPage() {
             </section>
 
             <section className="update-section">
-              <h3>Documentos do Processo</h3>
+              <h3>Orçamento do Pedido</h3>
 
-              <div className="documentos-grid">
-                {registroAtualizando.documentos.map((doc) => (
-                  <div key={doc.nome} className="documento-item">
-                    <span>{doc.label}</span>
-                    <div className="documento-actions">
-                      <Button
-                        label="Ver PDF"
-                        icon="pi pi-eye"
-                        text
-                        onClick={() => handleVisualizarDocumento(doc.nome)}
-                      />
-                      <Button
-                        label="Baixar"
-                        icon="pi pi-download"
-                        text
-                        onClick={() => handleBaixarDocumento(doc.nome)}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {registroAtualizando.documentos.length === 0 && (
+                <div className="timeline-empty">Nenhum orçamento anexado.</div>
+              )}
+
+              {registroAtualizando.documentos.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {registroAtualizando.documentos.map((doc, index) => {
+                    const icone = doc.tipo === 'pdf'
+                      ? 'pi pi-file-pdf'
+                      : doc.tipo === 'imagem'
+                        ? 'pi pi-image'
+                        : 'pi pi-file';
+
+                    return (
+                      <button
+                        key={`${doc.nome}-${index}`}
+                        type="button"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #e5e7eb',
+                          background: 'transparent',
+                          color: '#374151',
+                          fontSize: '0.9rem',
+                          width: '100%',
+                          cursor: 'pointer',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#f3f4f6'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        onClick={() => handleVisualizarDocumento(doc.url, doc.nome, doc.tipo)}
+                      >
+                        <i className={icone} style={{ fontSize: '1.1rem', color: '#f97316' }} />
+                        <span style={{ flex: 1, textAlign: 'left' }}>{doc.nome || `Orçamento ${index + 1}`}</span>
+                        <i className="pi pi-eye" style={{ color: '#9ca3af', fontSize: '0.85rem' }} />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </section>
 
 
@@ -633,8 +707,54 @@ export function ProtocoladosPage() {
 
           </div>
         )}
+      </Dialog>
 
+      <Dialog
+        header={previewNome}
+        visible={previewVisible}
+        style={{ width: '80vw', maxWidth: '1100px' }}
+        modal
+        onHide={() => setPreviewVisible(false)}
+      >
+        <div style={{ minHeight: '70vh' }}>
+          {previewTipo === 'pdf' && (
+            <iframe
+              src={previewUrl}
+              title={previewNome}
+              width="100%"
+              height="700px"
+              style={{ border: 'none', borderRadius: '8px' }}
+            />
+          )}
 
+          {previewTipo === 'imagem' && (
+            <img
+              src={previewUrl}
+              alt={previewNome}
+              style={{ maxWidth: '100%', maxHeight: '70vh', display: 'block', margin: '0 auto' }}
+            />
+          )}
+
+          {previewTipo === 'outro' && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+              <Button
+                label="Baixar arquivo"
+                icon="pi pi-download"
+                onClick={() => handleBaixarDocumento(previewUrl)}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="dialog-footer-actions">
+          <Button
+            label="Baixar"
+            icon="pi pi-download"
+            outlined
+            onClick={() => handleBaixarDocumento(previewUrl)}
+          />
+          <Button label="Fechar" onClick={() => setPreviewVisible(false)} />
+        </div>
       </Dialog>
     </div>
   );

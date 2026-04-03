@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import type { DataTableFilterMeta, DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
@@ -7,12 +7,25 @@ import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { InputNumber } from 'primereact/inputnumber';
 import { Dialog } from 'primereact/dialog';
+import { Dropdown } from 'primereact/dropdown';
 import { Tag } from 'primereact/tag';
 import { FilterMatchMode } from 'primereact/api';
-import { getOrcamentoMedico, salvarOrcamentoMedico, getAnexosOrder, uploadAnexoOrder } from '../../services/api/orders';
+import html2canvas from 'html2canvas';
+import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { getOrcamentoMedico, getOrders, salvarOrcamentoMedico, getAnexosOrder, uploadAnexoOrder, getMedicosCompleto } from '../../services/api/orders';
+import { getBaseOrcamento } from '../../services/api/client';
+import { getStatusTagStyle } from '../../utils/statusTag';
+import { EnviarOrcamentoDialog } from './EnviarOrcamentoDialog';
 import './OrcamentoMedicoPage.css';
 
-interface ItemOrcamento { descricao: string; valor: number; }
+GlobalWorkerOptions.workerSrc = pdfWorker;
+void useRef;
+void InputNumber;
+void html2canvas;
+void getDocument;
+void uploadAnexoOrder;
+void getBaseOrcamento;
 
 interface ProcessoOrcamento {
   id: number;
@@ -28,9 +41,15 @@ interface ProcessoOrcamento {
   statusOrcamento: string;
   solicitacao: string;
   orcamentosJuridico: string | null;
+  medicoId?: number;
+  idMedico?: number;
+  medico_id?: number;
+  nomeMedico?: string;
+  hospital?: string;
 }
 
 interface ProcessoOrcamentoRow extends ProcessoOrcamento { sequencial: number; }
+interface OrderLookup extends Record<string, any> { id: number; }
 
 interface Anexo {
   id: number
@@ -49,15 +68,6 @@ function calcularIdade(dataNascimento: string | null): number {
   return idade;
 }
 
-function calcularTotal(
-  equipe: ItemOrcamento[], taxas: ItemOrcamento[],
-  opme: ItemOrcamento[], medic: ItemOrcamento[]
-): number {
-  const soma = (arr: ItemOrcamento[]) => arr.reduce((s, i) => s + (i.valor || 0), 0);
-  return soma(equipe) + soma(taxas) + soma(opme) + soma(medic);
-}
-
-const itemVazio = (): ItemOrcamento => ({ descricao: '', valor: 0 });
 
 export function OrcamentoMedicoPage() {
   const [loading, setLoading] = useState(false);
@@ -69,41 +79,51 @@ export function OrcamentoMedicoPage() {
   const [anexos, setAnexos] = useState<Anexo[]>([])
   const [loadingAnexos, setLoadingAnexos] = useState(false)
   const [escolhaVisible, setEscolhaVisible] = useState(false)
-  const [arquivoVisible, setArquivoVisible] = useState(false)
-  const [valorArquivo, setValorArquivo] = useState<number | null>(null)
-  const [enviandoArquivo, setEnviandoArquivo] = useState(false)
+  const [medicos, setMedicos] = useState<any[]>([])
 
   // dialogs
   const [detalheVisible, setDetalheVisible] = useState(false);
-  const [orcamentoVisible, setOrcamentoVisible] = useState(false);
   const [examesVisible, setExamesVisible] = useState(false);
   const [processoSelecionado, setProcessoSelecionado] = useState<ProcessoOrcamentoRow | null>(null);
-  const [arquivoSelecionado, setArquivoSelecionado] = useState<File | null>(null);
-
-  // campos orçamento
-  const [equipeMedica, setEquipeMedica] = useState<ItemOrcamento[]>([itemVazio()]);
-  const [taxasHospitalar, setTaxasHospitalar] = useState<ItemOrcamento[]>([itemVazio()]);
-  const [opmeMateriais, setOpmeMateriais] = useState<ItemOrcamento[]>([itemVazio()]);
-  const [medicamentos, setMedicamentos] = useState<ItemOrcamento[]>([itemVazio()]);
+  const [ordersLookup, setOrdersLookup] = useState<Record<number, OrderLookup>>({});
   const [exames, setExames] = useState('');
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [previewTipo, setPreviewTipo] = useState<'pdf' | 'imagem' | 'outro'>('outro');
+  const [previewNome, setPreviewNome] = useState('');
   
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    idade: { value: '', matchMode: FilterMatchMode.CONTAINS },
     procedimento: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    medico: { value: null, matchMode: FilterMatchMode.EQUALS },
     area: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    subarea: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    dataStatusJuridico: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    dias: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    statusOrcamento: { value: null, matchMode: FilterMatchMode.EQUALS },
   });
 
   const carregarDados = () => {
     setLoading(true);
-    getOrcamentoMedico()
-      .then(({ data }) => {
-        setProcessos(data.map((o: any) => ({
+    Promise.all([getOrcamentoMedico(), getOrders(), getMedicosCompleto()])
+      .then(([orcamentoResponse, ordersResponse, medicosResponse]) => {
+        const ordersIndex = (ordersResponse.data as OrderLookup[]).reduce<Record<number, OrderLookup>>((acc, order) => {
+          acc[order.id] = order;
+          return acc;
+        }, {});
+
+        setOrdersLookup(ordersIndex);
+        setMedicos(medicosResponse.data);
+        console.log('[OrcamentoMedicoPage] orders lookup carregado', ordersIndex);
+
+        setProcessos(orcamentoResponse.data.map((o: any) => ({
           ...o,
           idade: calcularIdade(o.dataNascimento),
         })));
       })
-      .catch(() => console.error('Erro ao carregar orçamentos'))
+      .catch((err) => console.error('[OrcamentoMedicoPage] erro ao carregar orçamentos/orders', err))
       .finally(() => setLoading(false));
   };
 
@@ -112,6 +132,28 @@ export function OrcamentoMedicoPage() {
   const dataComSequencial = useMemo<ProcessoOrcamentoRow[]>(() => {
     return processos.map((item, index) => ({ ...item, sequencial: index + 1 }));
   }, [processos]);
+
+  const dataComMedico = useMemo(() => {
+    return dataComSequencial.map((item) => {
+      const orderLookup = ordersLookup[item.id];
+      const medicoId = item.idMedico ?? item.medicoId ?? item.medico_id ?? orderLookup?.idMedico ?? orderLookup?.medicoId ?? null;
+      const medicoNome = medicos.find((medico: any) => medico.id === medicoId)?.nomeSistema ?? '';
+      return {
+        ...item,
+        medico: item.nomeMedico ?? orderLookup?.nomeMedico ?? orderLookup?.medico ?? medicoNome,
+      };
+    });
+  }, [dataComSequencial, ordersLookup, medicos]);
+
+  const statusOrcamentoOptions = useMemo(() => {
+    return Array.from(new Set(processos.map((item) => item.statusOrcamento).filter(Boolean)))
+      .map((status) => ({ label: status, value: status }));
+  }, [processos]);
+
+  const medicosOptions = useMemo(() => {
+    return Array.from(new Set(dataComMedico.map((item) => item.medico).filter(Boolean)))
+      .map((medico) => ({ label: medico, value: medico }));
+  }, [dataComMedico]);
 
   const kpis = useMemo(() => {
     const total = dataComSequencial.length;
@@ -130,11 +172,17 @@ export function OrcamentoMedicoPage() {
   const formatarMoeda = (valor: number) =>
     valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+  const abrirPreview = (url: string, nome: string, tipo: 'pdf' | 'imagem' | 'outro') => {
+    setPreviewUrl(url);
+    setPreviewNome(nome);
+    setPreviewTipo(tipo);
+    setPreviewVisible(true);
+  };
+
 const abrirDetalhe = (rowData: ProcessoOrcamentoRow) => {
   setProcessoSelecionado(rowData);
   setDetalheVisible(true);
 
-  // 👇 adiciona isso
   setAnexos([])
   setLoadingAnexos(true)
   getAnexosOrder(rowData.id, 'RELATORIO')
@@ -142,34 +190,6 @@ const abrirDetalhe = (rowData: ProcessoOrcamentoRow) => {
     .catch(() => setAnexos([]))
     .finally(() => setLoadingAnexos(false))
 };
-
-  const abrirOrcamento = () => {
-    setEquipeMedica([itemVazio()]);
-    setTaxasHospitalar([itemVazio()]);
-    setOpmeMateriais([itemVazio()]);
-    setMedicamentos([itemVazio()]);
-    setOrcamentoVisible(true);
-  };
-
-  const handleEnviarOrcamento = async () => {
-    if (!processoSelecionado) return;
-    const valorTotal = calcularTotal(equipeMedica, taxasHospitalar, opmeMateriais, medicamentos);
-    try {
-      await salvarOrcamentoMedico(processoSelecionado.id, {
-        acao: 'enviar_orcamento',
-        equipeMedica,
-        taxasHospitalar,
-        opmeMateriais,
-        medicamentos,
-        valorTotal,
-      });
-      setOrcamentoVisible(false);
-      setDetalheVisible(false);
-      carregarDados();
-    } catch (err) {
-      alert('Erro ao enviar orçamento.');
-    }
-  };
 
   const handleSolicitarExames = async () => {
     if (!processoSelecionado) return;
@@ -198,58 +218,6 @@ const abrirDetalhe = (rowData: ProcessoOrcamentoRow) => {
     }
   };
 
-  // Helper para editar linhas de orçamento
-  const updateItem = (
-    arr: ItemOrcamento[], setArr: React.Dispatch<React.SetStateAction<ItemOrcamento[]>>,
-    index: number, field: keyof ItemOrcamento, value: any
-  ) => {
-    const novo = [...arr];
-    novo[index] = { ...novo[index], [field]: value };
-    setArr(novo);
-  };
-
-  const addItem = (arr: ItemOrcamento[], setArr: React.Dispatch<React.SetStateAction<ItemOrcamento[]>>) =>
-    setArr([...arr, itemVazio()]);
-
-  const removeItem = (arr: ItemOrcamento[], setArr: React.Dispatch<React.SetStateAction<ItemOrcamento[]>>, index: number) =>
-    setArr(arr.filter((_, i) => i !== index));
-
-  const renderSecaoOrcamento = (
-    titulo: string,
-    arr: ItemOrcamento[],
-    setArr: React.Dispatch<React.SetStateAction<ItemOrcamento[]>>
-  ) => (
-    <div className="secao-orcamento">
-      <h3>{titulo}</h3>
-      {arr.map((item, i) => (
-        <div key={i} className="orcamento-row">
-          <InputText
-            value={item.descricao}
-            onChange={(e) => updateItem(arr, setArr, i, 'descricao', e.target.value)}
-            placeholder="Descrição"
-            className="orcamento-descricao"
-          />
-          <InputNumber
-            value={item.valor}
-            onValueChange={(e) => updateItem(arr, setArr, i, 'valor', e.value ?? 0)}
-            mode="currency" currency="BRL" locale="pt-BR"
-            className="orcamento-valor"
-          />
-          <Button
-            icon="pi pi-trash" severity="danger" outlined rounded
-            onClick={() => removeItem(arr, setArr, i)}
-            disabled={arr.length === 1}
-          />
-        </div>
-      ))}
-      <Button
-        label="+ Adicionar" text
-        onClick={() => addItem(arr, setArr)}
-        style={{ marginTop: '4px' }}
-      />
-    </div>
-  );
-
   const filterElement = (options: any, placeholder: string) => (
     <InputText
       value={options.value || ''}
@@ -258,7 +226,16 @@ const abrirDetalhe = (rowData: ProcessoOrcamentoRow) => {
     />
   );
 
-  const valorTotal = calcularTotal(equipeMedica, taxasHospitalar, opmeMateriais, medicamentos);
+  const dropdownFilterElement = (options: any, filterOptions: { label: string; value: string }[], placeholder = 'Selecione') => (
+    <Dropdown
+      value={options.value ?? null}
+      options={filterOptions}
+      onChange={(e: any) => options.filterApplyCallback(e.value)}
+      placeholder={placeholder}
+      showClear
+      className="p-column-filter"
+    />
+  );
 
 
 const copiarParaWhatsapp = async (rowData: ProcessoOrcamentoRow) => {
@@ -281,26 +258,24 @@ const copiarParaWhatsapp = async (rowData: ProcessoOrcamentoRow) => {
     ? Math.max(0, Math.floor((hoje.getTime() - dataRef.getTime()) / (1000 * 60 * 60 * 24)))
     : rowData.dias
 
-  // 👇 campo orcamentosJuridico adicionado
   const orcamentos = rowData.orcamentosJuridico?.trim() || 'Nenhum orçamento registrado'
 
   const texto = `[#] SOLICITAÇÃO DE ORÇAMENTO
 ----------------------------------------
-👤 Paciente: ${rowData.paciente}
-🎂 Idade: ${rowData.idade}
-🏥 Procedimento: ${rowData.procedimento}
-📋 Área: ${rowData.area}
-📁 Subárea: ${rowData.subarea}
-📅 Data Solicitação: ${formatarData(rowData.dataStatusJuridico)}
-📌 Status: ${rowData.statusOrcamento}
-⏰ Dias em Aberto: ${diasEmAberto} dias
-💸 Orçamentos:
+Paciente: ${rowData.paciente}
+Idade: ${rowData.idade}
+Procedimento: ${rowData.procedimento}
+Área: ${rowData.area}
+Subárea: ${rowData.subarea}
+Data Solicitação: ${formatarData(rowData.dataStatusJuridico)}
+Status: ${rowData.statusOrcamento}
+Dias em Aberto: ${diasEmAberto} dias
+Orçamentos:
 ${orcamentos}
 Anexos:
 ${linhasAnexos}
 ----------------------------------------`
 
-  // 👇 fallback para localhost sem HTTPS
   const copiar = async (texto: string) => {
     if (navigator.clipboard && window.isSecureContext) {
       await navigator.clipboard.writeText(texto)
@@ -324,43 +299,6 @@ ${linhasAnexos}
     alert('Não foi possível copiar.')
   }
 }
-
-
-const handleEnviarArquivo = async () => {
-  if (!processoSelecionado || !valorArquivo) {
-    alert('Informe o valor total do orçamento.');
-    return;
-  }
-  setEnviandoArquivo(true);
-  try {
-    // 1. Salva o orçamento
-    await salvarOrcamentoMedico(processoSelecionado.id, {
-      acao: 'enviar_orcamento',
-      equipeMedica: [],
-      taxasHospitalar: [],
-      opmeMateriais: [],
-      medicamentos: [],
-      valorTotal: valorArquivo,
-    });
-
-    // 2. Se tiver arquivo, faz upload
-    if (arquivoSelecionado) {
-      await uploadAnexoOrder(processoSelecionado.id, arquivoSelecionado, 'ORCAMENTO');
-    }
-
-    setArquivoVisible(false);
-    setDetalheVisible(false);
-    setArquivoSelecionado(null);
-    setValorArquivo(null);
-    carregarDados();
-  } catch {
-    alert('Erro ao enviar orçamento.');
-  } finally {
-    setEnviandoArquivo(false);
-  }
-};
-
-
   return (
     <div className="orcamento-medico-page">
       <div className="page-header">
@@ -387,7 +325,7 @@ const handleEnviarArquivo = async () => {
 
       <div className="card">
         <DataTable
-          value={dataComSequencial} dataKey="id" paginator rows={rows} first={first}
+          value={dataComMedico} dataKey="id" paginator rows={rows} first={first}
           onPage={(e: DataTablePageEvent) => { setFirst(e.first); setRows(e.rows); }}
           sortField={sortField} sortOrder={sortOrder}
           onSort={(e: DataTableSortEvent) => { setSortField(e.sortField); setSortOrder(e.sortOrder); }}
@@ -399,17 +337,25 @@ const handleEnviarArquivo = async () => {
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
           <Column field="paciente" header="Paciente" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }} />
-          <Column field="idade" header="Idade" sortable style={{ minWidth: '7rem' }} />
+          <Column field="idade" header="Idade" sortable filter
+            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '7rem' }} />
           <Column field="procedimento" header="Procedimento" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '18rem' }} />
+          <Column field="medico" header="Médico" sortable filter
+            filterElement={(o) => dropdownFilterElement(o, medicosOptions)} style={{ minWidth: '14rem' }} />
           <Column field="area" header="Área" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '10rem' }} />
-          <Column field="subarea" header="Subárea" sortable style={{ minWidth: '12rem' }} />
+          <Column field="subarea" header="Subárea" sortable filter
+            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '12rem' }} />
           <Column field="dataStatusJuridico" header="Data Solicitação"
-            body={(r) => formatarData(r.dataStatusJuridico)} sortable style={{ minWidth: '12rem' }} />
-          <Column field="dias" header="Dias em Aberto" sortable style={{ minWidth: '10rem' }} />
+            body={(r) => formatarData(r.dataStatusJuridico)} sortable filter
+            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '12rem' }} />
+          <Column field="dias" header="Dias em Aberto" sortable filter
+            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '10rem' }} />
           <Column field="statusOrcamento" header="Status"
-            body={(r) => <Tag value={r.statusOrcamento} severity="warning" />}
+            body={(r) => <Tag value={r.statusOrcamento} style={getStatusTagStyle(r.statusOrcamento)} className="status-tag-custom" />}
+            filter
+            filterElement={(o) => dropdownFilterElement(o, statusOrcamentoOptions)}
             style={{ minWidth: '14rem' }} />
           <Column header="Enviar Orçamento"
             body={(rowData) => (
@@ -513,14 +459,16 @@ const handleEnviarArquivo = async () => {
                       : ['jpg', 'jpeg', 'png'].includes(extensao ?? '')
                         ? 'pi pi-image'
                         : 'pi pi-file'
+                    const tipo: 'pdf' | 'imagem' | 'outro' = extensao === 'pdf'
+                      ? 'pdf'
+                      : ['jpg', 'jpeg', 'png'].includes(extensao ?? '')
+                        ? 'imagem'
+                        : 'outro'
 
                     return (
-                        <a
+                        <button
                         key={anexo.id}
-                        href={anexo.linkImagem}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download
+                        type="button"
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -528,17 +476,20 @@ const handleEnviarArquivo = async () => {
                           padding: '8px 12px',
                           borderRadius: '8px',
                           border: '1px solid #e5e7eb',
-                          textDecoration: 'none',
+                          background: 'transparent',
                           color: '#374151',
                           fontSize: '0.9rem',
+                          width: '100%',
+                          cursor: 'pointer',
                         }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = '#f3f4f6' }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                        onClick={() => abrirPreview(anexo.linkImagem, nomeArquivo, tipo)}
                       >
                         <i className={icone} style={{ fontSize: '1.1rem', color: '#f97316' }} />
                         <span style={{ flex: 1 }}>{nomeArquivo}</span>
-                        <i className="pi pi-download" style={{ color: '#9ca3af', fontSize: '0.85rem' }} />
-                      </a>
+                        <i className="pi pi-eye" style={{ color: '#9ca3af', fontSize: '0.85rem' }} />
+                      </button>
                     )
                   })}
                 </div>
@@ -549,7 +500,7 @@ const handleEnviarArquivo = async () => {
               <Button
                 label="Enviar Orçamento"
                 icon="pi pi-send"
-                onClick={() => setEscolhaVisible(true)}  // 👈 era onClick={abrirOrcamento}
+                onClick={() => setEscolhaVisible(true)}
               />
               <Button label="Solicitar Exames" icon="pi pi-search"
                 severity="warning" outlined
@@ -561,170 +512,16 @@ const handleEnviarArquivo = async () => {
         )}
       </Dialog>
 
-      {/* Dialog Escolha de Tipo de Orçamento */}
-      <Dialog
-        header="Como deseja enviar o orçamento?"
+      <EnviarOrcamentoDialog
         visible={escolhaVisible}
-        style={{ width: '40rem', maxWidth: '96vw' }}
-        modal
+        processo={processoSelecionado}
+        orderLookup={processoSelecionado ? ordersLookup[processoSelecionado.id] : null}
         onHide={() => setEscolhaVisible(false)}
-      >
-        <div style={{ display: 'flex', gap: '16px', padding: '8px 0 16px' }}>
-          <button
-            onClick={() => {
-              setEscolhaVisible(false)
-              setValorArquivo(null)
-              setArquivoVisible(true)
-            }}
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '32px 16px',
-              borderRadius: '12px',
-              border: '2px solid #e5e7eb',
-              background: 'transparent',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#f97316'
-              e.currentTarget.style.background = '#fff7ed'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e7eb'
-              e.currentTarget.style.background = 'transparent'
-            }}
-          >
-            <i className="pi pi-file-import" style={{ fontSize: '2rem', color: '#f97316' }} />
-            <span style={{ fontWeight: 600, fontSize: '1rem' }}>Importar Arquivo</span>
-            <span style={{ fontSize: '0.85rem', color: '#6b7280', textAlign: 'center' }}>
-              Envie um PDF ou imagem com o orçamento e informe o valor total
-            </span>
-          </button>
-
-          <button
-            onClick={() => {
-              setEscolhaVisible(false)
-              abrirOrcamento()
-            }}
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '32px 16px',
-              borderRadius: '12px',
-              border: '2px solid #e5e7eb',
-              background: 'transparent',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#f97316'
-              e.currentTarget.style.background = '#fff7ed'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e7eb'
-              e.currentTarget.style.background = 'transparent'
-            }}
-          >
-            <i className="pi pi-table" style={{ fontSize: '2rem', color: '#f97316' }} />
-            <span style={{ fontWeight: 600, fontSize: '1rem' }}>Preencher Manualmente</span>
-            <span style={{ fontSize: '0.85rem', color: '#6b7280', textAlign: 'center' }}>
-              Preencha os itens de equipe, taxas, OPME e medicamentos
-            </span>
-          </button>
-        </div>
-      </Dialog>
-      {/* Fim dialogo de escolha */}
-
-
-      {/* Dialog Enviar por Valor */}
-      <Dialog
-        header="Enviar Orçamento"
-        visible={arquivoVisible}
-        style={{ width: '38rem', maxWidth: '96vw' }}
-        modal
-        onHide={() => setArquivoVisible(false)}
-      >
-
-<div>
-  <label style={{ fontWeight: 600, display: 'block', marginBottom: '8px' }}>
-    Arquivo do Orçamento (opcional)
-  </label>
-  <input
-    type="file"
-    accept=".pdf,.jpg,.jpeg,.png"
-    onChange={(e) => setArquivoSelecionado(e.target.files?.[0] ?? null)}
-    style={{ width: '100%' }}
-  />
-  {arquivoSelecionado && (
-    <span style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '6px', display: 'block' }}>
-      <i className="pi pi-file" style={{ marginRight: '4px' }} />
-      {arquivoSelecionado.name}
-    </span>
-  )}
-</div>
-
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '8px 0 16px' }}>
-          <p style={{ margin: 0, color: '#6b7280', fontSize: '0.95rem' }}>
-            Informe o valor total do orçamento recebido do médico.
-          </p>
-          <div>
-            <label style={{ fontWeight: 600, display: 'block', marginBottom: '8px' }}>
-              Valor Total do Orçamento
-            </label>
-            <InputNumber
-              value={valorArquivo}
-              onValueChange={(e) => setValorArquivo(e.value ?? null)}
-              mode="currency"
-              currency="BRL"
-              locale="pt-BR"
-              placeholder="R$ 0,00"
-              style={{ width: '100%' }}
-            />
-          </div>
-        </div>
-
-        <div className="dialog-footer-actions">
-          <Button label="Cancelar" outlined onClick={() => setArquivoVisible(false)} />
-          <Button
-            label={enviandoArquivo ? 'Enviando...' : 'Confirmar'}
-            icon="pi pi-check"
-            onClick={handleEnviarArquivo}
-            disabled={enviandoArquivo || !valorArquivo}
-            loading={enviandoArquivo}
-          />
-        </div>
-      </Dialog>
-
-
-
-      {/* Dialog Orçamento */}
-      <Dialog header="Enviar Orçamento" visible={orcamentoVisible}
-        style={{ width: '65rem', maxWidth: '96vw' }} modal
-        onHide={() => setOrcamentoVisible(false)} className="orcamento-edit-dialog">
-        <div className="orcamento-secoes">
-          {renderSecaoOrcamento('1. Equipe Médica', equipeMedica, setEquipeMedica)}
-          {renderSecaoOrcamento('2. Taxas Hospitalares', taxasHospitalar, setTaxasHospitalar)}
-          {renderSecaoOrcamento('3. OPME / Materiais', opmeMateriais, setOpmeMateriais)}
-          {renderSecaoOrcamento('4. Medicamentos', medicamentos, setMedicamentos)}
-
-          <div className="valor-total">
-            <strong>VALOR TOTAL: {formatarMoeda(valorTotal)}</strong>
-          </div>
-        </div>
-
-        <div className="dialog-footer-actions">
-          <Button label="Cancelar" outlined onClick={() => setOrcamentoVisible(false)} />
-          <Button label="Enviar Orçamento" icon="pi pi-check" onClick={handleEnviarOrcamento} />
-        </div>
-      </Dialog>
+        onSuccess={async () => {
+          setDetalheVisible(false);
+          await carregarDados();
+        }}
+      />
 
       {/* Dialog Exames */}
       <Dialog header="Solicitar Exames" visible={examesVisible}
@@ -745,6 +542,62 @@ const handleEnviarArquivo = async () => {
           <Button label="Solicitar" icon="pi pi-check" onClick={handleSolicitarExames} />
         </div>
       </Dialog>
+
+      <Dialog
+        header={previewNome}
+        visible={previewVisible}
+        style={{ width: '80vw', maxWidth: '1100px', height: '90vh' }}
+        modal
+        onHide={() => setPreviewVisible(false)}
+        footer={
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+            <a
+              href={previewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              download
+              style={{ textDecoration: 'none' }}
+            >
+              <Button label="Baixar" icon="pi pi-download" outlined />
+            </a>
+            <Button label="Fechar" onClick={() => setPreviewVisible(false)} />
+          </div>
+        }
+      >
+        <div style={{ height: 'calc(90vh - 160px)' }}>
+          {previewTipo === 'pdf' && (
+            <iframe
+              src={previewUrl}
+              title={previewNome}
+              style={{ width: '100%', height: '100%', border: 'none', borderRadius: '8px' }}
+            />
+          )}
+
+          {previewTipo === 'imagem' && (
+            <div style={{ width: '100%', height: '100%', overflow: 'auto', textAlign: 'center' }}>
+              <img
+                src={previewUrl}
+                alt={previewNome}
+                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+              />
+            </div>
+          )}
+
+          {previewTipo === 'outro' && (
+            <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ textAlign: 'center' }}>
+                <i className="pi pi-file" style={{ fontSize: '2rem', color: '#9ca3af', marginBottom: '12px' }} />
+                <p style={{ marginBottom: '12px' }}>Visualização não disponível para este tipo de arquivo.</p>
+                <a href={previewUrl} target="_blank" rel="noopener noreferrer" download>
+                  Baixar arquivo
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      </Dialog>
     </div>
   );
 }
+
+

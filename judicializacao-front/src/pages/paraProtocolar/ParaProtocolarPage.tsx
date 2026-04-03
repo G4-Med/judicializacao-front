@@ -6,7 +6,7 @@ import type {
   DataTableSortEvent
 } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { getParaProtocolar, salvarProtocolar, uploadAnexoOrder } from '../../services/api/orders';
+import { getParaProtocolar, salvarProtocolar, uploadAnexoOrder, getOrders, getMedicosCompleto, getAnexosOrder } from '../../services/api/orders';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -16,6 +16,7 @@ import { Calendar } from 'primereact/calendar';
 import { FilterMatchMode } from 'primereact/api';
 import { Dialog } from 'primereact/dialog';
 import { RadioButton } from 'primereact/radiobutton';
+import { getStatusTagStyle } from '../../utils/statusTag';
 import './ParaProtocolarPage.css';
 
 interface ParaProtocolar {
@@ -37,6 +38,7 @@ interface ParaProtocolar {
   numeroProcesso: string;
   status: string;
   anexoNome: string;
+  idMedico?: number | null;
 }
 
 interface ParaProtocolarTableRow extends ParaProtocolar {
@@ -44,7 +46,7 @@ interface ParaProtocolarTableRow extends ParaProtocolar {
   dias: number;
 }
 
-type NaoProtocolarOpcao = 'perda' | 'segredo' | '';
+type NaoProtocolarOpcao = 'perda' | 'segredo' | 'diretoria' | '';
 
 export function ParaProtocolarPage() {
   const [loading, setLoading] = useState(false);
@@ -59,6 +61,13 @@ export function ParaProtocolarPage() {
   const [arquivoExtra1, setArquivoExtra1] = useState<File | null>(null)
   const [arquivoExtra2, setArquivoExtra2] = useState<File | null>(null)
   const [enviandoProtocolo, setEnviandoProtocolo] = useState(false)
+  const [, setMedicos] = useState<any[]>([]);
+  const [anexosOrcamento, setAnexosOrcamento] = useState<any[]>([]);
+  const [loadingAnexosOrcamento, setLoadingAnexosOrcamento] = useState(false);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [previewTipo, setPreviewTipo] = useState<'pdf' | 'imagem' | 'outro'>('outro');
+  const [previewNome, setPreviewNome] = useState('');
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -82,29 +91,41 @@ export function ParaProtocolarPage() {
 
   const carregarDados = () => {
     setLoading(true);
-    getParaProtocolar()
-      .then(({ data }) => {
+    Promise.all([getParaProtocolar(), getOrders(), getMedicosCompleto()])
+      .then(([paraProtocolarRes, ordersRes, medicosRes]) => {
+        const ordersLookup = (ordersRes.data as any[]).reduce<Record<number, any>>((acc, order) => {
+          acc[order.id] = order;
+          return acc;
+        }, {});
+        setMedicos(medicosRes.data);
         setRegistros(
-          data.map((o: any) => ({
-            id: o.id,
-            paciente: o.paciente ?? '',
-            dataNascimento: o.dataNascimento,
-            procedimento: o.procedimento ?? '',
-            area: o.area ?? '',
-            subarea: o.subarea ?? '',
-            nprocesso: o.nprocesso ?? '',
-            refPreco: o.refPreco ?? 0,
-            valorOrcamento: o.valorOrcamento ?? 0,
-            dataStatusOrcamento: o.dataStatusOrcamento,
-            solicitacao: o.solicitacao ?? '',
-            cliente: o.area ?? '',
-            valor: o.valorOrcamento ?? o.refPreco ?? 0,
-            dataEnvioOrcamento: o.dataStatusOrcamento ?? '',
-            observacoes: o.solicitacao ?? '',
-            numeroProcesso: o.nprocesso ?? '',
-            status: o.statusProcesso ?? '',
-            anexoNome: ''
-          }))
+          paraProtocolarRes.data.map((o: any) => {
+            const orderCompleta = ordersLookup[o.id];
+            const medicoId = o.idMedico ?? orderCompleta?.idMedico ?? null;
+            const medico = medicosRes.data.find((item: any) => item.id === medicoId);
+
+            return {
+              id: o.id,
+              paciente: o.paciente ?? '',
+              dataNascimento: o.dataNascimento,
+              procedimento: o.procedimento ?? '',
+              area: o.area ?? '',
+              subarea: o.subarea ?? '',
+              nprocesso: o.nprocesso ?? '',
+              refPreco: o.refPreco ?? 0,
+              valorOrcamento: o.valorOrcamento ?? 0,
+              dataStatusOrcamento: o.dataStatusOrcamento,
+              solicitacao: o.solicitacao ?? '',
+              cliente: medico?.razaoSocial ?? '',
+              valor: o.valorOrcamento ?? o.refPreco ?? 0,
+              dataEnvioOrcamento: o.dataStatusOrcamento ?? '',
+              observacoes: o.solicitacao ?? '',
+              numeroProcesso: o.nprocesso ?? '',
+              status: o.statusProcesso ?? '',
+              anexoNome: '',
+              idMedico: medicoId,
+            };
+          })
         );
       })
       .catch(() => console.error('Erro ao carregar para protocolar'))
@@ -170,26 +191,55 @@ export function ParaProtocolarPage() {
     return `${dia}/${mes}/${ano}`;
   };
 
-  const getStatusSeverity = (
-    status: string
-  ): 'success' | 'info' | 'warning' | 'danger' | 'secondary' | 'contrast' => {
-    const valor = status.toLowerCase();
-
-    if (['protocolado', 'concluído', 'concluido'].includes(valor)) return 'success';
-    if (['pendente', 'aguardando protocolo', 'em análise', 'em analise'].includes(valor)) return 'warning';
-    if (['em andamento'].includes(valor)) return 'info';
-    if (['perdido', 'indeferido', 'perda'].includes(valor)) return 'danger';
-
-    return 'secondary';
-  };
-
   const precoBodyTemplate = (rowData: ParaProtocolarTableRow) => formatarMoeda(rowData.valor);
   const dataBodyTemplate = (rowData: ParaProtocolarTableRow) => formatarData(rowData.dataEnvioOrcamento);
   const diasBodyTemplate = (rowData: ParaProtocolarTableRow) => <span className="dias-cell">{rowData.dias}</span>;
 
   const statusBodyTemplate = (rowData: ParaProtocolarTableRow) => (
-    <Tag value={rowData.status} severity={getStatusSeverity(rowData.status)} />
+    <Tag value={rowData.status} style={getStatusTagStyle(rowData.status)} className="status-tag-custom" />
   );
+
+  const abrirPreview = (url: string, nome: string, tipo: 'pdf' | 'imagem' | 'outro') => {
+    setPreviewUrl(url);
+    setPreviewNome(nome);
+    setPreviewTipo(tipo);
+    setPreviewVisible(true);
+  };
+
+  const baixarArquivo = async (url: string, nomeArquivo: string) => {
+    void nomeArquivo;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const abrirOrcamentoAnexo = async (rowData: ParaProtocolarTableRow, modo: 'preview' | 'download') => {
+    try {
+      const res: any = await getAnexosOrder(rowData.id, 'ORCAMENTO');
+      const listaAnexos: any[] = res.data.anexos ?? [];
+
+      if (listaAnexos.length === 0) {
+        alert('Nenhum orçamento anexado para este pedido.');
+        return;
+      }
+
+      const anexo = listaAnexos[0];
+      const nomeArquivo = anexo.linkImagem.split('/').pop() || 'orcamento';
+      const extensao = nomeArquivo.split('.').pop()?.toLowerCase();
+      const tipo: 'pdf' | 'imagem' | 'outro' = extensao === 'pdf'
+        ? 'pdf'
+        : ['jpg', 'jpeg', 'png'].includes(extensao ?? '')
+          ? 'imagem'
+          : 'outro';
+
+      if (modo === 'download') {
+        await baixarArquivo(anexo.linkImagem, nomeArquivo);
+        return;
+      }
+
+      abrirPreview(anexo.linkImagem, nomeArquivo, tipo);
+    } catch {
+      alert('Erro ao carregar o orçamento do pedido.');
+    }
+  };
 
   const anexoBodyTemplate = (rowData: ParaProtocolarTableRow) => {
     return (
@@ -198,10 +248,8 @@ export function ParaProtocolarPage() {
         rounded
         outlined
         severity="secondary"
-        aria-label={`Baixar anexo ${rowData.anexoNome}`}
-        onClick={() => {
-          console.log('Baixar anexo:', rowData.anexoNome);
-        }}
+        aria-label={`Baixar orçamento do pedido ${rowData.id}`}
+        onClick={() => abrirOrcamentoAnexo(rowData, 'download')}
       />
     );
   };
@@ -216,6 +264,12 @@ export function ParaProtocolarPage() {
         aria-label={`Editar ${rowData.id}`}
         onClick={() => {
           setRegistroEditando({ ...rowData });
+          setAnexosOrcamento([]);
+          setLoadingAnexosOrcamento(true);
+          getAnexosOrder(rowData.id, 'ORCAMENTO')
+            .then((res: any) => setAnexosOrcamento(res.data.anexos ?? []))
+            .catch(() => setAnexosOrcamento([]))
+            .finally(() => setLoadingAnexosOrcamento(false));
           setEditDialogVisible(true);
         }}
       />
@@ -232,6 +286,12 @@ export function ParaProtocolarPage() {
         onClick={() => {
           setRegistroProtocolando({ ...rowData });
           setDataProtocolo('');
+          setAnexosOrcamento([]);
+          setLoadingAnexosOrcamento(true);
+          getAnexosOrder(rowData.id, 'ORCAMENTO')
+            .then((res: any) => setAnexosOrcamento(res.data.anexos ?? []))
+            .catch(() => setAnexosOrcamento([]))
+            .finally(() => setLoadingAnexosOrcamento(false));
           setProtocolarDialogVisible(true);
         }}
       />
@@ -249,6 +309,12 @@ export function ParaProtocolarPage() {
           setRegistroNaoProtocolar({ ...rowData });
           setNaoProtocolarOpcao('');
           setNaoProtocolarObs('');
+          setAnexosOrcamento([]);
+          setLoadingAnexosOrcamento(true);
+          getAnexosOrder(rowData.id, 'ORCAMENTO')
+            .then((res: any) => setAnexosOrcamento(res.data.anexos ?? []))
+            .catch(() => setAnexosOrcamento([]))
+            .finally(() => setLoadingAnexosOrcamento(false));
           setNaoProtocolarDialogVisible(true);
         }}
       />
@@ -338,7 +404,7 @@ const handleConfirmarProtocolacao = async () => {
       return;
     }
 
-    const acao = naoProtocolarOpcao === 'perda' ? 'perda' : 'segredo';
+    const acao = naoProtocolarOpcao === 'segredo' ? 'segredo' : 'perda';
 
     try {
       await salvarProtocolar(registroNaoProtocolar.id, {
@@ -473,7 +539,7 @@ const handleConfirmarProtocolacao = async () => {
           />
 
           <Column
-            header="Anexo"
+            header="Orçamento"
             body={anexoBodyTemplate}
             style={{ minWidth: '7rem' }}
             bodyStyle={{ textAlign: 'center' }}
@@ -565,8 +631,71 @@ const handleConfirmarProtocolacao = async () => {
             <div className="field">
               <label>Status</label>
               <div className="tag-box">
-                <Tag value={registroEditando.status} severity={getStatusSeverity(registroEditando.status)} />
+                <Tag value={registroEditando.status} style={getStatusTagStyle(registroEditando.status)} className="status-tag-custom" />
               </div>
+            </div>
+
+            <div className="field field-span-4">
+              <label>Orçamento do Pedido</label>
+
+              {loadingAnexosOrcamento && (
+                <span style={{ fontSize: '0.9rem', color: '#888' }}>
+                  <i className="pi pi-spin pi-spinner" style={{ marginRight: '6px' }} />
+                  Carregando orçamento...
+                </span>
+              )}
+
+              {!loadingAnexosOrcamento && anexosOrcamento.length === 0 && (
+                <span style={{ fontSize: '0.9rem', color: '#aaa' }}>
+                  Nenhum orçamento anexado.
+                </span>
+              )}
+
+              {!loadingAnexosOrcamento && anexosOrcamento.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {anexosOrcamento.map((anexo, index) => {
+                    const nomeArquivo = anexo.linkImagem.split('/').pop() || `Orçamento ${index + 1}`;
+                    const extensao = nomeArquivo.split('.').pop()?.toLowerCase();
+                    const icone = extensao === 'pdf'
+                      ? 'pi pi-file-pdf'
+                      : ['jpg', 'jpeg', 'png'].includes(extensao ?? '')
+                        ? 'pi pi-image'
+                        : 'pi pi-file';
+                    const tipo: 'pdf' | 'imagem' | 'outro' = extensao === 'pdf'
+                      ? 'pdf'
+                      : ['jpg', 'jpeg', 'png'].includes(extensao ?? '')
+                        ? 'imagem'
+                        : 'outro';
+
+                    return (
+                      <button
+                        key={anexo.id ?? index}
+                        type="button"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #e5e7eb',
+                          background: 'transparent',
+                          color: '#374151',
+                          fontSize: '0.9rem',
+                          width: '100%',
+                          cursor: 'pointer',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#f3f4f6'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        onClick={() => abrirPreview(anexo.linkImagem, nomeArquivo, tipo)}
+                      >
+                        <i className={icone} style={{ fontSize: '1.1rem', color: '#f97316' }} />
+                        <span style={{ flex: 1, textAlign: 'left' }}>{nomeArquivo}</span>
+                        <i className="pi pi-eye" style={{ color: '#9ca3af', fontSize: '0.85rem' }} />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="field field-span-4">
@@ -646,6 +775,69 @@ const handleConfirmarProtocolacao = async () => {
               <label>Observações</label>
               <InputTextarea value={registroProtocolando.observacoes} rows={4} disabled />
             </div>
+
+<div className="field field-span-4">
+  <label>Orçamento do Pedido</label>
+
+  {loadingAnexosOrcamento && (
+    <span style={{ fontSize: '0.9rem', color: '#888' }}>
+      <i className="pi pi-spin pi-spinner" style={{ marginRight: '6px' }} />
+      Carregando orçamento...
+    </span>
+  )}
+
+  {!loadingAnexosOrcamento && anexosOrcamento.length === 0 && (
+    <span style={{ fontSize: '0.9rem', color: '#aaa' }}>
+      Nenhum orçamento anexado.
+    </span>
+  )}
+
+  {!loadingAnexosOrcamento && anexosOrcamento.length > 0 && (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {anexosOrcamento.map((anexo, index) => {
+        const nomeArquivo = anexo.linkImagem.split('/').pop() || `Orçamento ${index + 1}`;
+        const extensao = nomeArquivo.split('.').pop()?.toLowerCase();
+        const icone = extensao === 'pdf'
+          ? 'pi pi-file-pdf'
+          : ['jpg', 'jpeg', 'png'].includes(extensao ?? '')
+            ? 'pi pi-image'
+            : 'pi pi-file';
+        const tipo: 'pdf' | 'imagem' | 'outro' = extensao === 'pdf'
+          ? 'pdf'
+          : ['jpg', 'jpeg', 'png'].includes(extensao ?? '')
+            ? 'imagem'
+            : 'outro';
+
+        return (
+          <button
+            key={anexo.id ?? index}
+            type="button"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid #e5e7eb',
+              background: 'transparent',
+              color: '#374151',
+              fontSize: '0.9rem',
+              width: '100%',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#f3f4f6'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            onClick={() => abrirPreview(anexo.linkImagem, nomeArquivo, tipo)}
+          >
+            <i className={icone} style={{ fontSize: '1.1rem', color: '#f97316' }} />
+            <span style={{ flex: 1, textAlign: 'left' }}>{nomeArquivo}</span>
+            <i className="pi pi-eye" style={{ color: '#9ca3af', fontSize: '0.85rem' }} />
+          </button>
+        );
+      })}
+    </div>
+  )}
+</div>
 
 <div className="field field-span-2">
   <label>
@@ -818,6 +1010,69 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field field-span-4">
+              <label>Orçamento do Pedido</label>
+
+              {loadingAnexosOrcamento && (
+                <span style={{ fontSize: '0.9rem', color: '#888' }}>
+                  <i className="pi pi-spin pi-spinner" style={{ marginRight: '6px' }} />
+                  Carregando orçamento...
+                </span>
+              )}
+
+              {!loadingAnexosOrcamento && anexosOrcamento.length === 0 && (
+                <span style={{ fontSize: '0.9rem', color: '#aaa' }}>
+                  Nenhum orçamento anexado.
+                </span>
+              )}
+
+              {!loadingAnexosOrcamento && anexosOrcamento.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {anexosOrcamento.map((anexo, index) => {
+                    const nomeArquivo = anexo.linkImagem.split('/').pop() || `Orçamento ${index + 1}`;
+                    const extensao = nomeArquivo.split('.').pop()?.toLowerCase();
+                    const icone = extensao === 'pdf'
+                      ? 'pi pi-file-pdf'
+                      : ['jpg', 'jpeg', 'png'].includes(extensao ?? '')
+                        ? 'pi pi-image'
+                        : 'pi pi-file';
+                    const tipo: 'pdf' | 'imagem' | 'outro' = extensao === 'pdf'
+                      ? 'pdf'
+                      : ['jpg', 'jpeg', 'png'].includes(extensao ?? '')
+                        ? 'imagem'
+                        : 'outro';
+
+                    return (
+                      <button
+                        key={anexo.id ?? index}
+                        type="button"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #e5e7eb',
+                          background: 'transparent',
+                          color: '#374151',
+                          fontSize: '0.9rem',
+                          width: '100%',
+                          cursor: 'pointer',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#f3f4f6'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        onClick={() => abrirPreview(anexo.linkImagem, nomeArquivo, tipo)}
+                      >
+                        <i className={icone} style={{ fontSize: '1.1rem', color: '#f97316' }} />
+                        <span style={{ flex: 1, textAlign: 'left' }}>{nomeArquivo}</span>
+                        <i className="pi pi-eye" style={{ color: '#9ca3af', fontSize: '0.85rem' }} />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="field field-span-4">
               <label>Escolha uma opção</label>
 
               <div className="radio-group">
@@ -841,6 +1096,17 @@ const handleConfirmarProtocolacao = async () => {
                     checked={naoProtocolarOpcao === 'segredo'}
                   />
                   <label htmlFor="opcaoSegredo">Não Protocolar e marcar como Segredo de Justiça</label>
+                </div>
+
+                <div className="radio-item">
+                  <RadioButton
+                    inputId="opcaoDiretoria"
+                    name="naoProtocolarOpcao"
+                    value="diretoria"
+                    onChange={(e) => setNaoProtocolarOpcao(e.value)}
+                    checked={naoProtocolarOpcao === 'diretoria'}
+                  />
+                  <label htmlFor="opcaoDiretoria">Diretoria falou para não protocolar</label>
                 </div>
               </div>
             </div>
@@ -868,6 +1134,53 @@ const handleConfirmarProtocolacao = async () => {
             disabled={!naoProtocolarOpcao}
             onClick={handleConfirmarNaoProtocolar}
           />
+        </div>
+      </Dialog>
+      <Dialog
+        header={previewNome}
+        visible={previewVisible}
+        style={{ width: '80vw', maxWidth: '1100px' }}
+        modal
+        onHide={() => setPreviewVisible(false)}
+      >
+        <div style={{ minHeight: '70vh' }}>
+          {previewTipo === 'pdf' && (
+            <iframe
+              src={previewUrl}
+              title={previewNome}
+              width="100%"
+              height="700px"
+              style={{ border: 'none', borderRadius: '8px' }}
+            />
+          )}
+
+          {previewTipo === 'imagem' && (
+            <img
+              src={previewUrl}
+              alt={previewNome}
+              style={{ maxWidth: '100%', maxHeight: '70vh', display: 'block', margin: '0 auto' }}
+            />
+          )}
+
+          {previewTipo === 'outro' && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+              <Button
+                label="Baixar arquivo"
+                icon="pi pi-download"
+                onClick={() => baixarArquivo(previewUrl, previewNome || 'arquivo')}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="dialog-footer-actions">
+          <Button
+            label="Baixar"
+            icon="pi pi-download"
+            outlined
+            onClick={() => baixarArquivo(previewUrl, previewNome || 'arquivo')}
+          />
+          <Button label="Fechar" onClick={() => setPreviewVisible(false)} />
         </div>
       </Dialog>
     </div>

@@ -13,6 +13,12 @@
   font-weight: 700;
 }
 
+.status-tag-custom {
+  font-weight: 700;
+  border-width: 1px;
+  border-style: solid;
+}
+
 .segredo-update-dialog .p-dialog-header {
   padding: 1rem 1.25rem;
   border-bottom: 1px solid #e5e7eb;

@@ -9,7 +9,8 @@ import { Column } from 'primereact/column';
 import { Tag } from 'primereact/tag';
 import { InputText } from 'primereact/inputtext';
 import { FilterMatchMode } from 'primereact/api';
-import { getResultados } from '../../services/api/orders';
+import { getResultados, getOrders, getMedicosCompleto } from '../../services/api/orders';
+import { getStatusTagStyle } from '../../utils/statusTag';
 import './ResultadosPage.css';
 
 interface ResultadoProcesso {
@@ -26,6 +27,7 @@ interface ResultadoProcesso {
   statusProcesso: string;
   statusPerda: string;
   analiseJuridicaFinal: string;
+  idMedico?: number | null;
   // legados para tabela
   cliente: string;
   valor: number;
@@ -56,36 +58,48 @@ export function ResultadosPage() {
     valor: { value: '', matchMode: FilterMatchMode.CONTAINS },
     numeroProcesso: { value: '', matchMode: FilterMatchMode.CONTAINS },
     dias: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    status: { value: '', matchMode: FilterMatchMode.CONTAINS },
     resultado: { value: '', matchMode: FilterMatchMode.CONTAINS }
   });
 
 const carregarDados = () => {
   setLoading(true);
-  getResultados()
-    .then(({ data }) => {
-      setRegistros(data.map((o: any) => ({
-        id: o.id,
-        paciente: o.paciente ?? '',
-        nprocesso: o.nprocesso ?? '',
-        procedimento: o.procedimento ?? '',
-        area: o.area ?? '',
-        refPreco: o.refPreco ?? 0,
-        valorOrcamento: o.valorOrcamento ?? 0,
-        valorGanho: o.valorGanho ?? 0,
-        dataPedido: o.dataPedido,
-        dias: o.dias ?? 0,
-        statusProcesso: o.statusProcesso ?? '',
-        statusPerda: o.statusPerda ?? '',
-        analiseJuridicaFinal: o.analiseJuridicaFinal ?? '',
-        // legados
-        cliente: o.area ?? '',
-        valor: o.valorGanho ?? o.valorOrcamento ?? o.refPreco ?? 0,
-        numeroProcesso: o.nprocesso ?? '',
-        dataProtocolo: o.dataPedido ?? '',
-        status: o.statusProcesso ?? '',
-        resultado: o.statusProcesso === 'Ganho' ? 'Ganho' : 'Perda',
-      })));
+  Promise.all([getResultados(), getOrders(), getMedicosCompleto()])
+    .then(([resultadosRes, ordersRes, medicosRes]) => {
+      const ordersLookup = (ordersRes.data as any[]).reduce<Record<number, any>>((acc, order) => {
+        acc[order.id] = order;
+        return acc;
+      }, {});
+
+      setRegistros(resultadosRes.data.map((o: any) => {
+        const orderCompleta = ordersLookup[o.id];
+        const medicoId = o.idMedico ?? orderCompleta?.idMedico ?? null;
+        const medico = medicosRes.data.find((item: any) => item.id === medicoId);
+        const valorOrcamento = o.valorOrcamento ?? orderCompleta?.valorOrcamento ?? 0;
+
+        return {
+          id: o.id,
+          paciente: o.paciente ?? '',
+          nprocesso: o.nprocesso ?? '',
+          procedimento: o.procedimento ?? '',
+          area: o.area ?? '',
+          refPreco: o.refPreco ?? 0,
+          valorOrcamento,
+          valorGanho: o.valorGanho ?? 0,
+          dataPedido: o.dataPedido,
+          dias: o.dias ?? 0,
+          statusProcesso: o.statusProcesso ?? '',
+          statusPerda: o.statusPerda ?? '',
+          analiseJuridicaFinal: o.analiseJuridicaFinal ?? '',
+          idMedico: medicoId,
+          // legados
+          cliente: medico?.razaoSocial ?? '',
+          valor: valorOrcamento,
+          numeroProcesso: o.nprocesso ?? '',
+          dataProtocolo: o.dataPedido ?? '',
+          status: o.statusProcesso ?? '',
+          resultado: o.statusProcesso === 'Ganho' ? 'Ganho' : 'Perda',
+        };
+      }));
     })
     .catch(() => console.error('Erro ao carregar resultados'))
     .finally(() => setLoading(false));
@@ -123,11 +137,11 @@ const kpis = useMemo(() => {
     (item) => item.statusProcesso === 'Ganho'
   );
   const perdas = dataComCamposCalculados.filter(
-    (item) => item.statusProcesso === 'Perdido'
+    (item) => item.statusProcesso === 'Perda'
   );
 
   const ganhosValor = ganhos.reduce((acc, item) => acc + (item.valorGanho || item.valorOrcamento), 0);
-  const perdasValor = perdas.reduce((acc, item) => acc + item.refPreco, 0);
+  const perdasValor = perdas.reduce((acc, item) => acc + (item.valorOrcamento || item.refPreco), 0);
   const valorTotal = ganhosValor + perdasValor;
 
   const ganhosPercentual = valorTotal > 0 ? (ganhosValor / valorTotal) * 100 : 0;
@@ -180,29 +194,19 @@ const kpis = useMemo(() => {
     return 'secondary';
   };
 
-  const getResultadoSeverity = (
-    resultado: string
-  ): 'success' | 'info' | 'warning' | 'danger' | 'secondary' | 'contrast' => {
-    const valor = resultado.toLowerCase();
-
-    if (['ganho', 'procedente'].includes(valor)) return 'success';
-    if (['perda', 'improcedente'].includes(valor)) return 'danger';
-
-    return 'secondary';
-  };
-
   const precoBodyTemplate = (rowData: ResultadoProcessoTableRow) => formatarMoeda(rowData.valor);
 
   const diasBodyTemplate = (rowData: ResultadoProcessoTableRow) => (
     <span className="dias-cell">{rowData.dias}</span>
   );
 
-  const statusBodyTemplate = (rowData: ResultadoProcessoTableRow) => (
-    <Tag value={rowData.status} severity={getStatusSeverity(rowData.status)} />
-  );
-
   const resultadoBodyTemplate = (rowData: ResultadoProcessoTableRow) => (
-    <Tag value={rowData.resultado} severity={getResultadoSeverity(rowData.resultado)} />
+    <Tag
+      value={rowData.resultado}
+      severity={getStatusSeverity(rowData.resultado)}
+      style={getStatusTagStyle(rowData.resultado)}
+      className="status-tag-custom"
+    />
   );
 
   const filterElement = (options: any, placeholder: string) => {
@@ -347,16 +351,6 @@ const kpis = useMemo(() => {
             filterElement={(options) => filterElement(options, 'Buscar')}
             body={diasBodyTemplate}
             style={{ minWidth: '7rem' }}
-          />
-
-          <Column
-            field="status"
-            header="Status"
-            sortable
-            filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
-            body={statusBodyTemplate}
-            style={{ minWidth: '12rem' }}
           />
 
           <Column

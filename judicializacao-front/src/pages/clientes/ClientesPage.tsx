@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import type {
   DataTableFilterMeta,
@@ -13,7 +13,8 @@ import {
   createDadosBancarios, updateDadosBancarios,
   getDadosMedico, getEmpresaMedico,
   getDadosPessoais, getDadosBancarios,
-  cadastrarUsuarioMedico, verificarUsuarioMedico,  
+  cadastrarUsuarioMedico, verificarUsuarioMedico,
+  getBaseOrcamento, salvarBaseOrcamento
 } from '../../services/api/client';
 import { Column } from 'primereact/column';
 import { Tag } from 'primereact/tag';
@@ -83,10 +84,27 @@ interface Cliente {
   arquivoAdicionalArquivo?: File | null;
 
 }
-
 interface ClienteTableRow extends Cliente {
   sequencial: number;
 }
+
+const baseOrcamentoInicial = {
+  honorariosEquipeMedica: false,
+  taxasHospitalares: false,
+  materiaisOpme: false,
+  medicamentosDiaria: false,
+  examesPreOperatorios: false,
+  consultaPosOperatoria: false,
+  atendimentoEnfermagem: false,
+  acompanhanteTaxaAdicional: false,
+  fisioterapiaPosOperatoria: false,
+  medicamentosPosAlta: false,
+  ortesesImobilizadores: false,
+  examesComplementares: false,
+  custoCtiBemodinamica: false,
+  linkBaseOrcamento: '',
+  linkAssinatura: '',
+};
 
 const clienteInicial: ClienteTableRow = {
   id: 0,
@@ -158,6 +176,10 @@ export function ClientesPage() {
   const [novoCliente, setNovoCliente] = useState<ClienteTableRow>(clienteInicial);
   const [usuarioCadastrado, setUsuarioCadastrado] = useState(false);
   const [loadingUsuario, setLoadingUsuario] = useState(false);
+  const [baseOrcamentoArquivo, setBaseOrcamentoArquivo] = useState<File | null>(null);
+  const [baseOrcamento, setBaseOrcamento] = useState(baseOrcamentoInicial);
+  const [assinaturaDialogVisible, setAssinaturaDialogVisible] = useState(false);
+  const [savingBase, setSavingBase] = useState(false);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     razaoSocial: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -369,6 +391,30 @@ const editarBodyTemplate = (rowData: ClienteTableRow) => {
             chavePix: db.chavePix ?? '',
           });
 
+
+          const { data: base } = await getBaseOrcamento(rowData.id);
+          if (base.exists) {
+            setBaseOrcamento({
+              honorariosEquipeMedica: base.honorariosEquipeMedica,
+              taxasHospitalares: base.taxasHospitalares,
+              materiaisOpme: base.materiaisOpme,
+              medicamentosDiaria: base.medicamentosDiaria,
+              examesPreOperatorios: base.examesPreOperatorios,
+              consultaPosOperatoria: base.consultaPosOperatoria,
+              atendimentoEnfermagem: base.atendimentoEnfermagem,
+              acompanhanteTaxaAdicional: base.acompanhanteTaxaAdicional,
+              fisioterapiaPosOperatoria: base.fisioterapiaPosOperatoria,
+              medicamentosPosAlta: base.medicamentosPosAlta,
+              ortesesImobilizadores: base.ortesesImobilizadores,
+              examesComplementares: base.examesComplementares,
+              custoCtiBemodinamica: base.custoCtiBemodinamica,
+              linkBaseOrcamento: base.linkBaseOrcamento ?? '',
+              linkAssinatura: base.linkAssinatura ?? '',
+            });
+          } else {
+            setBaseOrcamento(baseOrcamentoInicial);
+          }
+
           setEditDialogVisible(true);
         } catch (err) {
           console.error('Erro ao carregar dados do cliente:', err);
@@ -441,6 +487,8 @@ const formatarData = (data: string) => {
       createDate: agora,
       updateDate: agora
     });
+    setBaseOrcamento(baseOrcamentoInicial);
+    setBaseOrcamentoArquivo(null);
 
     setCreateDialogVisible(true);
   };
@@ -727,6 +775,80 @@ const handleSalvarEdicao = async () => {
       </div>
     );
   };
+
+
+  const handleSalvarBaseOrcamento = async () => {
+    if (!clienteEditando) return;
+    setSavingBase(true);
+    try {
+      const form = new FormData();
+      if (baseOrcamentoArquivo) form.append('baseOrcamento', baseOrcamentoArquivo);
+      Object.entries(baseOrcamento).forEach(([key, value]) => {
+        if (typeof value === 'boolean') form.append(key, String(value));
+      });
+      await salvarBaseOrcamento(clienteEditando.id, form);
+      alert('Base de orçamento salva!');
+    } catch {
+      alert('Erro ao salvar base de orçamento.');
+    } finally {
+      setSavingBase(false);
+    }
+  };
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  const iniciarDesenho = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    setIsDrawing(true);
+  };
+
+  const desenhar = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.strokeStyle = '#1f2937';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  };
+
+  const pararDesenho = () => setIsDrawing(false);
+
+  const limparAssinatura = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx?.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const salvarAssinatura = async () => {
+    if (!clienteEditando || !canvasRef.current) return;
+    canvasRef.current.toBlob(async (blob) => {
+      if (!blob) return;
+      const file = new File([blob], 'assinatura.png', { type: 'image/png' });
+      const form = new FormData();
+      form.append('assinatura', file);
+      try {
+        await salvarBaseOrcamento(clienteEditando.id, form);
+        const url = URL.createObjectURL(blob);
+        setBaseOrcamento(prev => ({ ...prev, linkAssinatura: url }));
+        setAssinaturaDialogVisible(false);
+        alert('Assinatura salva!');
+      } catch {
+        alert('Erro ao salvar assinatura.');
+      }
+    }, 'image/png');
+  };  
 
 
 
@@ -1403,6 +1525,114 @@ const handleSalvarEdicao = async () => {
 
             </div>
           </TabPanel>
+
+
+          <TabPanel header="Base Orçamento">
+            <div className="cliente-form-grid">
+
+              {/* Upload da base */}
+              <div className="field field-span-4">
+                <label style={{ fontWeight: 600 }}>Folha Timbrada (PDF)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginTop: '6px' }}>
+                  {baseOrcamento.linkBaseOrcamento && (
+                    <a href={baseOrcamento.linkBaseOrcamento} target="_blank" rel="noopener noreferrer"
+                      style={{ color: '#f97316', fontSize: '0.9rem' }}>
+                      <i className="pi pi-file-pdf" style={{ marginRight: '4px' }} />
+                      Ver PDF atual
+                    </a>
+                  )}
+                  <input type="file" accept=".pdf"
+                    onChange={(e) => setBaseOrcamentoArquivo(e.target.files?.[0] ?? null)}
+                    style={{ flex: 1 }} />
+                </div>
+                {baseOrcamentoArquivo && (
+                  <span style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '4px', display: 'block' }}>
+                    <i className="pi pi-file" style={{ marginRight: '4px' }} />
+                    {baseOrcamentoArquivo.name}
+                  </span>
+                )}
+              </div>
+
+              {/* Assinatura */}
+              <div className="field field-span-4">
+                <label style={{ fontWeight: 600 }}>Assinatura</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '6px' }}>
+                  {baseOrcamento.linkAssinatura ? (
+                    <img src={baseOrcamento.linkAssinatura} alt="Assinatura"
+                      style={{ height: '60px', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '4px' }} />
+                  ) : (
+                    <span style={{ fontSize: '0.9rem', color: '#aaa' }}>Nenhuma assinatura cadastrada</span>
+                  )}
+                  <Button label="Criar Assinatura" icon="pi pi-pencil" outlined
+                    onClick={() => setAssinaturaDialogVisible(true)} />
+                </div>
+              </div>
+
+              {/* Divisor */}
+              <div className="field field-span-4" style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+
+                  {/* INCLUSOS */}
+                  <div>
+                    <p style={{ fontWeight: 700, color: '#ef4444', marginBottom: '12px' }}>
+                      INCLUSOS (marque o que está incluso)
+                    </p>
+                    {[
+                      { key: 'honorariosEquipeMedica', label: 'Honorários da equipe médica' },
+                      { key: 'taxasHospitalares', label: 'Taxas hospitalares' },
+                      { key: 'materiaisOpme', label: 'Materiais e OPME' },
+                      { key: 'medicamentosDiaria', label: 'Medicamentos durante a diária do pós-operatório' },
+                      { key: 'examesPreOperatorios', label: 'Exames pré-operatórios básicos' },
+                      { key: 'consultaPosOperatoria', label: '1 Consulta pós-operatória' },
+                      { key: 'atendimentoEnfermagem', label: 'Atendimento de enfermagem 24h' },
+                    ].map(({ key, label }) => (
+                      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                        <input type="checkbox"
+                          checked={baseOrcamento[key as keyof typeof baseOrcamento] as boolean}
+                          onChange={(e) => setBaseOrcamento(prev => ({ ...prev, [key]: e.target.checked }))}
+                          style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                        <label style={{ fontSize: '0.9rem', color: '#374151', cursor: 'pointer' }}>{label}</label>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* NAO INCLUSOS */}
+                  <div>
+                    <p style={{ fontWeight: 700, color: '#ef4444', marginBottom: '12px' }}>
+                      NÃO INCLUSOS (marque o que NÃO está incluso)
+                    </p>
+                    {[
+                      { key: 'acompanhanteTaxaAdicional', label: 'Acompanhante (taxa adicional)' },
+                      { key: 'fisioterapiaPosOperatoria', label: 'Fisioterapia pós-operatória' },
+                      { key: 'medicamentosPosAlta', label: 'Medicamentos pós-alta' },
+                      { key: 'ortesesImobilizadores', label: 'Órteses e imobilizadores' },
+                      { key: 'examesComplementares', label: 'Exames complementares extras' },
+                      { key: 'custoCtiBemodinamica', label: 'Custo com CTI e hemodinâmica' },
+                    ].map(({ key, label }) => (
+                      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                        <input type="checkbox"
+                          checked={baseOrcamento[key as keyof typeof baseOrcamento] as boolean}
+                          onChange={(e) => setBaseOrcamento(prev => ({ ...prev, [key]: e.target.checked }))}
+                          style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                        <label style={{ fontSize: '0.9rem', color: '#374151', cursor: 'pointer' }}>{label}</label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Botão salvar */}
+              <div className="field field-span-4" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Button label="Salvar Base de Orçamento" icon="pi pi-check"
+                  loading={savingBase} onClick={handleSalvarBaseOrcamento} />
+              </div>
+
+            </div>
+          </TabPanel>
+
+
+
+
         </TabView>
 
 
@@ -1993,8 +2223,165 @@ const handleSalvarEdicao = async () => {
                 </div>
               </div>
             </TabPanel>
+
+            <TabPanel header="Base Orçamento">
+              <div className="cliente-form-grid">
+                <div className="field field-span-4">
+                  <label style={{ fontWeight: 600 }}>Folha Timbrada (PDF)</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginTop: '6px' }}>
+                    {baseOrcamento.linkBaseOrcamento && (
+                      <a
+                        href={baseOrcamento.linkBaseOrcamento}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#f97316', fontSize: '0.9rem' }}
+                      >
+                        <i className="pi pi-file-pdf" style={{ marginRight: '4px' }} />
+                        Ver PDF atual
+                      </a>
+                    )}
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) => setBaseOrcamentoArquivo(e.target.files?.[0] ?? null)}
+                      style={{ flex: 1 }}
+                    />
+                  </div>
+                  {baseOrcamentoArquivo && (
+                    <span style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '4px', display: 'block' }}>
+                      <i className="pi pi-file" style={{ marginRight: '4px' }} />
+                      {baseOrcamentoArquivo.name}
+                    </span>
+                  )}
+                </div>
+
+                <div className="field field-span-4">
+                  <label style={{ fontWeight: 600 }}>Assinatura</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '6px' }}>
+                    {baseOrcamento.linkAssinatura ? (
+                      <img
+                        src={baseOrcamento.linkAssinatura}
+                        alt="Assinatura"
+                        style={{ height: '60px', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '4px' }}
+                      />
+                    ) : (
+                      <span style={{ fontSize: '0.9rem', color: '#aaa' }}>Nenhuma assinatura cadastrada</span>
+                    )}
+                    <Button
+                      label="Criar Assinatura"
+                      icon="pi pi-pencil"
+                      outlined
+                      onClick={() => setAssinaturaDialogVisible(true)}
+                    />
+                  </div>
+                </div>
+
+                <div className="field field-span-4" style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                    <div>
+                      <p style={{ fontWeight: 700, color: '#ef4444', marginBottom: '12px' }}>
+                        INCLUSOS (marque o que está incluso)
+                      </p>
+                      {[
+                        { key: 'honorariosEquipeMedica', label: 'Honorários da equipe médica' },
+                        { key: 'taxasHospitalares', label: 'Taxas hospitalares' },
+                        { key: 'materiaisOpme', label: 'Materiais e OPME' },
+                        { key: 'medicamentosDiaria', label: 'Medicamentos durante a diária do pós-operatório' },
+                        { key: 'examesPreOperatorios', label: 'Exames pré-operatórios básicos' },
+                        { key: 'consultaPosOperatoria', label: '1 Consulta pós-operatória' },
+                        { key: 'atendimentoEnfermagem', label: 'Atendimento de enfermagem 24h' },
+                      ].map(({ key, label }) => (
+                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                          <input
+                            type="checkbox"
+                            checked={baseOrcamento[key as keyof typeof baseOrcamento] as boolean}
+                            onChange={(e) => setBaseOrcamento((prev) => ({ ...prev, [key]: e.target.checked }))}
+                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                          />
+                          <label style={{ fontSize: '0.9rem', color: '#374151', cursor: 'pointer' }}>{label}</label>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div>
+                      <p style={{ fontWeight: 700, color: '#ef4444', marginBottom: '12px' }}>
+                        NÃO INCLUSOS (marque o que NÃO está incluso)
+                      </p>
+                      {[
+                        { key: 'acompanhanteTaxaAdicional', label: 'Acompanhante (taxa adicional)' },
+                        { key: 'fisioterapiaPosOperatoria', label: 'Fisioterapia pós-operatória' },
+                        { key: 'medicamentosPosAlta', label: 'Medicamentos pós-alta' },
+                        { key: 'ortesesImobilizadores', label: 'Órteses e imobilizadores' },
+                        { key: 'examesComplementares', label: 'Exames complementares extras' },
+                        { key: 'custoCtiBemodinamica', label: 'Custo com CTI e hemodinâmica' },
+                      ].map(({ key, label }) => (
+                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                          <input
+                            type="checkbox"
+                            checked={baseOrcamento[key as keyof typeof baseOrcamento] as boolean}
+                            onChange={(e) => setBaseOrcamento((prev) => ({ ...prev, [key]: e.target.checked }))}
+                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                          />
+                          <label style={{ fontSize: '0.9rem', color: '#374151', cursor: 'pointer' }}>{label}</label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="field field-span-4" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <Button
+                    label="Salvar Base de Orçamento"
+                    icon="pi pi-check"
+                    loading={savingBase}
+                    onClick={handleSalvarBaseOrcamento}
+                  />
+                </div>
+              </div>
+            </TabPanel>
           </TabView>
         )}
+
+
+        {/* Dialog Assinatura */}
+        <Dialog
+          header="Criar Assinatura"
+          visible={assinaturaDialogVisible}
+          style={{ width: '500px' }}
+          modal
+          onHide={() => setAssinaturaDialogVisible(false)}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem' }}>
+              Assine no campo abaixo usando o mouse ou touchscreen.
+            </p>
+            <canvas
+              ref={canvasRef}
+              width={460}
+              height={200}
+              style={{
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                cursor: 'crosshair',
+                background: '#fff',
+                touchAction: 'none',
+              }}
+              onMouseDown={iniciarDesenho}
+              onMouseMove={desenhar}
+              onMouseUp={pararDesenho}
+              onMouseLeave={pararDesenho}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Button label="Limpar" icon="pi pi-trash" outlined severity="danger"
+                onClick={limparAssinatura} />
+              <Button label="Salvar Assinatura" icon="pi pi-check"
+                onClick={salvarAssinatura} />
+            </div>
+          </div>
+        </Dialog>
+
+
+
 
         <div className="dialog-footer-actions">
           <Button
