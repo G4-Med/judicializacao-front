@@ -41,6 +41,7 @@ interface Protocolado {
   refPreco: number;
   valorOrcamento: number;
   dataStatusOrcamento: string | null;
+  dataProtocoloApi?: string | null;
   dias: number;
   statusProcesso: string;
   obsProtocolo: string;
@@ -123,6 +124,7 @@ export function ProtocoladosPage() {
           refPreco: o.refPreco ?? 0,
           valorOrcamento: o.valorOrcamento ?? 0,
           dataStatusOrcamento: o.dataStatusOrcamento,
+          dataProtocoloApi: o.dataProtocolo ?? null,
           dias: o.dias ?? 0,
           statusProcesso: o.statusProcesso ?? '',
           obsProtocolo: o.obsProtocolo ?? '',
@@ -132,7 +134,7 @@ export function ProtocoladosPage() {
           cliente: o.area ?? '',
           valor: o.valorOrcamento ?? o.refPreco ?? 0,
           numeroProcesso: o.nprocesso ?? '',
-          dataProtocolo: o.dataStatusOrcamento ?? '',
+          dataProtocolo: o.dataProtocolo ?? '',
           status: 'Protocolado',
           resultado: 'Em andamento',
           documentos: [],

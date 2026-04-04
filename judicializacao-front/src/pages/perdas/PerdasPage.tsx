@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import type {
   DataTableFilterMeta,
@@ -22,16 +22,14 @@ interface PerdaProcesso {
   refPreco: number;
   valorOrcamento: number;
   dataPedido: string | null;
+  dataStatusPerda?: string | null;
   dias: number;
   statusProcesso: string;
   statusPerda: string;
   justificativaPerda: string;
   analiseJuridicaFinal: string;
-  // legados
   cliente: string;
   valor: number;
-  numeroProcesso: string;
-  dataProtocolo: string;
   resultado: string;
   idMedico?: number | null;
 }
@@ -54,97 +52,102 @@ export function PerdasPage() {
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     cliente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     valor: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    numeroProcesso: { value: '', matchMode: FilterMatchMode.CONTAINS },
     dias: { value: '', matchMode: FilterMatchMode.CONTAINS },
     resultado: { value: '', matchMode: FilterMatchMode.CONTAINS },
     statusPerda: { value: '', matchMode: FilterMatchMode.CONTAINS },
     justificativaPerda: { value: '', matchMode: FilterMatchMode.CONTAINS }
   });
 
+  const carregarDados = () => {
+    setLoading(true);
+    Promise.all([getPerdas(), getOrders(), getMedicosCompleto()])
+      .then(([perdasRes, ordersRes, medicosRes]) => {
+        const ordersLookup = (ordersRes.data as any[]).reduce<Record<number, any>>((acc, order) => {
+          acc[order.id] = order;
+          return acc;
+        }, {});
 
-  
-const carregarDados = () => {
-  setLoading(true);
-  Promise.all([getPerdas(), getOrders(), getMedicosCompleto()])
-    .then(([perdasRes, ordersRes, medicosRes]) => {
-      const ordersLookup = (ordersRes.data as any[]).reduce<Record<number, any>>((acc, order) => {
-        acc[order.id] = order;
-        return acc;
-      }, {});
+        setRegistros(
+          perdasRes.data.map((o: any) => {
+            const orderCompleta = ordersLookup[o.id];
+            const medicoId = o.idMedico ?? orderCompleta?.idMedico ?? null;
+            const medico = medicosRes.data.find((item: any) => item.id === medicoId);
+            const valorOrcamento = o.valorOrcamento ?? orderCompleta?.valorOrcamento ?? 0;
 
-      setRegistros(
-        perdasRes.data.map((o: any) => {
-          const orderCompleta = ordersLookup[o.id];
-          const medicoId = o.idMedico ?? orderCompleta?.idMedico ?? null;
-          const medico = medicosRes.data.find((item: any) => item.id === medicoId);
-          const valorOrcamento = o.valorOrcamento ?? orderCompleta?.valorOrcamento ?? 0;
-
-          return {
-            id: o.id,
-            paciente: o.paciente ?? '',
-            nprocesso: o.nprocesso ?? '',
-            procedimento: o.procedimento ?? '',
-            area: o.area ?? '',
-            refPreco: o.refPreco ?? 0,
-            valorOrcamento,
-            dataPedido: o.dataPedido,
-            dias: o.dias ?? 0,
-            statusProcesso: o.statusProcesso ?? '',
-            statusPerda: o.statusPerda ?? '',
-            justificativaPerda: o.justificativaPerda ?? '',
-            analiseJuridicaFinal: o.analiseJuridicaFinal ?? '',
-            cliente: medico?.razaoSocial ?? '',
-            valor: valorOrcamento || o.refPreco || 0,
-            numeroProcesso: o.nprocesso ?? '',
-            dataProtocolo: o.dataPedido ?? '',
-            resultado: 'Perda',
-            idMedico: medicoId,
-          };
-        })
-      );
-    })
-    .catch(() => console.error('Erro ao carregar perdas'))
-    .finally(() => setLoading(false));
-};
-
-useEffect(() => { carregarDados(); }, []);  
-
-
-
-const dataComCamposCalculados = useMemo<PerdaProcessoTableRow[]>(() => {
-  return registros.map((item, index) => ({
-    ...item,
-    sequencial: index + 1,
-    dias: item.dias, // já vem calculado do backend
-  }));
-}, [registros]);
-
-
-
-const kpis = useMemo(() => {
-  const totalProcessos = dataComCamposCalculados.length;
-  const mediaProcessos = totalProcessos
-    ? Math.round(dataComCamposCalculados.reduce((acc, item) => acc + item.dias, 0) / totalProcessos)
-    : 0;
-  const valorTotal = dataComCamposCalculados.reduce(
-    (acc, item) => acc + (item.valorOrcamento || item.refPreco || 0),
-    0
-  );
-
-  return {
-    totalProcessos,
-    mediaProcessos,
-    valorTotal,
-    ganhosValor: 0,
-    perdasValor: valorTotal,
-    ganhosPercentual: 0,
-    perdasPercentual: valorTotal > 0 ? 100 : 0,
+            return {
+              id: o.id,
+              paciente: o.paciente ?? '',
+              nprocesso: o.nprocesso ?? '',
+              procedimento: o.procedimento ?? '',
+              area: o.area ?? '',
+              refPreco: o.refPreco ?? 0,
+              valorOrcamento,
+              dataPedido: o.dataPedido ?? null,
+              dataStatusPerda: o.dataStatusPerda ?? null,
+              dias: o.dias ?? 0,
+              statusProcesso: o.statusProcesso ?? '',
+              statusPerda: o.statusPerda ?? '',
+              justificativaPerda: o.justificativaPerda ?? '',
+              analiseJuridicaFinal: o.analiseJuridicaFinal ?? '',
+              cliente: medico?.razaoSocial ?? '',
+              valor: valorOrcamento || o.refPreco || 0,
+              resultado: 'Perda',
+              idMedico: medicoId
+            };
+          })
+        );
+      })
+      .catch(() => console.error('Erro ao carregar perdas'))
+      .finally(() => setLoading(false));
   };
-}, [dataComCamposCalculados]);
 
+  useEffect(() => {
+    carregarDados();
+  }, []);
 
+  const dataComCamposCalculados = useMemo<PerdaProcessoTableRow[]>(() => {
+    return registros.map((item, index) => {
+      const dataPedido = item.dataPedido ? new Date(`${item.dataPedido}T00:00:00`) : null;
+      const dataStatusPerda = item.dataStatusPerda ? new Date(`${item.dataStatusPerda}T00:00:00`) : null;
+      const dias =
+        dataPedido && dataStatusPerda
+          ? Math.max(0, Math.floor((dataStatusPerda.getTime() - dataPedido.getTime()) / (1000 * 60 * 60 * 24)))
+          : 0;
 
-const onPage = (event: DataTablePageEvent) => {
+      return {
+        ...item,
+        sequencial: index + 1,
+        dias
+      };
+    });
+  }, [registros]);
+
+  const kpis = useMemo(() => {
+    const totalProcessos = dataComCamposCalculados.length;
+    const valorTotal = dataComCamposCalculados.reduce(
+      (acc, item) => acc + (item.valorOrcamento || item.refPreco || 0),
+      0
+    );
+    const perdaJuridico = dataComCamposCalculados.filter(
+      (item) => item.statusPerda === 'Perda Pelo Juridico'
+    ).length;
+    const perdaMedico = dataComCamposCalculados.filter(
+      (item) => item.statusPerda === 'Perda pelo Medico'
+    ).length;
+    const perdaSemEspecialista = dataComCamposCalculados.filter(
+      (item) => item.statusPerda === 'Perda por falta de especialista'
+    ).length;
+
+    return {
+      totalProcessos,
+      valorTotal,
+      perdaJuridico,
+      perdaMedico,
+      perdaSemEspecialista
+    };
+  }, [dataComCamposCalculados]);
+
+  const onPage = (event: DataTablePageEvent) => {
     setFirst(event.first);
     setRows(event.rows);
   };
@@ -160,35 +163,6 @@ const onPage = (event: DataTablePageEvent) => {
       currency: 'BRL'
     });
 
-  const formatarPercentual = (valor: number) =>
-    `${valor.toLocaleString('pt-BR', {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1
-    })}%`;
-
-  const getStatusSeverity = (
-    status: string
-  ): 'success' | 'info' | 'warning' | 'danger' | 'secondary' | 'contrast' => {
-    const valor = status.toLowerCase();
-
-    if (['concluído', 'concluido', 'finalizado'].includes(valor)) return 'success';
-    if (['em andamento'].includes(valor)) return 'warning';
-    if (['indeferido'].includes(valor)) return 'danger';
-
-    return 'secondary';
-  };
-
-  const getResultadoSeverity = (
-    resultado: string
-  ): 'success' | 'info' | 'warning' | 'danger' | 'secondary' | 'contrast' => {
-    const valor = resultado.toLowerCase();
-
-    if (['ganho', 'procedente'].includes(valor)) return 'success';
-    if (['perda', 'improcedente'].includes(valor)) return 'danger';
-
-    return 'secondary';
-  };
-
   const precoBodyTemplate = (rowData: PerdaProcessoTableRow) => formatarMoeda(rowData.valor);
 
   const diasBodyTemplate = (rowData: PerdaProcessoTableRow) => (
@@ -198,7 +172,6 @@ const onPage = (event: DataTablePageEvent) => {
   const resultadoBodyTemplate = (rowData: PerdaProcessoTableRow) => (
     <Tag
       value={rowData.resultado}
-      severity={getResultadoSeverity(rowData.resultado)}
       style={getStatusTagStyle(rowData.resultado)}
       className="status-tag-custom"
     />
@@ -207,7 +180,6 @@ const onPage = (event: DataTablePageEvent) => {
   const statusPerdaBodyTemplate = (rowData: PerdaProcessoTableRow) => (
     <Tag
       value={rowData.statusPerda}
-      severity={getStatusSeverity(rowData.statusPerda)}
       style={getStatusTagStyle(rowData.statusPerda)}
       className="status-tag-custom"
     />
@@ -244,10 +216,26 @@ const onPage = (event: DataTablePageEvent) => {
 
         <div className="kpi-card">
           <div className="kpi-header">
-            <span>Média/Processos</span>
-            <i className="pi pi-chart-line"></i>
+            <span>Perda Pelo Jurídico</span>
+            <i className="pi pi-briefcase"></i>
           </div>
-          <div className="kpi-value">{kpis.mediaProcessos}</div>
+          <div className="kpi-value">{kpis.perdaJuridico}</div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>Perda pelo Médico</span>
+            <i className="pi pi-user-minus"></i>
+          </div>
+          <div className="kpi-value">{kpis.perdaMedico}</div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>Perda por falta de especialista</span>
+            <i className="pi pi-ban"></i>
+          </div>
+          <div className="kpi-value">{kpis.perdaSemEspecialista}</div>
         </div>
 
         <div className="kpi-card">
@@ -256,24 +244,6 @@ const onPage = (event: DataTablePageEvent) => {
             <i className="pi pi-dollar"></i>
           </div>
           <div className="kpi-value">{formatarMoeda(kpis.valorTotal)}</div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span>Ganhos</span>
-            <i className="pi pi-check-circle"></i>
-          </div>
-          <div className="kpi-value kpi-value-success">{formatarMoeda(kpis.ganhosValor)}</div>
-          <div className="kpi-subvalue">{formatarPercentual(kpis.ganhosPercentual)}</div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span>Perdas</span>
-            <i className="pi pi-times-circle"></i>
-          </div>
-          <div className="kpi-value kpi-value-danger">{formatarMoeda(kpis.perdasValor)}</div>
-          <div className="kpi-subvalue">{formatarPercentual(kpis.perdasPercentual)}</div>
         </div>
       </div>
 
@@ -336,15 +306,6 @@ const onPage = (event: DataTablePageEvent) => {
             filterElement={(options) => filterElement(options, 'Buscar')}
             body={precoBodyTemplate}
             style={{ minWidth: '10rem' }}
-          />
-
-          <Column
-            field="numeroProcesso"
-            header="Processo"
-            sortable
-            filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
-            style={{ minWidth: '16rem' }}
           />
 
           <Column

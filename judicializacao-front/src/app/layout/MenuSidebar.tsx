@@ -1,4 +1,4 @@
-import { Sidebar } from 'primereact/sidebar'
+﻿import { Sidebar } from 'primereact/sidebar'
 import { PanelMenu } from 'primereact/panelmenu'
 import { Button } from 'primereact/button'
 import { useNavigate } from 'react-router-dom'
@@ -41,25 +41,8 @@ export function MenuSidebar({ visible, onHide }: Props) {
         { label: 'Protocolar', command: () => go('/para-protocolar') },
         { label: 'Protocolados', command: () => go('/protocolados') },
         { label: 'Segredo de Justiça', command: () => go('/segredo-justica') },
-        { label: 'Resultados', command: () => go('/resultados') },
-        { label: 'Perdas', command: () => go('/perdas') },
       ],
     },
-    {
-      label: 'Resultados',
-      icon: 'pi pi-chart-line',
-      items: [
-        {
-          label: 'Resultados',
-          command: () => go('/resultados'),
-        },
-        {
-          label: 'Perdas',
-          command: () => go('/perdas'),
-        },
-      ],
-    },
-
     {
       label: 'Resultados',
       icon: 'pi pi-chart-line',
@@ -68,7 +51,6 @@ export function MenuSidebar({ visible, onHide }: Props) {
         { label: 'Perdas', command: () => go('/perdas') },
       ],
     },
-    // 👇 adiciona este bloco novo
     {
       label: 'Relatórios',
       icon: 'pi pi-file-pdf',
@@ -77,27 +59,14 @@ export function MenuSidebar({ visible, onHide }: Props) {
         { label: 'Relatório Consolidado', command: () => go('/relatorios/consolidado') },
       ],
     },
-
     {
       label: 'Admin',
       icon: 'pi pi-cog',
       items: [
-        {
-          label: 'Relatórios',
-          command: () => go('/relatorios'),
-        },
-        {
-          label: 'Usuários',
-          command: () => go('/usuarios'),
-        },
-        {
-          label: 'Configurações',
-          command: () => go('/configuracoes'),
-        },
-        {
-          label: 'Logs',
-          command: () => go('/logs'),
-        },
+        { label: 'Relatórios', command: () => go('/relatorios') },
+        { label: 'Usuários', command: () => go('/usuarios') },
+        { label: 'Configurações', command: () => go('/configuracoes') },
+        { label: 'Logs', command: () => go('/logs') },
       ],
     },
   ]
@@ -110,10 +79,7 @@ export function MenuSidebar({ visible, onHide }: Props) {
       showCloseIcon={false}
     >
       <div className="flex flex-column justify-content-between h-full">
-
-        {/* TOPO */}
         <div>
-
           <Button
             icon="pi pi-arrow-circle-left"
             label="Voltar"
@@ -125,7 +91,6 @@ export function MenuSidebar({ visible, onHide }: Props) {
           <PanelMenu model={items} multiple />
         </div>
 
-        {/* RODAPÉ */}
         <div className="mt-4">
           <Button
             icon="pi pi-sign-out"
@@ -138,7 +103,6 @@ export function MenuSidebar({ visible, onHide }: Props) {
             }}
           />
         </div>
-
       </div>
     </Sidebar>
   )

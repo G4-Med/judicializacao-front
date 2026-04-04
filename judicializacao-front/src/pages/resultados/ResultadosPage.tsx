@@ -23,6 +23,7 @@ interface ResultadoProcesso {
   valorOrcamento: number;
   valorGanho: number;
   dataPedido: string | null;
+  dataResultado?: string | null;
   dias: number;
   statusProcesso: string;
   statusPerda: string;
@@ -86,6 +87,7 @@ const carregarDados = () => {
           valorOrcamento,
           valorGanho: o.valorGanho ?? 0,
           dataPedido: o.dataPedido,
+          dataResultado: o.dataResultado ?? null,
           dias: o.dias ?? 0,
           statusProcesso: o.statusProcesso ?? '',
           statusPerda: o.statusPerda ?? '',
@@ -95,7 +97,7 @@ const carregarDados = () => {
           cliente: medico?.razaoSocial ?? '',
           valor: valorOrcamento,
           numeroProcesso: o.nprocesso ?? '',
-          dataProtocolo: o.dataPedido ?? '',
+          dataProtocolo: o.dataResultado ?? '',
           status: o.statusProcesso ?? '',
           resultado: o.statusProcesso === 'Ganho' ? 'Ganho' : 'Perda',
         };
@@ -111,12 +113,13 @@ useEffect(() => { carregarDados(); }, []);
 
 
   const dataComCamposCalculados = useMemo<ResultadoProcessoTableRow[]>(() => {
-    const hoje = new Date();
-
     return registros.map((item, index) => {
-      const dataBase = new Date(`${item.dataProtocolo}T00:00:00`);
-      const diferencaMs = hoje.getTime() - dataBase.getTime();
-      const dias = Math.max(0, Math.floor(diferencaMs / (1000 * 60 * 60 * 24)));
+      const dataPedido = item.dataPedido ? new Date(`${item.dataPedido}T00:00:00`) : null;
+      const dataResultado = item.dataResultado ? new Date(`${item.dataResultado}T00:00:00`) : null;
+      const dias =
+        dataPedido && dataResultado
+          ? Math.max(0, Math.floor((dataResultado.getTime() - dataPedido.getTime()) / (1000 * 60 * 60 * 24)))
+          : 0;
 
       return {
         ...item,

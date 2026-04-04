@@ -1,4 +1,4 @@
-import { PanelMenu } from 'primereact/panelmenu'
+﻿import { PanelMenu } from 'primereact/panelmenu'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 export function Menu() {
@@ -58,18 +58,6 @@ export function Menu() {
           command: () => navigate('/segredo-justica'),
           className: location.pathname === '/segredo-justica' ? 'menu-active-item' : '',
         },
-        {
-          label: 'Resultados',
-          icon: 'pi pi-angle-right',
-          command: () => navigate('/resultados'),
-          className: location.pathname === '/resultados' ? 'menu-active-item' : '',
-        },
-        {
-          label: 'Perdas',
-          icon: 'pi pi-angle-right',
-          command: () => navigate('/perdas'),
-          className: location.pathname === '/perdas' ? 'menu-active-item' : '',
-        },
       ],
     },
     {
@@ -90,26 +78,6 @@ export function Menu() {
         },
       ],
     },
-    
-    {
-      label: 'Resultados',
-      icon: 'pi pi-chart-line',
-      items: [
-        {
-          label: 'Resultados',
-          icon: 'pi pi-angle-right',
-          command: () => navigate('/resultados'),
-          className: location.pathname === '/resultados' ? 'menu-active-item' : '',
-        },
-        {
-          label: 'Perdas',
-          icon: 'pi pi-angle-right',
-          command: () => navigate('/perdas'),
-          className: location.pathname === '/perdas' ? 'menu-active-item' : '',
-        },
-      ],
-    },
-    // 👇 adiciona este bloco novo
     {
       label: 'Relatórios',
       icon: 'pi pi-file-pdf',
@@ -128,7 +96,6 @@ export function Menu() {
         },
       ],
     },
-
     {
       label: 'Admin',
       icon: 'pi pi-cog',
