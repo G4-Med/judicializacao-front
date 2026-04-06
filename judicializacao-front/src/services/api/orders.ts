@@ -1,4 +1,4 @@
-import api from './../api';
+﻿import api from './../api';
 
 
 export const getOrders = () => api.get('/orders/listar/');
@@ -20,6 +20,34 @@ export const adicionarAcompanhamento = (id: number, data: any) => api.post(`/ord
 export const getResultados = () => api.get('/orders/resultados/');
 export const getPerdas = () => api.get('/orders/perdas/');
 export const getMedicosCompleto = () => api.get('client/medico-completo/lista/');
+export const getEmailsPendentes = (params?: { status?: string; tipoEmail?: string }) =>
+  api.get('/orders/emails/', { params });
+export const getEmailsPendentesKpis = () => api.get('/orders/emails/kpis/');
+export const getEmailsPendentesCount = () => api.get('/orders/emails/pendentes-count/');
+export const enviarEmailPendente = (id: number) => api.post(`/orders/emails/${id}/enviar/`);
+export const enviarEmailsPendentesLote = (ids: number[]) => api.post('/orders/emails/enviar-lote/', { ids });
+export const enviarEmailDireto = (payload: {
+  emailPendenteId?: number;
+  destinatario: string;
+  assunto: string;
+  corpo: string;
+  anexoUrl?: string;
+}) => api.post('/emails/enviar/', payload);
+export const getConfiguracoesEmails = () => api.get('/emails/configuracoes/');
+export const salvarConfiguracaoEmail = (payload: {
+  tipoEmail: string;
+  assunto: string;
+  corpo: string;
+  ativo?: boolean;
+}) => api.post('/emails/configuracoes/', payload);
+export const atualizarConfiguracaoEmail = (
+  id: number,
+  payload: {
+    assunto?: string;
+    corpo?: string;
+    ativo?: boolean;
+  }
+) => api.patch(`/emails/configuracoes/${id}/`, payload);
 export function enviarOrcamentoArquivo(orderId: number, valorTotal: number) {
   return api.post('/api/orcamento/arquivo/', { orderId, valorTotal })
 }
@@ -54,4 +82,3 @@ export const uploadArquivoIntegracao = (file: File) => {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
 };
-

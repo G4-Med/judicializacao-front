@@ -9,142 +9,224 @@ import { Column } from 'primereact/column';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
+import { Password } from 'primereact/password';
 import { FilterMatchMode } from 'primereact/api';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { InputSwitch } from 'primereact/inputswitch';
+import {
+  criarUsuario,
+  editarUsuario,
+  getGruposUsuarios,
+  getMedicosUsuario,
+  getUsuarios,
+  type UsuarioPayload
+} from '../../services/api/usuarios';
+import { getMedicosCompleto } from '../../services/api/orders';
 import './UsuariosPage.css';
 
-interface Usuario {
+interface ApiUsuario {
   id: number;
-  nomeUsuario: string;
-  emailAcesso: string;
-  permissao: string;
-  status: boolean;
-  primeiroAcesso: boolean;
-  dataCriacao: string;
-  dataAlteracao: string;
-  medicosVinculados: number[];
+  username?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  is_active?: boolean;
+  is_staff?: boolean;
+  is_superuser?: boolean;
+  date_joined?: string;
+  last_login?: string | null;
+  group?: { id: number; name: string } | null;
+  group_id?: number | null;
+  group_name?: string | null;
+  medico?: { id: number; nome?: string } | null;
+  medico_id?: number | null;
+  medico_nome?: string | null;
 }
 
-interface UsuarioTableRow extends Usuario {
+interface ApiGrupo {
+  id: number;
+  name: string;
+}
+
+interface ApiMedico {
+  id: number;
+  nomeSistema?: string;
+  razaoSocial?: string;
+  nome?: string;
+  ativo?: boolean;
+  status?: boolean | string;
+}
+
+interface UsuarioRow {
+  id: number;
   sequencial: number;
+  username: string;
+  nomeCompleto: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  isActive: boolean;
+  isStaff: boolean;
+  isSuperuser: boolean;
+  groupId: number | null;
+  groupName: string;
+  medicoId: number | null;
+  medicoNome: string;
+  dateJoined: string | null;
+  lastLogin: string | null;
 }
 
-interface MedicoVinculo {
-  id: number;
-  nome: string;
-  especialidade: string;
-  ativo: boolean;
+interface FormUsuario {
+  id: number | null;
+  username: string;
+  password: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  isActive: boolean;
+  isStaff: boolean;
+  isSuperuser: boolean;
+  groupId: number | null;
+  medicoId: number | null;
+}
+
+const formVazio: FormUsuario = {
+  id: null,
+  username: '',
+  password: '',
+  email: '',
+  firstName: '',
+  lastName: '',
+  isActive: true,
+  isStaff: false,
+  isSuperuser: false,
+  groupId: null,
+  medicoId: null
+};
+
+function nomeMedico(m: ApiMedico) {
+  return m.nomeSistema || m.razaoSocial || m.nome || `Médico ${m.id}`;
+}
+
+function formatarDataHora(value?: string | null) {
+  if (!value) return '--';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '--';
+  return d.toLocaleString('pt-BR');
 }
 
 export function UsuariosPage() {
   const [loading, setLoading] = useState(false);
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [selectedUsuarios, setSelectedUsuarios] = useState<UsuarioTableRow[]>([]);
+  const [usuarios, setUsuarios] = useState<UsuarioRow[]>([]);
+  const [grupos, setGrupos] = useState<ApiGrupo[]>([]);
+  const [medicos, setMedicos] = useState<ApiMedico[]>([]);
+
+  const [selectedUsuarios, setSelectedUsuarios] = useState<UsuarioRow[]>([]);
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>(undefined);
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
-    nomeUsuario: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    emailAcesso: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    permissao: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    status: { value: '', matchMode: FilterMatchMode.CONTAINS }
+    nomeCompleto: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    username: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    email: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    groupName: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    medicoNome: { value: '', matchMode: FilterMatchMode.CONTAINS }
   });
 
-  const [editDialogVisible, setEditDialogVisible] = useState(false);
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogModo, setDialogModo] = useState<'criar' | 'editar'>('criar');
+  const [form, setForm] = useState<FormUsuario>(formVazio);
+  const [salvando, setSalvando] = useState(false);
+
   const [vincularDialogVisible, setVincularDialogVisible] = useState(false);
+  const [usuarioVinculando, setUsuarioVinculando] = useState<UsuarioRow | null>(null);
+  const [medicosVinculados, setMedicosVinculados] = useState<number[]>([]);
+  const [carregandoVinculos, setCarregandoVinculos] = useState(false);
+  const [salvandoVinculo, setSalvandoVinculo] = useState(false);
 
-  const [usuarioEditando, setUsuarioEditando] = useState<UsuarioTableRow | null>(null);
-  const [usuarioVinculando, setUsuarioVinculando] = useState<UsuarioTableRow | null>(null);
+  const grupoOptions = useMemo(
+    () => grupos.map((g) => ({ label: g.name, value: g.id })),
+    [grupos]
+  );
 
-  const [medicosDisponiveis, setMedicosDisponiveis] = useState<MedicoVinculo[]>([]);
-  const [medicosSelecionados, setMedicosSelecionados] = useState<number[]>([]);
+  const medicoOptions = useMemo(
+    () => [
+      { label: 'Sem vínculo', value: null },
+      ...medicos.map((m) => ({ label: nomeMedico(m), value: m.id }))
+    ],
+    [medicos]
+  );
 
-  const permissaoOptions = [
-    { label: 'Administrador', value: 'Administrador' },
-    { label: 'Jurídico', value: 'Jurídico' },
-    { label: 'Financeiro', value: 'Financeiro' },
-    { label: 'Operacional', value: 'Operacional' }
-  ];
-
-  useEffect(() => {
-    setLoading(true);
-
-    const mockUsuarios: Usuario[] = [
-      {
-        id: 1,
-        nomeUsuario: 'Yagoo Pereira',
-        emailAcesso: 'yagoo@g4med.com',
-        permissao: 'Administrador',
-        status: true,
-        primeiroAcesso: true,
-        dataCriacao: '2026-03-01',
-        dataAlteracao: '2026-03-15',
-        medicosVinculados: [1, 2]
-      },
-      {
-        id: 2,
-        nomeUsuario: 'Isabela Rocha',
-        emailAcesso: 'isabela@g4med.com',
-        permissao: 'Jurídico',
-        status: true,
-        primeiroAcesso: false,
-        dataCriacao: '2026-03-03',
-        dataAlteracao: '2026-03-11',
-        medicosVinculados: [2]
-      },
-      {
-        id: 3,
-        nomeUsuario: 'Bruno Alves',
-        emailAcesso: 'bruno@g4med.com',
-        permissao: 'Operacional',
-        status: false,
-        primeiroAcesso: false,
-        dataCriacao: '2026-03-05',
-        dataAlteracao: '2026-03-08',
-        medicosVinculados: []
-      }
-    ];
-
-    const mockMedicos: MedicoVinculo[] = [
-      { id: 1, nome: 'Dr. Bruno Fajardo', especialidade: 'Ortopedia', ativo: true },
-      { id: 2, nome: 'Dr. Vitor Groppo', especialidade: 'Cardiologia', ativo: true },
-      { id: 3, nome: 'IBG Saúde', especialidade: 'Neurocirurgia', ativo: true },
-      { id: 4, nome: 'Clínica Prisma', especialidade: 'Cirurgia Geral', ativo: false }
-    ];
-
-    const timer = setTimeout(() => {
-      setUsuarios(mockUsuarios);
-      setMedicosDisponiveis(mockMedicos);
-      setLoading(false);
-    }, 400);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  const dataComSequencial = useMemo<UsuarioTableRow[]>(() => {
-    return usuarios.map((item, index) => ({
-      ...item,
-      sequencial: index + 1
-    }));
-  }, [usuarios]);
-
-  const kpis = useMemo(() => {
-    const totalUsuarios = dataComSequencial.length;
-    const usuariosAtivos = dataComSequencial.filter((item) => item.status).length;
-    const usuariosInativos = dataComSequencial.filter((item) => !item.status).length;
-    const semPrimeiraConexao = dataComSequencial.filter((item) => !item.primeiroAcesso).length;
+  const mapUsuario = (u: ApiUsuario, index: number): UsuarioRow => {
+    const groupId = u.group?.id ?? u.group_id ?? null;
+    const groupName = u.group?.name ?? u.group_name ?? '--';
+    const medicoId = u.medico?.id ?? u.medico_id ?? null;
+    const medicoNomeVal = u.medico?.nome ?? u.medico_nome ?? '';
+    const first = u.first_name ?? '';
+    const last = u.last_name ?? '';
+    const nomeCompleto = `${first} ${last}`.trim() || u.username || `Usuário ${u.id}`;
 
     return {
-      totalUsuarios,
-      usuariosAtivos,
-      usuariosInativos,
-      semPrimeiraConexao
+      id: u.id,
+      sequencial: index + 1,
+      username: u.username ?? '',
+      nomeCompleto,
+      email: u.email ?? '',
+      firstName: first,
+      lastName: last,
+      isActive: u.is_active ?? true,
+      isStaff: u.is_staff ?? false,
+      isSuperuser: u.is_superuser ?? false,
+      groupId,
+      groupName,
+      medicoId,
+      medicoNome: medicoNomeVal || (medicoId ? `Médico ${medicoId}` : '--'),
+      dateJoined: u.date_joined ?? null,
+      lastLogin: u.last_login ?? null
     };
-  }, [dataComSequencial]);
+  };
+
+  const carregarDados = async () => {
+    setLoading(true);
+    try {
+      const [usuariosRes, gruposRes, medicosRes] = await Promise.all([
+        getUsuarios(),
+        getGruposUsuarios(),
+        getMedicosCompleto()
+      ]);
+
+      const lista: ApiUsuario[] = Array.isArray(usuariosRes.data)
+        ? usuariosRes.data
+        : usuariosRes.data?.results ?? [];
+      setUsuarios(lista.map(mapUsuario));
+
+      const gruposLista: ApiGrupo[] = Array.isArray(gruposRes.data)
+        ? gruposRes.data
+        : gruposRes.data?.results ?? [];
+      setGrupos(gruposLista);
+
+      setMedicos(((medicosRes.data as ApiMedico[]) ?? []) || []);
+    } catch (error) {
+      console.error('Erro ao carregar usuários', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void carregarDados();
+  }, []);
+
+  const kpis = useMemo(() => {
+    const total = usuarios.length;
+    const ativos = usuarios.filter((u) => u.isActive).length;
+    const inativos = total - ativos;
+    const semLogin = usuarios.filter((u) => !u.lastLogin).length;
+    return { total, ativos, inativos, semLogin };
+  }, [usuarios]);
 
   const onPage = (event: DataTablePageEvent) => {
     setFirst(event.first);
@@ -156,96 +238,158 @@ export function UsuariosPage() {
     setSortOrder(event.sortOrder);
   };
 
-  const formatarData = (data: string) => {
-    const [ano, mes, dia] = data.split('-');
-    return `${dia}/${mes}/${ano}`;
+  const abrirCriar = () => {
+    setDialogModo('criar');
+    setForm({ ...formVazio });
+    setDialogVisible(true);
   };
 
-  const getStatusTag = (ativo: boolean) => {
-    return (
-      <Tag
-        value={ativo ? 'Ativo' : 'Inativo'}
-        severity={ativo ? 'success' : 'danger'}
-      />
-    );
-  };
-
-  const editarBodyTemplate = (rowData: UsuarioTableRow) => {
-    return (
-      <Button
-        icon="pi pi-pencil"
-        rounded
-        outlined
-        severity="secondary"
-        aria-label={`Editar usuário ${rowData.id}`}
-        onClick={() => {
-          setUsuarioEditando({ ...rowData });
-          setEditDialogVisible(true);
-        }}
-      />
-    );
-  };
-
-  const vincularBodyTemplate = (rowData: UsuarioTableRow) => {
-    return (
-      <Button
-        label="Vincular Médicos"
-        icon="pi pi-link"
-        outlined
-        onClick={() => {
-          setUsuarioVinculando({ ...rowData });
-          setMedicosSelecionados([...rowData.medicosVinculados]);
-          setVincularDialogVisible(true);
-        }}
-      />
-    );
-  };
-
-  const filterElement = (options: any, placeholder: string) => {
-    return (
-      <InputText
-        value={options.value || ''}
-        onChange={(e) => options.filterApplyCallback(e.target.value)}
-        placeholder={placeholder}
-        className="p-column-filter"
-      />
-    );
-  };
-
-  const updateUsuarioEditando = (field: keyof UsuarioTableRow, value: any) => {
-    if (!usuarioEditando) return;
-
-    setUsuarioEditando({
-      ...usuarioEditando,
-      [field]: value
+  const abrirEditar = (row: UsuarioRow) => {
+    setDialogModo('editar');
+    setForm({
+      id: row.id,
+      username: row.username,
+      password: '',
+      email: row.email,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      isActive: row.isActive,
+      isStaff: row.isStaff,
+      isSuperuser: row.isSuperuser,
+      groupId: row.groupId,
+      medicoId: row.medicoId
     });
+    setDialogVisible(true);
   };
 
-  const handleSalvarEdicao = () => {
-    if (!usuarioEditando) return;
-
-    console.log('Salvar usuário:', usuarioEditando);
-    setEditDialogVisible(false);
+  const updateForm = <K extends keyof FormUsuario>(field: K, value: FormUsuario[K]) => {
+    setForm((atual) => ({ ...atual, [field]: value }));
   };
 
-  const handleToggleMedico = (medicoId: number) => {
-    setMedicosSelecionados((prev) =>
-      prev.includes(medicoId)
-        ? prev.filter((id) => id !== medicoId)
-        : [...prev, medicoId]
+  const handleSalvar = async () => {
+    if (!form.username.trim()) {
+      alert('Informe o nome de usuário.');
+      return;
+    }
+    if (dialogModo === 'criar' && !form.password.trim()) {
+      alert('Informe uma senha para o novo usuário.');
+      return;
+    }
+
+    const payload: UsuarioPayload = {
+      username: form.username.trim(),
+      email: form.email.trim(),
+      first_name: form.firstName.trim(),
+      last_name: form.lastName.trim(),
+      is_active: form.isActive,
+      is_staff: form.isStaff,
+      is_superuser: form.isSuperuser,
+      group_id: form.groupId,
+      medico_id: form.medicoId
+    };
+
+    if (form.password.trim()) {
+      payload.password = form.password;
+    }
+
+    setSalvando(true);
+    try {
+      if (dialogModo === 'criar') {
+        await criarUsuario(payload);
+      } else if (form.id != null) {
+        await editarUsuario(form.id, payload);
+      }
+      setDialogVisible(false);
+      await carregarDados();
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.error ??
+        err?.response?.data?.detail ??
+        err?.response?.data?.message ??
+        'Erro ao salvar usuário.';
+      alert(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const medicosAtivos = useMemo(
+    () =>
+      medicos.filter((m) => {
+        if (typeof m.ativo === 'boolean') return m.ativo;
+        if (typeof m.status === 'boolean') return m.status;
+        if (typeof m.status === 'string') return m.status.toLowerCase() === 'ativo';
+        return true;
+      }),
+    [medicos]
+  );
+
+  const abrirVincular = async (row: UsuarioRow) => {
+    setUsuarioVinculando(row);
+    setVincularDialogVisible(true);
+    setMedicosVinculados(row.medicoId ? [row.medicoId] : []);
+    setCarregandoVinculos(true);
+    try {
+      const res = await getMedicosUsuario(row.id);
+      const lista = Array.isArray(res.data) ? res.data : res.data?.results ?? [];
+      const ids = lista
+        .map((item: any) => item?.id ?? item?.medico_id ?? item?.medico?.id)
+        .filter((id: any): id is number => typeof id === 'number');
+      setMedicosVinculados(ids);
+    } catch (error) {
+      console.error('Erro ao carregar vínculos do usuário', error);
+    } finally {
+      setCarregandoVinculos(false);
+    }
+  };
+
+  const toggleMedicoVinculo = (medicoId: number) => {
+    setMedicosVinculados((atual) =>
+      atual.includes(medicoId) ? atual.filter((id) => id !== medicoId) : [...atual, medicoId]
     );
   };
 
-  const handleSalvarVinculos = () => {
+  const handleSalvarVinculo = async () => {
     if (!usuarioVinculando) return;
-
-    console.log('Salvar vínculos:', {
-      usuario: usuarioVinculando,
-      medicosSelecionados
-    });
-
-    setVincularDialogVisible(false);
+    setSalvandoVinculo(true);
+    try {
+      await editarUsuario(usuarioVinculando.id, { medico_ids: medicosVinculados });
+      setVincularDialogVisible(false);
+      await carregarDados();
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.error ??
+        err?.response?.data?.detail ??
+        'Erro ao salvar vínculo.';
+      alert(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    } finally {
+      setSalvandoVinculo(false);
+    }
   };
+
+  const filterElement = (options: any, placeholder: string) => (
+    <InputText
+      value={options.value || ''}
+      onChange={(e) => options.filterApplyCallback(e.target.value)}
+      placeholder={placeholder}
+      className="p-column-filter"
+    />
+  );
+
+  const statusBody = (row: UsuarioRow) => (
+    <Tag value={row.isActive ? 'Ativo' : 'Inativo'} severity={row.isActive ? 'success' : 'danger'} />
+  );
+
+  const editarBody = (row: UsuarioRow) => (
+    <Button
+      icon="pi pi-pencil"
+      rounded
+      outlined
+      severity="secondary"
+      aria-label={`Editar usuário ${row.id}`}
+      onClick={() => abrirEditar(row)}
+    />
+  );
 
   return (
     <div className="usuarios-page">
@@ -256,10 +400,7 @@ export function UsuariosPage() {
         </div>
 
         <div className="page-actions">
-          <Button
-            label="Novo Usuário"
-            icon="pi pi-plus"
-          />
+          <Button label="Novo Usuário" icon="pi pi-plus" onClick={abrirCriar} />
         </div>
       </div>
 
@@ -269,7 +410,7 @@ export function UsuariosPage() {
             <span>Total Usuários</span>
             <i className="pi pi-users"></i>
           </div>
-          <div className="kpi-value">{kpis.totalUsuarios}</div>
+          <div className="kpi-value">{kpis.total}</div>
         </div>
 
         <div className="kpi-card">
@@ -277,7 +418,7 @@ export function UsuariosPage() {
             <span>Usuários Ativos</span>
             <i className="pi pi-check-circle"></i>
           </div>
-          <div className="kpi-value">{kpis.usuariosAtivos}</div>
+          <div className="kpi-value">{kpis.ativos}</div>
         </div>
 
         <div className="kpi-card">
@@ -285,26 +426,26 @@ export function UsuariosPage() {
             <span>Usuários Inativos</span>
             <i className="pi pi-times-circle"></i>
           </div>
-          <div className="kpi-value">{kpis.usuariosInativos}</div>
+          <div className="kpi-value">{kpis.inativos}</div>
         </div>
 
         <div className="kpi-card">
           <div className="kpi-header">
-            <span>Sem Primeira Conexão</span>
+            <span>Sem Primeiro Acesso</span>
             <i className="pi pi-sign-in"></i>
           </div>
-          <div className="kpi-value">{kpis.semPrimeiraConexao}</div>
+          <div className="kpi-value">{kpis.semLogin}</div>
         </div>
       </div>
 
       <div className="card">
         <DataTable
-          value={dataComSequencial}
+          value={usuarios}
           dataKey="id"
           paginator
           rows={rows}
           first={first}
-          totalRecords={dataComSequencial.length}
+          totalRecords={usuarios.length}
           onPage={onPage}
           sortField={sortField}
           sortOrder={sortOrder}
@@ -315,68 +456,93 @@ export function UsuariosPage() {
           loading={loading}
           selectionMode="multiple"
           selection={selectedUsuarios}
-          onSelectionChange={(e) => setSelectedUsuarios(e.value as UsuarioTableRow[])}
+          onSelectionChange={(e) => setSelectedUsuarios(e.value as UsuarioRow[])}
           tableStyle={{ minWidth: '90rem' }}
           emptyMessage="Nenhum usuário encontrado."
           className="usuarios-table"
         >
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
 
+          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
+
           <Column
-            field="sequencial"
-            header="#"
+            field="nomeCompleto"
+            header="Nome"
             sortable
-            style={{ minWidth: '4rem' }}
-            body={(rowData: UsuarioTableRow) => rowData.sequencial}
+            filter
+            filterElement={(o) => filterElement(o, 'Buscar')}
+            style={{ minWidth: '16rem' }}
           />
 
           <Column
-            field="nomeUsuario"
-            header="Nome Usuário"
+            field="username"
+            header="Usuário"
             sortable
             filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
-            style={{ minWidth: '18rem' }}
-          />
-
-          <Column
-            field="emailAcesso"
-            header="Email Acesso"
-            sortable
-            filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
-            style={{ minWidth: '18rem' }}
-          />
-
-          <Column
-            field="permissao"
-            header="Permissão"
-            sortable
-            filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
+            filterElement={(o) => filterElement(o, 'Buscar')}
             style={{ minWidth: '12rem' }}
           />
 
           <Column
-            field="status"
-            header="Status"
+            field="email"
+            header="Email"
             sortable
             filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
-            body={(rowData: UsuarioTableRow) => getStatusTag(rowData.status)}
-            style={{ minWidth: '10rem' }}
+            filterElement={(o) => filterElement(o, 'Buscar')}
+            style={{ minWidth: '18rem' }}
+          />
+
+          <Column
+            field="groupName"
+            header="Grupo"
+            sortable
+            filter
+            filterElement={(o) => filterElement(o, 'Buscar')}
+            style={{ minWidth: '12rem' }}
+          />
+
+          <Column
+            field="medicoNome"
+            header="Médico vinculado"
+            sortable
+            filter
+            filterElement={(o) => filterElement(o, 'Buscar')}
+            style={{ minWidth: '16rem' }}
+          />
+
+          <Column
+            field="isActive"
+            header="Status"
+            sortable
+            body={statusBody}
+            style={{ minWidth: '8rem' }}
+          />
+
+          <Column
+            field="lastLogin"
+            header="Último acesso"
+            sortable
+            body={(row: UsuarioRow) => formatarDataHora(row.lastLogin)}
+            style={{ minWidth: '12rem' }}
           />
 
           <Column
             header="Editar"
-            body={editarBodyTemplate}
+            body={editarBody}
             style={{ minWidth: '7rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
 
           <Column
-            header="Vincular Médicos"
-            body={vincularBodyTemplate}
+            header="Vincular Médico"
+            body={(row: UsuarioRow) => (
+              <Button
+                label="Vincular"
+                icon="pi pi-link"
+                outlined
+                onClick={() => void abrirVincular(row)}
+              />
+            )}
             style={{ minWidth: '12rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
@@ -384,61 +550,137 @@ export function UsuariosPage() {
       </div>
 
       <Dialog
-        header="Editar Usuário"
-        visible={editDialogVisible}
-        style={{ width: '50rem', maxWidth: '95vw' }}
+        header={dialogModo === 'criar' ? 'Novo Usuário' : 'Editar Usuário'}
+        visible={dialogVisible}
+        style={{ width: '54rem', maxWidth: '95vw' }}
         modal
-        onHide={() => setEditDialogVisible(false)}
+        onHide={() => setDialogVisible(false)}
         className="usuario-edit-dialog"
       >
-        {usuarioEditando && (
-          <div className="usuario-form-grid">
-            <div className="field field-span-2">
-              <label>Nome Usuário</label>
-              <InputText
-                value={usuarioEditando.nomeUsuario}
-                onChange={(e) => updateUsuarioEditando('nomeUsuario', e.target.value)}
+        <div className="usuario-form-grid">
+          <div className="field">
+            <label>Nome</label>
+            <InputText value={form.firstName} onChange={(e) => updateForm('firstName', e.target.value)} />
+          </div>
+
+          <div className="field">
+            <label>Sobrenome</label>
+            <InputText value={form.lastName} onChange={(e) => updateForm('lastName', e.target.value)} />
+          </div>
+
+          <div className="field">
+            <label>Usuário</label>
+            <InputText value={form.username} onChange={(e) => updateForm('username', e.target.value)} />
+          </div>
+
+          <div className="field">
+            <label>Email</label>
+            <InputText value={form.email} onChange={(e) => updateForm('email', e.target.value)} />
+          </div>
+
+          <div className="field field-span-2">
+            <label>{dialogModo === 'criar' ? 'Senha' : 'Nova senha (deixe em branco para manter)'}</label>
+            <Password
+              value={form.password}
+              onChange={(e) => updateForm('password', e.target.value)}
+              feedback={false}
+              toggleMask
+              inputStyle={{ width: '100%' }}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          <div className="field">
+            <label>Grupo</label>
+            <Dropdown
+              value={form.groupId}
+              options={grupoOptions}
+              onChange={(e) => updateForm('groupId', e.value)}
+              placeholder="Selecione um grupo"
+              showClear
+            />
+          </div>
+
+          <div className="field">
+            <label>Médico vinculado</label>
+            <Dropdown
+              value={form.medicoId}
+              options={medicoOptions}
+              onChange={(e) => updateForm('medicoId', e.value)}
+              placeholder="Selecione um médico"
+              filter
+            />
+          </div>
+
+          <div className="field">
+            <label>Status</label>
+            <div className="status-switch-box">
+              <InputSwitch checked={form.isActive} onChange={(e) => updateForm('isActive', !!e.value)} />
+              <span>{form.isActive ? 'Ativo' : 'Inativo'}</span>
+            </div>
+          </div>
+
+          <div className="field">
+            <label>Permissões internas</label>
+            <div className="status-switch-box">
+              <InputSwitch checked={form.isStaff} onChange={(e) => updateForm('isStaff', !!e.value)} />
+              <span>Staff</span>
+            </div>
+            <div className="status-switch-box">
+              <InputSwitch
+                checked={form.isSuperuser}
+                onChange={(e) => updateForm('isSuperuser', !!e.value)}
               />
+              <span>Superusuário</span>
             </div>
+          </div>
+        </div>
 
-            <div className="field field-span-2">
-              <label>Email Acesso</label>
-              <InputText
-                value={usuarioEditando.emailAcesso}
-                onChange={(e) => updateUsuarioEditando('emailAcesso', e.target.value)}
-              />
-            </div>
+        <div className="dialog-footer-actions">
+          <Button label="Cancelar" outlined onClick={() => setDialogVisible(false)} disabled={salvando} />
+          <Button
+            label={salvando ? 'Salvando...' : 'Salvar'}
+            icon="pi pi-check"
+            loading={salvando}
+            onClick={() => void handleSalvar()}
+          />
+        </div>
+      </Dialog>
 
-            <div className="field">
-              <label>Permissão</label>
-              <Dropdown
-                value={usuarioEditando.permissao}
-                options={permissaoOptions}
-                onChange={(e) => updateUsuarioEditando('permissao', e.value)}
-                placeholder="Selecione"
-              />
-            </div>
-
-            <div className="field">
-              <label>Status</label>
-              <div className="status-switch-box">
-                <InputSwitch
-                  checked={usuarioEditando.status}
-                  onChange={(e) => updateUsuarioEditando('status', e.value)}
-                />
-                <span>{usuarioEditando.status ? 'Ativo' : 'Inativo'}</span>
-              </div>
-            </div>
-
-            <div className="field">
-              <label>Data de Criação</label>
-              <InputText value={formatarData(usuarioEditando.dataCriacao)} disabled />
-            </div>
-
-            <div className="field">
-              <label>Data de Alteração</label>
-              <InputText value={formatarData(usuarioEditando.dataAlteracao)} disabled />
-            </div>
+      <Dialog
+        header={`Vincular Médico${usuarioVinculando ? ` - ${usuarioVinculando.nomeCompleto}` : ''}`}
+        visible={vincularDialogVisible}
+        style={{ width: '48rem', maxWidth: '95vw' }}
+        modal
+        onHide={() => setVincularDialogVisible(false)}
+        className="usuario-vinculo-dialog"
+      >
+        {carregandoVinculos ? (
+          <div style={{ padding: '1rem' }}>Carregando vínculos...</div>
+        ) : (
+          <div className="medicos-vinculo-lista">
+            {medicosAtivos.length === 0 ? (
+              <div style={{ padding: '1rem' }}>Nenhum médico ativo cadastrado.</div>
+            ) : (
+              medicosAtivos.map((medico) => {
+                const checked = medicosVinculados.includes(medico.id);
+                return (
+                  <label key={medico.id} className="medico-vinculo-item">
+                    <div className="medico-vinculo-left">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleMedicoVinculo(medico.id)}
+                      />
+                      <div className="medico-vinculo-info">
+                        <strong>{nomeMedico(medico)}</strong>
+                      </div>
+                    </div>
+                    <Tag value="Ativo" severity="success" />
+                  </label>
+                );
+              })
+            )}
           </div>
         )}
 
@@ -446,62 +688,14 @@ export function UsuariosPage() {
           <Button
             label="Cancelar"
             outlined
-            onClick={() => setEditDialogVisible(false)}
-          />
-          <Button
-            label="Salvar"
-            icon="pi pi-check"
-            onClick={handleSalvarEdicao}
-          />
-        </div>
-      </Dialog>
-
-      <Dialog
-        header={`Vincular Médicos${usuarioVinculando ? ` - ${usuarioVinculando.nomeUsuario}` : ''}`}
-        visible={vincularDialogVisible}
-        style={{ width: '56rem', maxWidth: '95vw' }}
-        modal
-        onHide={() => setVincularDialogVisible(false)}
-        className="usuario-vinculo-dialog"
-      >
-        <div className="medicos-vinculo-lista">
-          {medicosDisponiveis.map((medico) => {
-            const checked = medicosSelecionados.includes(medico.id);
-
-            return (
-              <label key={medico.id} className="medico-vinculo-item">
-                <div className="medico-vinculo-left">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => handleToggleMedico(medico.id)}
-                  />
-
-                  <div className="medico-vinculo-info">
-                    <strong>{medico.nome}</strong>
-                    <span>{medico.especialidade}</span>
-                  </div>
-                </div>
-
-                <Tag
-                  value={medico.ativo ? 'Ativo' : 'Inativo'}
-                  severity={medico.ativo ? 'success' : 'danger'}
-                />
-              </label>
-            );
-          })}
-        </div>
-
-        <div className="dialog-footer-actions">
-          <Button
-            label="Cancelar"
-            outlined
             onClick={() => setVincularDialogVisible(false)}
+            disabled={salvandoVinculo}
           />
           <Button
-            label="Salvar Vínculos"
+            label={salvandoVinculo ? 'Salvando...' : 'Salvar Vínculo'}
             icon="pi pi-check"
-            onClick={handleSalvarVinculos}
+            loading={salvandoVinculo}
+            onClick={() => void handleSalvarVinculo()}
           />
         </div>
       </Dialog>

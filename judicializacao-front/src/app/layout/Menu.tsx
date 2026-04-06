@@ -7,10 +7,16 @@ export function Menu() {
 
   const items = [
     {
-      label: 'Dashboard',
+      label: 'Home',
       icon: 'pi pi-home',
+      command: () => navigate('/home'),
+      className: location.pathname === '/home' || location.pathname === '/' ? 'menu-active-item' : '',
+    },
+    {
+      label: 'Dashboard',
+      icon: 'pi pi-chart-bar',
       command: () => navigate('/dashboard'),
-      className: location.pathname === '/dashboard' || location.pathname === '/' ? 'menu-active-item' : '',
+      className: location.pathname === '/dashboard' ? 'menu-active-item' : '',
     },
     {
       label: 'Processos',
@@ -79,6 +85,12 @@ export function Menu() {
       ],
     },
     {
+      label: 'Emails',
+      icon: 'pi pi-envelope',
+      command: () => navigate('/emails'),
+      className: location.pathname === '/emails' ? 'menu-active-item' : '',
+    },
+    {
       label: 'Relatórios',
       icon: 'pi pi-file-pdf',
       items: [
@@ -101,12 +113,6 @@ export function Menu() {
       icon: 'pi pi-cog',
       items: [
         {
-          label: 'Relatórios',
-          icon: 'pi pi-angle-right',
-          command: () => navigate('/relatorios'),
-          className: location.pathname === '/relatorios' ? 'menu-active-item' : '',
-        },
-        {
           label: 'Usuários',
           icon: 'pi pi-angle-right',
           command: () => navigate('/usuarios'),
@@ -117,6 +123,12 @@ export function Menu() {
           icon: 'pi pi-angle-right',
           command: () => navigate('/configuracoes'),
           className: location.pathname === '/configuracoes' ? 'menu-active-item' : '',
+        },
+        {
+          label: 'Configurações Emails',
+          icon: 'pi pi-angle-right',
+          command: () => navigate('/configuracoes-emails'),
+          className: location.pathname === '/configuracoes-emails' ? 'menu-active-item' : '',
         },
         {
           label: 'Logs',

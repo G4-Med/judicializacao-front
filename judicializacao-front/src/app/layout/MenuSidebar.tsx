@@ -18,8 +18,13 @@ export function MenuSidebar({ visible, onHide }: Props) {
 
   const items = [
     {
-      label: 'Dashboard',
+      label: 'Home',
       icon: 'pi pi-home',
+      command: () => go('/home'),
+    },
+    {
+      label: 'Dashboard',
+      icon: 'pi pi-chart-bar',
       command: () => go('/dashboard'),
     },
     {
@@ -52,6 +57,11 @@ export function MenuSidebar({ visible, onHide }: Props) {
       ],
     },
     {
+      label: 'Emails',
+      icon: 'pi pi-envelope',
+      command: () => go('/emails'),
+    },
+    {
       label: 'Relatórios',
       icon: 'pi pi-file-pdf',
       items: [
@@ -63,9 +73,9 @@ export function MenuSidebar({ visible, onHide }: Props) {
       label: 'Admin',
       icon: 'pi pi-cog',
       items: [
-        { label: 'Relatórios', command: () => go('/relatorios') },
         { label: 'Usuários', command: () => go('/usuarios') },
         { label: 'Configurações', command: () => go('/configuracoes') },
+        { label: 'Configurações Emails', command: () => go('/configuracoes-emails') },
         { label: 'Logs', command: () => go('/logs') },
       ],
     },

@@ -71,7 +71,7 @@ const LoginForms = ({ view, toggleView }: LoginFormsProps) => {
 
     try {
       await login(username, password);
-      navigate('/dashboard');
+      navigate('/home');
     } catch {
       setError('Usuário ou senha incorretos.');
     } finally {

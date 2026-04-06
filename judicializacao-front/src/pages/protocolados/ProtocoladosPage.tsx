@@ -180,11 +180,15 @@ export function ProtocoladosPage() {
       alert('Selecione Ganho ou Perda antes de salvar.');
       return;
     }
+    if (valorGanho === null || valorGanho <= 0) {
+      alert(resultadoSelecionado === 'ganho' ? 'Informe o valor ganho.' : 'Informe o valor da causa.');
+      return;
+    }
     try {
       await salvarResultadoProtocolado(registroAtualizando.id, {
         acao: resultadoSelecionado,
         analise: parecerJuridico,
-        valorGanho: resultadoSelecionado === 'ganho' ? valorGanho : null,
+        valorGanho,
       });
       await carregarDados();
       setTipoAcao('');
@@ -684,6 +688,7 @@ export function ProtocoladosPage() {
                         value={valorGanho ?? undefined}
                         onValueChange={(e) => setValorGanho(e.value ?? null)}
                         mode="currency" currency="BRL" locale="pt-BR"
+                        className={valorGanho === null || valorGanho <= 0 ? 'p-invalid' : ''}
                       />
                     </div>
                   )}

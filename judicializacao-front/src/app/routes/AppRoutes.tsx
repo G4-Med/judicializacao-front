@@ -1,10 +1,11 @@
-import { Route, Routes } from 'react-router-dom';
+﻿import { Route, Routes } from 'react-router-dom';
 
 import { MainLayout } from '../layout/MainLayout';
 
 import { LoginPage } from '../../pages/auth/LoginPage';
 import { RecuperarSenhaPage } from '../../pages/auth/RecuperarSenhaPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
+import { HomePage } from '../../pages/home/HomePage';
 import { ProcessosPage } from '../../pages/processos/ProcessosPage';
 import { ClientesPage } from '../../pages/clientes/ClientesPage';
 import { ParaProtocolarPage } from '../../pages/paraProtocolar/ParaProtocolarPage';
@@ -12,7 +13,6 @@ import { ProtocoladosPage } from '../../pages/protocolados/ProtocoladosPage';
 import { SegredoJusticaPage } from '../../pages/segredoJustica/SegredoJusticaPage';
 import { ResultadosPage } from '../../pages/resultados/ResultadosPage';
 import { PerdasPage } from '../../pages/perdas/PerdasPage';
-import { RelatoriosPage } from '../../pages/relatorios/RelatoriosPage';
 import { UsuariosPage } from '../../pages/usuarios/UsuariosPage';
 import { ConfiguracoesPage } from '../../pages/configuracoes/ConfiguracoesPage';
 import { LogsPage } from '../../pages/logs/LogsPage';
@@ -20,6 +20,8 @@ import { JuridicoPage } from '../../pages/juridico/JuridicoPage';
 import { OrcamentoMedicoPage } from '../../pages/orcamentoMedico/OrcamentoMedicoPage';
 import { RelatorioResumidoPage } from '../../pages/relatorios/RelatorioResumidoPage';
 import { RelatorioConsolidadoPage } from '../../pages/relatorios/RelatorioConsolidadoPage';
+import { EmailsPage } from '../../pages/emails/EmailsPage';
+import { ConfiguracoesEmailsPage } from '../../pages/configuracoesEmails/ConfiguracoesEmailsPage';
 
 export function AppRoutes() {
   return (
@@ -28,7 +30,8 @@ export function AppRoutes() {
       <Route path="/recuperar-senha" element={<RecuperarSenhaPage />} />
 
       <Route element={<MainLayout />}>
-        <Route path="/" element={<DashboardPage />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/home" element={<HomePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
 
         <Route path="/processos" element={<ProcessosPage />} />
@@ -42,13 +45,14 @@ export function AppRoutes() {
 
         <Route path="/resultados" element={<ResultadosPage />} />
         <Route path="/perdas" element={<PerdasPage />} />
+        <Route path="/emails" element={<EmailsPage />} />
 
         <Route path="/relatorios/resumido" element={<RelatorioResumidoPage />} />
         <Route path="/relatorios/consolidado" element={<RelatorioConsolidadoPage />} />
 
-        <Route path="/relatorios" element={<RelatoriosPage />} />
         <Route path="/usuarios" element={<UsuariosPage />} />
         <Route path="/configuracoes" element={<ConfiguracoesPage />} />
+        <Route path="/configuracoes-emails" element={<ConfiguracoesEmailsPage />} />
         <Route path="/logs" element={<LogsPage />} />
       </Route>
     </Routes>

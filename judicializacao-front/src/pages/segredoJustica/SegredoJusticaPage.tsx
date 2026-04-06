@@ -10,6 +10,7 @@ import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
+import { InputNumber } from 'primereact/inputnumber';
 import { FilterMatchMode } from 'primereact/api';
 import { getSegredoJustica, salvarResultadoSegredo, getAnexosOrder } from '../../services/api/orders';
 import { Dialog } from 'primereact/dialog';
@@ -76,6 +77,7 @@ export function SegredoJusticaPage() {
 
   const [resultadoSelecionado, setResultadoSelecionado] = useState<ResultadoType>('');
   const [parecerJuridico, setParecerJuridico] = useState('');
+  const [valorGanho, setValorGanho] = useState<number | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
   const [previewTipo, setPreviewTipo] = useState<'pdf' | 'imagem' | 'outro'>('outro');
@@ -186,6 +188,7 @@ useEffect(() => { carregarDados(); }, []);
           setRegistroAtualizando({ ...rowData, documentos: [] });
           setResultadoSelecionado('');
           setParecerJuridico('');
+          setValorGanho(null);
           getAnexosOrder(rowData.id, 'ORCAMENTO')
             .then((res: any) => {
               const anexos: any[] = res.data.anexos ?? [];
@@ -252,14 +255,20 @@ useEffect(() => { carregarDados(); }, []);
       alert('Selecione um resultado antes de salvar.');
       return;
     }
+    if (valorGanho === null || valorGanho <= 0) {
+      alert(resultadoSelecionado === 'ganho' ? 'Informe o valor ganho.' : 'Informe o valor da causa.');
+      return;
+    }
 
     try {
       await salvarResultadoSegredo(registroAtualizando.id, {
         resultado: resultadoSelecionado,
         parecer: parecerJuridico,
+        valorGanho,
       });
       carregarDados();
       setUpdateDialogVisible(false);
+      setValorGanho(null);
     } catch (err: any) {
       alert(err?.response?.data?.error ?? 'Erro ao salvar.');
     }
@@ -500,15 +509,35 @@ useEffect(() => { carregarDados(); }, []);
                     label="Procedente (Ganho)"
                     severity={resultadoSelecionado === 'ganho' ? 'success' : 'secondary'}
                     outlined={resultadoSelecionado !== 'ganho'}
-                    onClick={() => setResultadoSelecionado('ganho')}
+                    onClick={() => {
+                      setResultadoSelecionado('ganho');
+                      setValorGanho(registroAtualizando.valorOrcamento || null);
+                    }}
                   />
                   <Button
                     label="Improcedente (Perda)"
                     severity={resultadoSelecionado === 'perda' ? 'danger' : 'secondary'}
                     outlined={resultadoSelecionado !== 'perda'}
-                    onClick={() => setResultadoSelecionado('perda')}
+                    onClick={() => {
+                      setResultadoSelecionado('perda');
+                      setValorGanho(null);
+                    }}
                   />
                 </div>
+
+                {resultadoSelecionado !== '' && (
+                  <div className="field">
+                    <label>{resultadoSelecionado === 'ganho' ? 'Valor Ganho' : 'Valor da Causa'}</label>
+                    <InputNumber
+                      value={valorGanho ?? undefined}
+                      onValueChange={(e) => setValorGanho(e.value ?? null)}
+                      mode="currency"
+                      currency="BRL"
+                      locale="pt-BR"
+                      className={valorGanho === null || valorGanho <= 0 ? 'p-invalid' : ''}
+                    />
+                  </div>
+                )}
 
                 <div className="field">
                   <label>Parecer Jurídico</label>
