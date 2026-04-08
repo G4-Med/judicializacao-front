@@ -7,6 +7,10 @@ export const createMedico = (data: any) => api.post('/client/medicos/', data);
 export const updateMedico = (id: number, data: any) => api.patch(`/client/medicos/${id}/`, data);
 export const deleteMedico = (id: number) => api.delete(`/client/medicos/${id}/`);
 export const getMedicosCompleto = () => api.get('/client/medico-completo/lista/');
+export const getEspecialidades = () => api.get('/client/especialidades/');
+export const getSubespecialidades = () => api.get('/client/subespecialidades/');
+export const getHospitais = () => api.get('/client/hospitais/');
+export const getBancos = () => api.get('/client/bancos/');
 
 // ── DadosMedico ─────────────────────────────────────────
 export const getDadosMedico = (idMedico: number) => api.get(`/client/dados-medico/?idMedico=${idMedico}`);
@@ -42,3 +46,12 @@ export const salvarBaseOrcamento = (medicoId: number, formData: FormData) =>
   api.post(`/client/medico/${medicoId}/base-orcamento/salvar/`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
+
+export const uploadArquivoStorage = (file: File) => {
+  const form = new FormData();
+  form.append('file', file);
+
+  return api.post('/integracoes/upload/', form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+};

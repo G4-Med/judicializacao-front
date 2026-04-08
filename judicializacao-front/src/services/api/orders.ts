@@ -40,6 +40,14 @@ export const salvarConfiguracaoEmail = (payload: {
   corpo: string;
   ativo?: boolean;
 }) => api.post('/emails/configuracoes/', payload);
+export const getEspecialidades = () => api.get('/client/especialidades/');
+export const salvarEspecialidade = (payload: { especialidade: string }) => api.post('/client/especialidades/', payload);
+export const getSubespecialidades = () => api.get('/client/subespecialidades/');
+export const salvarSubespecialidade = (payload: { subespecialidade: string }) => api.post('/client/subespecialidades/', payload);
+export const getHospitais = () => api.get('/client/hospitais/');
+export const salvarHospital = (payload: { hospital: string }) => api.post('/client/hospitais/', payload);
+export const getBancos = () => api.get('/client/bancos/');
+export const salvarBanco = (payload: { codBanco: string; nomeBanco: string }) => api.post('/client/bancos/', payload);
 export const atualizarConfiguracaoEmail = (
   id: number,
   payload: {

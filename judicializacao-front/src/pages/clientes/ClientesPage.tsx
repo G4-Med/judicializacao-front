@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import type {
   DataTableFilterMeta,
@@ -6,7 +6,7 @@ import type {
   DataTableSortEvent
 } from 'primereact/datatable';
 import {
-  getMedicos, getMedicosCompleto, createMedico, updateMedico,
+  getMedicosCompleto, createMedico, updateMedico,
   createDadosMedico, updateDadosMedico,
   createEmpresaMedico, updateEmpresaMedico,
   createDadosPessoais, updateDadosPessoais,
@@ -14,7 +14,8 @@ import {
   getDadosMedico, getEmpresaMedico,
   getDadosPessoais, getDadosBancarios,
   cadastrarUsuarioMedico, verificarUsuarioMedico,
-  getBaseOrcamento, salvarBaseOrcamento
+  getBaseOrcamento, salvarBaseOrcamento,
+  getEspecialidades, getSubespecialidades, getHospitais, getBancos, uploadArquivoStorage
 } from '../../services/api/client';
 import { Column } from 'primereact/column';
 import { Tag } from 'primereact/tag';
@@ -82,11 +83,33 @@ interface Cliente {
   contratoArquivo?: File | null;
   procuracaoArquivo?: File | null;
   arquivoAdicionalArquivo?: File | null;
+  caminhoContrato?: string;
+  caminhoProcuracao?: string;
+  caminhoArquivoAdicional?: string;
 
 }
 interface ClienteTableRow extends Cliente {
   sequencial: number;
 }
+
+interface DropdownOption {
+  label: string;
+  value: string;
+}
+
+interface BancoOption extends DropdownOption {
+  codigo: string;
+}
+
+type CampoArquivoEmpresa =
+  | 'contratoArquivo'
+  | 'procuracaoArquivo'
+  | 'arquivoAdicionalArquivo';
+
+type CampoCaminhoEmpresa =
+  | 'caminhoContrato'
+  | 'caminhoProcuracao'
+  | 'caminhoArquivoAdicional';
 
 const baseOrcamentoInicial = {
   honorariosEquipeMedica: false,
@@ -161,7 +184,10 @@ const clienteInicial: ClienteTableRow = {
   chavePix: '',
   contratoArquivo: null,
   procuracaoArquivo: null,
-  arquivoAdicionalArquivo: null
+  arquivoAdicionalArquivo: null,
+  caminhoContrato: '',
+  caminhoProcuracao: '',
+  caminhoArquivoAdicional: ''
 };
 
 export function ClientesPage() {
@@ -180,6 +206,10 @@ export function ClientesPage() {
   const [baseOrcamento, setBaseOrcamento] = useState(baseOrcamentoInicial);
   const [assinaturaDialogVisible, setAssinaturaDialogVisible] = useState(false);
   const [savingBase, setSavingBase] = useState(false);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [previewNome, setPreviewNome] = useState('');
+  const [previewTipo, setPreviewTipo] = useState<'pdf' | 'image' | 'other'>('other');
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     razaoSocial: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -195,19 +225,10 @@ export function ClientesPage() {
 
   const [editDialogVisible, setEditDialogVisible] = useState(false);
   const [clienteEditando, setClienteEditando] = useState<ClienteTableRow | null>(null);
-
-  const hospitalOptions = [
-    { label: 'Hospital Monte Sinai', value: 'Hospital Monte Sinai' },
-    { label: 'Hospital Albert Sabin', value: 'Hospital Albert Sabin' },
-    { label: 'Hospital Unimed', value: 'Hospital Unimed' }
-  ];
-
-  const especialidadeOptions = [
-    { label: 'Ortopedia', value: 'Ortopedia' },
-    { label: 'Cardiologia', value: 'Cardiologia' },
-    { label: 'Neurocirurgia', value: 'Neurocirurgia' },
-    { label: 'Cirurgia Geral', value: 'Cirurgia Geral' }
-  ];
+  const [hospitalOptions, setHospitalOptions] = useState<DropdownOption[]>([]);
+  const [especialidadeOptions, setEspecialidadeOptions] = useState<DropdownOption[]>([]);
+  const [subespecialidadeOptions, setSubespecialidadeOptions] = useState<DropdownOption[]>([]);
+  const [bancoOptions, setBancoOptions] = useState<BancoOption[]>([]);
 
   const estadoCivilOptions = [
     { label: 'Solteiro(a)', value: 'Solteiro(a)' },
@@ -216,29 +237,9 @@ export function ClientesPage() {
     { label: 'Viúvo(a)', value: 'Viúvo(a)' }
   ];
 
-  const cidadeOptions = [
-    { label: 'Juiz de Fora', value: 'Juiz de Fora' },
-    { label: 'Belo Horizonte', value: 'Belo Horizonte' },
-    { label: 'Rio de Janeiro', value: 'Rio de Janeiro' }
-  ];
-
-  const estadoOptions = [
-    { label: 'MG', value: 'MG' },
-    { label: 'RJ', value: 'RJ' },
-    { label: 'SP', value: 'SP' }
-  ];
-
   const statusOptions = [
     { label: 'Ativo', value: true },
     { label: 'Inativo', value: false }
-  ];
-
-  const bancoOptions = [
-    { label: 'Banco do Brasil', value: 'Banco do Brasil' },
-    { label: 'Caixa', value: 'Caixa' },
-    { label: 'Itaú', value: 'Itaú' },
-    { label: 'Bradesco', value: 'Bradesco' },
-    { label: 'Santander', value: 'Santander' }
   ];
 
   const tipoContaOptions = [
@@ -246,45 +247,103 @@ export function ClientesPage() {
     { label: 'Conta Poupança', value: 'Conta Poupança' }
   ];
 
+  const normalizarOptions = (data: any[], campo: string): DropdownOption[] => {
+    const lista = Array.isArray(data) ? data : [];
+    return lista
+      .map((item: any) => String(item?.[campo] ?? '').trim())
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+      .map((valor) => ({ label: valor, value: valor }));
+  };
+
+  const normalizarBancos = (data: any[]): BancoOption[] => {
+    const lista = Array.isArray(data) ? data : [];
+    return lista
+      .map((item: any) => ({
+        label: String(item?.nomeBanco ?? '').trim(),
+        value: String(item?.nomeBanco ?? '').trim(),
+        codigo: String(item?.codBanco ?? '').trim(),
+      }))
+      .filter((item) => item.label && item.codigo)
+      .sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+  };
+
+  const mapearClientesTabela = (lista: any[]) =>
+    (Array.isArray(lista) ? lista : []).map((m: any) => ({
+      id: m.id,
+      nomeMedico: m.nomeMedico ?? m.nomeCompleto ?? '',
+      nomeSistema: m.nomeSistema ?? '',
+      especialidade: m.especialidade ?? '',
+      subespecialidade: m.subespecialidade ?? '',
+      keywords: m.keywords ?? '',
+      grupoWhatsapp: m.grupoWhatsapp ?? '',
+      status: m.status,
+      createDate: m.createDate?.split('T')[0] ?? '',
+      updateDate: m.updateDate?.split('T')[0] ?? '',
+      crm: m.crm ?? '',
+      razaoSocial: m.razaoSocial ?? '',
+      cnpj: m.cnpj ?? '',
+      contrato: m.contrato ?? false,
+      procuracao: m.procuracao ?? false,
+      arquivoAdicional: m.arquivoAdicional ?? false,
+      rqe: '',
+      hospital: '',
+      telefone: '',
+      email: '',
+      modoValidacao: '',
+      emailAcesso: '',
+      nomeCompleto: '',
+      cpf: '',
+      rg: '',
+      estadoCivil: '',
+      rua: '',
+      numero: '',
+      complemento: '',
+      bairro: '',
+      cidade: '',
+      estado: '',
+      cep: '',
+      fantasia: m.fantasia ?? '',
+      pjRua: '',
+      pjNumero: '',
+      pjComplemento: '',
+      pjBairro: '',
+      pjCidade: '',
+      pjEstado: '',
+      pjCep: '',
+      nomeConta: '',
+      numeroBanco: '',
+      nomeBanco: '',
+      agencia: '',
+      tipoConta: '',
+      numeroConta: '',
+      chavePix: ''
+    }));
+
+  const carregarClientes = async () => {
+    const { data } = await getMedicosCompleto();
+    setClientes(mapearClientesTabela(data));
+  };
+
   useEffect(() => {
-  setLoading(true);
-  getMedicosCompleto()
-    .then(({ data }) => {
-      setClientes(data.map((m: any) => ({
-        id: m.id,
-        nomeMedico: m.nomeMedico,        // ← era m.nomeCompleto
-        nomeSistema: m.nomeSistema,
-        especialidade: m.especialidade ?? '',
-        subespecialidade: m.subespecialidade ?? '',
-        keywords: m.keywords ?? '',
-        grupoWhatsapp: m.grupoWhatsapp ?? '',
-        status: m.status,
-        createDate: m.createDate?.split('T')[0] ?? '',
-        updateDate: m.updateDate?.split('T')[0] ?? '',
-        crm: m.crm ?? '',              // ← era ''
-        razaoSocial: m.razaoSocial ?? '',  // ← era ''
-        cnpj: m.cnpj ?? '',
-        contrato: m.contrato ?? false,
-        procuracao: m.procuracao ?? false,
-        arquivoAdicional: m.arquivoAdicional ?? false,
-        rqe: '', hospital: '', telefone: '', email: '', modoValidacao: '', emailAcesso: '',
-        nomeCompleto: '', cpf: '', rg: '', estadoCivil: '',
-        rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '',
-        fantasia: m.fantasia ?? '',
-        pjRua: '', pjNumero: '', pjComplemento: '', pjBairro: '',
-        pjCidade: '', pjEstado: '', pjCep: '',
-        nomeConta: '', numeroBanco: '', nomeBanco: '', agencia: '',
-        tipoConta: '', numeroConta: '', chavePix: ''
-      })));
-    })
-    .catch(() => console.error('Erro ao carregar médicos'))
-    .finally(() => setLoading(false));
+    setLoading(true);
+    Promise.all([
+      getMedicosCompleto(),
+      getEspecialidades(),
+      getSubespecialidades(),
+      getHospitais(),
+      getBancos()
+    ])
+      .then(([medicosRes, especialidadesRes, subespecialidadesRes, hospitaisRes, bancosRes]) => {
+        setClientes(mapearClientesTabela(medicosRes.data));
 
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 400);
-
-    return () => clearTimeout(timer);
+        setEspecialidadeOptions(normalizarOptions(especialidadesRes.data, 'especialidade'));
+        setSubespecialidadeOptions(normalizarOptions(subespecialidadesRes.data, 'subespecialidade'));
+        setHospitalOptions(normalizarOptions(hospitaisRes.data, 'hospital'));
+        setBancoOptions(normalizarBancos(bancosRes.data));
+      })
+      .catch(() => console.error('Erro ao carregar médicos'))
+      .finally(() => setLoading(false));
   }, []);
 
   const dataComSequencial = useMemo<ClienteTableRow[]>(() => {
@@ -322,7 +381,7 @@ export function ClientesPage() {
   };
 
   const getDocumentoTag = (value: boolean) => {
-    return <Tag value={value ? 'Ativo' : 'Inativo'} severity={value ? 'success' : 'danger'} />;
+    return <Tag value={value ? 'Enviado' : 'Não enviado'} severity={value ? 'success' : 'danger'} />;
   };
 
 const editarBodyTemplate = (rowData: ClienteTableRow) => {
@@ -371,6 +430,9 @@ const editarBodyTemplate = (rowData: ClienteTableRow) => {
             contrato: em.contrato ?? false,
             procuracao: em.procuracao ?? false,
             arquivoAdicional: em.arquivoAdicional ?? false,
+            caminhoContrato: em.caminhoContrato ?? '',
+            caminhoProcuracao: em.caminhoProcuracao ?? '',
+            caminhoArquivoAdicional: em.caminhoArquivoAdicional ?? '',
             nomeCompleto: dp.nomeCompleto ?? '',
             cpf: dp.CPF ?? '',
             rg: dp.RG ?? '',
@@ -456,12 +518,181 @@ const formatarData = (data: string) => {
   return `${dia}/${mes}/${ano}`;
 };
 
+const formatarTelefone = (valor: string) => {
+  const digits = valor.replace(/\D/g, '').slice(0, 13);
+
+  if (!digits) return '';
+
+  if (digits.startsWith('55')) {
+    const rest = digits.slice(2);
+    if (!rest) return '+55';
+    if (rest.length <= 2) return `+55 (${rest}`;
+    if (rest.length <= 6) return `+55 (${rest.slice(0, 2)}) ${rest.slice(2)}`;
+    if (rest.length <= 10) return `+55 (${rest.slice(0, 2)}) ${rest.slice(2, rest.length - 4)}-${rest.slice(-4)}`;
+    return `+55 (${rest.slice(0, 2)}) ${rest.slice(2, 7)}-${rest.slice(7, 11)}`;
+  }
+
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+};
+
+const formatarCpf = (valor: string) => {
+  const digits = valor.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+};
+
+const formatarCnpj = (valor: string) => {
+  const digits = valor.replace(/\D/g, '').slice(0, 14);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+  if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+};
+
+const formatarCep = (valor: string) => {
+  const digits = valor.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+};
+
+const formatarAgencia = (valor: string) => {
+  const digits = valor.replace(/\D/g, '').slice(0, 5);
+  if (digits.length <= 4) return digits;
+  return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+};
+
+const formatarConta = (valor: string) => {
+  const digits = valor.replace(/\D/g, '').slice(0, 13);
+  if (digits.length <= 1) return digits;
+  return `${digits.slice(0, -1)}-${digits.slice(-1)}`;
+};
+
 
   const updateNovoCliente = (field: keyof ClienteTableRow, value: any) => {
     setNovoCliente((prev) => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleSelecionarBancoNovo = (nomeBanco: string) => {
+    const bancoSelecionado = bancoOptions.find((item) => item.value === nomeBanco);
+    setNovoCliente((prev) => ({
+      ...prev,
+      nomeBanco,
+      numeroBanco: bancoSelecionado?.codigo ?? ''
+    }));
+  };
+
+  const handleSelecionarBancoEdicao = (nomeBanco: string) => {
+    if (!clienteEditando) return;
+    const bancoSelecionado = bancoOptions.find((item) => item.value === nomeBanco);
+    setClienteEditando({
+      ...clienteEditando,
+      nomeBanco,
+      numeroBanco: bancoSelecionado?.codigo ?? ''
+    });
+  };
+
+  const UF_PARA_NOME: Record<string, string> = {
+    AC: 'Acre', AL: 'Alagoas', AP: 'Amapá', AM: 'Amazonas', BA: 'Bahia',
+    CE: 'Ceará', DF: 'Distrito Federal', ES: 'Espírito Santo', GO: 'Goiás',
+    MA: 'Maranhão', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais',
+    PA: 'Pará', PB: 'Paraíba', PR: 'Paraná', PE: 'Pernambuco', PI: 'Piauí',
+    RJ: 'Rio de Janeiro', RN: 'Rio Grande do Norte', RS: 'Rio Grande do Sul',
+    RO: 'Rondônia', RR: 'Roraima', SC: 'Santa Catarina', SP: 'São Paulo',
+    SE: 'Sergipe', TO: 'Tocantins'
+  };
+
+  const buscarCepViaCep = async (cep: string) => {
+    const limpo = (cep || '').replace(/\D/g, '');
+    if (limpo.length !== 8) return null;
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${limpo}/json/`);
+      const data = await res.json();
+      if (data?.erro) return null;
+      return {
+        rua: data.logradouro ?? '',
+        bairro: data.bairro ?? '',
+        cidade: data.localidade ?? '',
+        estado: UF_PARA_NOME[data.uf] ?? data.uf ?? '',
+        complemento: data.complemento ?? ''
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const handleBuscarCepEmpresaNovo = async () => {
+    const dados = await buscarCepViaCep(novoCliente.pjCep);
+    if (!dados) {
+      alert('CEP não encontrado.');
+      return;
+    }
+    setNovoCliente((prev) => ({
+      ...prev,
+      pjRua: dados.rua || prev.pjRua,
+      pjBairro: dados.bairro || prev.pjBairro,
+      pjCidade: dados.cidade || prev.pjCidade,
+      pjEstado: dados.estado || prev.pjEstado,
+      pjComplemento: dados.complemento || prev.pjComplemento
+    }));
+  };
+
+  const handleBuscarCepPessoalNovo = async () => {
+    const dados = await buscarCepViaCep(novoCliente.cep);
+    if (!dados) {
+      alert('CEP não encontrado.');
+      return;
+    }
+    setNovoCliente((prev) => ({
+      ...prev,
+      rua: dados.rua || prev.rua,
+      bairro: dados.bairro || prev.bairro,
+      cidade: dados.cidade || prev.cidade,
+      estado: dados.estado || prev.estado,
+      complemento: dados.complemento || prev.complemento
+    }));
+  };
+
+  const handleBuscarCepPessoalEdicao = async () => {
+    if (!clienteEditando) return;
+    const dados = await buscarCepViaCep(clienteEditando.cep);
+    if (!dados) {
+      alert('CEP não encontrado.');
+      return;
+    }
+    setClienteEditando({
+      ...clienteEditando,
+      rua: dados.rua || clienteEditando.rua,
+      bairro: dados.bairro || clienteEditando.bairro,
+      cidade: dados.cidade || clienteEditando.cidade,
+      estado: dados.estado || clienteEditando.estado,
+      complemento: dados.complemento || clienteEditando.complemento
+    });
+  };
+
+  const handleBuscarCepEmpresaEdicao = async () => {
+    if (!clienteEditando) return;
+    const dados = await buscarCepViaCep(clienteEditando.pjCep);
+    if (!dados) {
+      alert('CEP não encontrado.');
+      return;
+    }
+    setClienteEditando({
+      ...clienteEditando,
+      pjRua: dados.rua || clienteEditando.pjRua,
+      pjBairro: dados.bairro || clienteEditando.pjBairro,
+      pjCidade: dados.cidade || clienteEditando.pjCidade,
+      pjEstado: dados.estado || clienteEditando.pjEstado,
+      pjComplemento: dados.complemento || clienteEditando.pjComplemento
+    });
   };
 
 
@@ -494,12 +725,24 @@ const formatarData = (data: string) => {
   };
 
 
- // ── Salvar cadastro (POST em cascata) ───────────────────
+ //  Salvar cadastro (POST em cascata) 
 const handleSalvarCadastro = async () => {
   try {
+    const nomeCompletoMedico = (novoCliente.nomeMedico || novoCliente.nomeCompleto || '').trim();
+
+    if (!nomeCompletoMedico) {
+      alert('Preencha o Nome Médico.');
+      return;
+    }
+
+    if (!novoCliente.nomeSistema?.trim()) {
+      alert('Preencha o Nome Sistema.');
+      return;
+    }
+
     // 1. Cria o médico
     const { data: medico } = await createMedico({
-      nomeCompleto: novoCliente.nomeCompleto,
+      nomeCompleto: nomeCompletoMedico,
       nomeSistema: novoCliente.nomeSistema,
       especialidade: novoCliente.especialidade,
       subespecialidade: novoCliente.subespecialidade,
@@ -509,6 +752,16 @@ const handleSalvarCadastro = async () => {
     });
 
     const idMedico = medico.id;
+
+    const caminhoContrato = novoCliente.contratoArquivo
+      ? (await uploadArquivoStorage(novoCliente.contratoArquivo)).data?.url ?? ''
+      : '';
+    const caminhoProcuracao = novoCliente.procuracaoArquivo
+      ? (await uploadArquivoStorage(novoCliente.procuracaoArquivo)).data?.url ?? ''
+      : '';
+    const caminhoArquivoAdicional = novoCliente.arquivoAdicionalArquivo
+      ? (await uploadArquivoStorage(novoCliente.arquivoAdicionalArquivo)).data?.url ?? ''
+      : '';
 
     // 2. Cria dados médico
     await createDadosMedico({
@@ -538,13 +791,16 @@ const handleSalvarCadastro = async () => {
       contrato: novoCliente.contrato,
       procuracao: novoCliente.procuracao,
       arquivoAdicional: novoCliente.arquivoAdicional,
+      caminhoContrato,
+      caminhoProcuracao,
+      caminhoArquivoAdicional,
     });
 
 
         // 4. Cria dados pessoais
     await createDadosPessoais({
       idMedico,
-      nomeMedico: novoCliente.nomeMedico,
+      nomeCompleto: nomeCompletoMedico,
       CPF: novoCliente.cpf,
       RG: novoCliente.rg,
       estadoCivil: novoCliente.estadoCivil,
@@ -570,21 +826,33 @@ const handleSalvarCadastro = async () => {
     });
 
      // Recarrega a lista
-    const { data } = await getMedicos();
-    setClientes(data);
+    await carregarClientes();
     setCreateDialogVisible(false);
 
   } catch (err) {
     console.error('Erro ao salvar cliente:', err);
-    alert('Erro ao salvar. Verifique os dados e tente novamente.');
+    const detalheErro =
+      (err as any)?.response?.data?.detail ??
+      JSON.stringify((err as any)?.response?.data ?? {});
+    alert(detalheErro && detalheErro !== '{}' ? detalheErro : 'Erro ao salvar. Verifique os dados e tente novamente.');
   }
 };
 
 
-// ── Salvar edição (PATCH) ───────────────────────────────
+//  Salvar edição (PATCH) 
 const handleSalvarEdicao = async () => {
   if (!clienteEditando) return;
   try {
+    const caminhoContrato = clienteEditando.contratoArquivo
+      ? (await uploadArquivoStorage(clienteEditando.contratoArquivo)).data?.url ?? clienteEditando.caminhoContrato ?? ''
+      : clienteEditando.caminhoContrato ?? '';
+    const caminhoProcuracao = clienteEditando.procuracaoArquivo
+      ? (await uploadArquivoStorage(clienteEditando.procuracaoArquivo)).data?.url ?? clienteEditando.caminhoProcuracao ?? ''
+      : clienteEditando.caminhoProcuracao ?? '';
+    const caminhoArquivoAdicional = clienteEditando.arquivoAdicionalArquivo
+      ? (await uploadArquivoStorage(clienteEditando.arquivoAdicionalArquivo)).data?.url ?? clienteEditando.caminhoArquivoAdicional ?? ''
+      : clienteEditando.caminhoArquivoAdicional ?? '';
+
     // 1. Atualiza tabela Medico
     await updateMedico(clienteEditando.id, {
       nomeCompleto: clienteEditando.nomeMedico,
@@ -632,6 +900,9 @@ const handleSalvarEdicao = async () => {
         contrato: clienteEditando.contrato,
         procuracao: clienteEditando.procuracao,
         arquivoAdicional: clienteEditando.arquivoAdicional,
+        caminhoContrato,
+        caminhoProcuracao,
+        caminhoArquivoAdicional,
       });
     }
 
@@ -665,28 +936,7 @@ const handleSalvarEdicao = async () => {
       });
     }
 
-    const { data } = await getMedicos();
-    setClientes(data.map((m: any) => ({
-      id: m.id,
-      nomeMedico: m.nomeCompleto,
-      nomeSistema: m.nomeSistema,
-      especialidade: m.especialidade ?? '',
-      subespecialidade: m.subespecialidade ?? '',
-      keywords: m.keywords ?? '',
-      grupoWhatsapp: m.grupoWhatsapp ?? '',
-      status: m.status,
-      createDate: m.createDate?.split('T')[0] ?? '',
-      updateDate: m.updateDate?.split('T')[0] ?? '',
-      razaoSocial: '', crm: '', rqe: '', hospital: '', telefone: '',
-      email: '', cnpj: '', modoValidacao: '', emailAcesso: '',
-      contrato: false, procuracao: false, arquivoAdicional: false,
-      nomeCompleto: '', cpf: '', rg: '', estadoCivil: '',
-      rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '',
-      fantasia: '', pjRua: '', pjNumero: '', pjComplemento: '', pjBairro: '',
-      pjCidade: '', pjEstado: '', pjCep: '',
-      nomeConta: '', numeroBanco: '', nomeBanco: '', agencia: '',
-      tipoConta: '', numeroConta: '', chavePix: ''
-    })));
+    await carregarClientes();
 
     setEditDialogVisible(false);
   } catch (err) {
@@ -695,62 +945,83 @@ const handleSalvarEdicao = async () => {
   }
 };
 
-
-
-
-  const getArquivoTag = (arquivo?: File | null) => {
+  const getArquivoTag = (arquivo?: File | null, caminho?: string) => {
+    const enviado = !!arquivo || !!caminho;
     return (
       <Tag
-        value={arquivo ? 'Documento enviado' : 'Documento não enviado'}
-        severity={arquivo ? 'success' : 'danger'}
+        value={enviado ? 'Documento enviado' : 'Documento não enviado'}
+        severity={enviado ? 'success' : 'danger'}
       />
     );
   };
 
+  const handleNovoClienteArquivo = (field: CampoArquivoEmpresa, file: File | null) => {
+    const caminhoField: Record<CampoArquivoEmpresa, CampoCaminhoEmpresa> = {
+      contratoArquivo: 'caminhoContrato',
+      procuracaoArquivo: 'caminhoProcuracao',
+      arquivoAdicionalArquivo: 'caminhoArquivoAdicional'
+    };
 
-
-  const handleNovoClienteArquivo = (
-    field: 'contratoArquivo' | 'procuracaoArquivo' | 'arquivoAdicionalArquivo',
-    file: File | null
-  ) => {
     setNovoCliente((prev) => ({
       ...prev,
       [field]: file,
+      [caminhoField[field]]: file ? '' : prev[caminhoField[field]],
       contrato: field === 'contratoArquivo' ? !!file : prev.contrato,
       procuracao: field === 'procuracaoArquivo' ? !!file : prev.procuracao,
       arquivoAdicional: field === 'arquivoAdicionalArquivo' ? !!file : prev.arquivoAdicional
     }));
   };
 
-  const handleClienteEditandoArquivo = (
-    field: 'contratoArquivo' | 'procuracaoArquivo' | 'arquivoAdicionalArquivo',
-    file: File | null
-  ) => {
+  const handleClienteEditandoArquivo = (field: CampoArquivoEmpresa, file: File | null) => {
     if (!clienteEditando) return;
+
+    const caminhoField: Record<CampoArquivoEmpresa, CampoCaminhoEmpresa> = {
+      contratoArquivo: 'caminhoContrato',
+      procuracaoArquivo: 'caminhoProcuracao',
+      arquivoAdicionalArquivo: 'caminhoArquivoAdicional'
+    };
 
     setClienteEditando({
       ...clienteEditando,
       [field]: file,
+      [caminhoField[field]]: file ? '' : clienteEditando[caminhoField[field]],
       contrato: field === 'contratoArquivo' ? !!file : clienteEditando.contrato,
       procuracao: field === 'procuracaoArquivo' ? !!file : clienteEditando.procuracao,
       arquivoAdicional: field === 'arquivoAdicionalArquivo' ? !!file : clienteEditando.arquivoAdicional
     });
   };
 
+  const abrirPreviewArquivo = (url: string, nome: string) => {
+    const lower = url.toLowerCase();
+    const tipo = lower.endsWith('.pdf')
+      ? 'pdf'
+      : /\.(png|jpg|jpeg|gif|webp|bmp|svg)$/.test(lower)
+        ? 'image'
+        : 'other';
 
+    setPreviewUrl(url);
+    setPreviewNome(nome);
+    setPreviewTipo(tipo);
+    setPreviewVisible(true);
+  };
 
   const renderUploadSimples = (
     id: string,
     label: string,
     arquivo: File | null | undefined,
+    caminho: string | undefined,
     onChangeArquivo: (file: File | null) => void
   ) => {
+    const urlLocal = arquivo ? URL.createObjectURL(arquivo) : '';
+    const nomeArquivo = arquivo?.name || caminho?.split('/').pop() || label;
+    const urlPreview = arquivo ? urlLocal : (caminho || '');
+
     return (
-      <div className="field field-span-2">
+      <div className="field field-span-2 upload-simple-field">
         <label>{label}</label>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {getArquivoTag(arquivo)}
+        <div className="upload-simple-actions">
+          {getArquivoTag(arquivo, caminho)}
 
           <input
             id={id}
@@ -760,16 +1031,21 @@ const handleSalvarEdicao = async () => {
           />
 
           <Button
+            type="button"
             label="Upload"
             icon="pi pi-upload"
             outlined
             onClick={() => document.getElementById(id)?.click()}
           />
 
-          {arquivo && (
-            <span style={{ fontSize: '0.9rem', color: '#6b7280' }}>
-              {arquivo.name}
-            </span>
+          {urlPreview && (
+            <Button
+              type="button"
+              label="Visualizar"
+              icon="pi pi-eye"
+              text
+              onClick={() => abrirPreviewArquivo(urlPreview, nomeArquivo)}
+            />
           )}
         </div>
       </div>
@@ -857,7 +1133,7 @@ const handleSalvarEdicao = async () => {
       <div className="page-header">
         <div>
           <h1>Clientes</h1>
-          <p>Gestão dos clientes cadastrados</p>
+          <p>Gesto dos clientes cadastrados</p>
         </div>
 
         <div className="page-actions">
@@ -1061,9 +1337,11 @@ const handleSalvarEdicao = async () => {
               </div>
               <div className="field">
                 <label>Subespecialidade</label>
-                <InputText
+                <Dropdown
                   value={novoCliente.subespecialidade}
-                  onChange={(e) => updateNovoCliente('subespecialidade', e.target.value)}
+                  options={subespecialidadeOptions}
+                  onChange={(e) => updateNovoCliente('subespecialidade', e.value)}
+                  placeholder="Selecione"
                 />
               </div>
               <div className="field field-span-2">
@@ -1190,7 +1468,7 @@ const handleSalvarEdicao = async () => {
                 <label>Telefone</label>
                 <InputText
                   value={novoCliente.telefone}
-                  onChange={(e) => updateNovoCliente('telefone', e.target.value)}
+                  onChange={(e) => updateNovoCliente('telefone', formatarTelefone(e.target.value))}
                 />
               </div>
 
@@ -1230,7 +1508,7 @@ const handleSalvarEdicao = async () => {
                 <label>CNPJ</label>
                 <InputText
                   value={novoCliente.cnpj}
-                  onChange={(e) => updateNovoCliente('cnpj', e.target.value)}
+                  onChange={(e) => updateNovoCliente('cnpj', formatarCnpj(e.target.value))}
                 />
               </div>
               <div className="field field-span-2">
@@ -1297,10 +1575,19 @@ const handleSalvarEdicao = async () => {
 
               <div className="field">
                 <label>CEP</label>
-                <InputText
-                  value={novoCliente.pjCep}
-                  onChange={(e) => updateNovoCliente('pjCep', e.target.value)}
-                />
+                <div className="p-inputgroup">
+                  <InputText
+                    value={novoCliente.pjCep}
+                    onChange={(e) => updateNovoCliente('pjCep', formatarCep(e.target.value))}
+                    onBlur={() => void handleBuscarCepEmpresaNovo()}
+                    placeholder="00000-000"
+                  />
+                  <Button
+                    type="button"
+                    icon="pi pi-search"
+                    onClick={() => void handleBuscarCepEmpresaNovo()}
+                  />
+                </div>
               </div>
               <div className='form-grid'>
                 <div className="field">
@@ -1322,18 +1609,21 @@ const handleSalvarEdicao = async () => {
                     'novo-contrato-arquivo',
                     'Contrato',
                     novoCliente.contratoArquivo,
+                    novoCliente.caminhoContrato,
                     (file) => handleNovoClienteArquivo('contratoArquivo', file)
                   )}
                   {renderUploadSimples(
                     'novo-procuracao-arquivo',
                     'Procuração',
                     novoCliente.procuracaoArquivo,
+                    novoCliente.caminhoProcuracao,
                     (file) => handleNovoClienteArquivo('procuracaoArquivo', file)
                   )}
                   {renderUploadSimples(
                     'novo-arquivo-adicional-arquivo',
                     'Arquivo Adicional',
                     novoCliente.arquivoAdicionalArquivo,
+                    novoCliente.caminhoArquivoAdicional,
                     (file) => handleNovoClienteArquivo('arquivoAdicionalArquivo', file)
                   )}
                 </div>
@@ -1354,7 +1644,7 @@ const handleSalvarEdicao = async () => {
                 <label>CPF</label>
                 <InputText
                   value={novoCliente.cpf}
-                  onChange={(e) => updateNovoCliente('cpf', e.target.value)}
+                  onChange={(e) => updateNovoCliente('cpf', formatarCpf(e.target.value))}
                 />
               </div>
               <div className="field">
@@ -1408,28 +1698,35 @@ const handleSalvarEdicao = async () => {
 
               <div className="field">
                 <label>Cidade</label>
-                <Dropdown
+                <InputText
                   value={novoCliente.cidade}
-                  options={cidadeOptions}
-                  onChange={(e) => updateNovoCliente('cidade', e.value)}
+                  onChange={(e) => updateNovoCliente('cidade', e.target.value)}
                 />
               </div>
 
               <div className="field">
                 <label>Estado</label>
-                <Dropdown
+                <InputText
                   value={novoCliente.estado}
-                  options={estadoOptions}
-                  onChange={(e) => updateNovoCliente('estado', e.value)}
+                  onChange={(e) => updateNovoCliente('estado', e.target.value)}
                 />
               </div>
 
               <div className="field">
                 <label>CEP</label>
-                <InputText
-                  value={novoCliente.cep}
-                  onChange={(e) => updateNovoCliente('cep', e.target.value)}
-                />
+                <div className="p-inputgroup">
+                  <InputText
+                    value={novoCliente.cep}
+                    onChange={(e) => updateNovoCliente('cep', formatarCep(e.target.value))}
+                    onBlur={() => void handleBuscarCepPessoalNovo()}
+                    placeholder="00000-000"
+                  />
+                  <Button
+                    type="button"
+                    icon="pi pi-search"
+                    onClick={() => void handleBuscarCepPessoalNovo()}
+                  />
+                </div>
               </div>
               <div className="field">
                 <label>CreateDate</label>
@@ -1472,7 +1769,7 @@ const handleSalvarEdicao = async () => {
                 <Dropdown
                   value={novoCliente.nomeBanco}
                   options={bancoOptions}
-                  onChange={(e) => updateNovoCliente('nomeBanco', e.value)}
+                  onChange={(e) => handleSelecionarBancoNovo(e.value)}
                 />
               </div>
 
@@ -1480,7 +1777,7 @@ const handleSalvarEdicao = async () => {
                 <label>Agência</label>
                 <InputText
                   value={novoCliente.agencia}
-                  onChange={(e) => updateNovoCliente('agencia', e.target.value)}
+                  onChange={(e) => updateNovoCliente('agencia', formatarAgencia(e.target.value))}
                 />
               </div>
 
@@ -1497,7 +1794,7 @@ const handleSalvarEdicao = async () => {
                 <label>Número da Conta</label>
                 <InputText
                   value={novoCliente.numeroConta}
-                  onChange={(e) => updateNovoCliente('numeroConta', e.target.value)}
+                  onChange={(e) => updateNovoCliente('numeroConta', formatarConta(e.target.value))}
                 />
               </div>
 
@@ -1605,7 +1902,7 @@ const handleSalvarEdicao = async () => {
                       { key: 'acompanhanteTaxaAdicional', label: 'Acompanhante (taxa adicional)' },
                       { key: 'fisioterapiaPosOperatoria', label: 'Fisioterapia pós-operatória' },
                       { key: 'medicamentosPosAlta', label: 'Medicamentos pós-alta' },
-                      { key: 'ortesesImobilizadores', label: 'Órteses e imobilizadores' },
+                      { key: 'ortesesImobilizadores', label: 'rteses e imobilizadores' },
                       { key: 'examesComplementares', label: 'Exames complementares extras' },
                       { key: 'custoCtiBemodinamica', label: 'Custo com CTI e hemodinâmica' },
                     ].map(({ key, label }) => (
@@ -1725,9 +2022,11 @@ const handleSalvarEdicao = async () => {
 
                 <div className="field">
                   <label>Subespecialidade</label>
-                  <InputText
+                  <Dropdown
                     value={clienteEditando.subespecialidade}
-                    onChange={(e) => updateClienteEditando('subespecialidade', e.target.value)}
+                    options={subespecialidadeOptions}
+                    onChange={(e) => updateClienteEditando('subespecialidade', e.value)}
+                    placeholder="Selecione"
                   />
                 </div>
 
@@ -1871,7 +2170,7 @@ const handleSalvarEdicao = async () => {
                   <label>Telefone</label>
                   <InputText
                     value={clienteEditando.telefone}
-                    onChange={(e) => updateClienteEditando('telefone', e.target.value)}
+                    onChange={(e) => updateClienteEditando('telefone', formatarTelefone(e.target.value))}
                   />
                 </div>
 
@@ -1915,7 +2214,7 @@ const handleSalvarEdicao = async () => {
                   <label>CNPJ</label>
                   <InputText
                     value={clienteEditando.cnpj}
-                    onChange={(e) => updateClienteEditando('cnpj', e.target.value)}
+                    onChange={(e) => updateClienteEditando('cnpj', formatarCnpj(e.target.value))}
                   />
                 </div>
 
@@ -1985,10 +2284,19 @@ const handleSalvarEdicao = async () => {
 
                 <div className="field">
                   <label>CEP</label>
-                  <InputText
-                    value={clienteEditando.pjCep}
-                    onChange={(e) => updateClienteEditando('pjCep', e.target.value)}
-                  />
+                  <div className="p-inputgroup">
+                    <InputText
+                      value={clienteEditando.pjCep}
+                      onChange={(e) => updateClienteEditando('pjCep', formatarCep(e.target.value))}
+                      onBlur={() => void handleBuscarCepEmpresaEdicao()}
+                      placeholder="00000-000"
+                    />
+                    <Button
+                      type="button"
+                      icon="pi pi-search"
+                      onClick={() => void handleBuscarCepEmpresaEdicao()}
+                    />
+                  </div>
                 </div>
 
                 <div className="form-grid">
@@ -2013,6 +2321,7 @@ const handleSalvarEdicao = async () => {
                       'editar-contrato-arquivo',
                       'Contrato',
                       clienteEditando.contratoArquivo,
+                      clienteEditando.caminhoContrato,
                       (file) => handleClienteEditandoArquivo('contratoArquivo', file)
                     )}
 
@@ -2020,6 +2329,7 @@ const handleSalvarEdicao = async () => {
                       'editar-procuracao-arquivo',
                       'Procuração',
                       clienteEditando.procuracaoArquivo,
+                      clienteEditando.caminhoProcuracao,
                       (file) => handleClienteEditandoArquivo('procuracaoArquivo', file)
                     )}
 
@@ -2027,6 +2337,7 @@ const handleSalvarEdicao = async () => {
                       'editar-arquivo-adicional-arquivo',
                       'Arquivo Adicional',
                       clienteEditando.arquivoAdicionalArquivo,
+                      clienteEditando.caminhoArquivoAdicional,
                       (file) => handleClienteEditandoArquivo('arquivoAdicionalArquivo', file)
                     )}
                   </div>
@@ -2048,7 +2359,7 @@ const handleSalvarEdicao = async () => {
                   <label>CPF</label>
                   <InputText
                     value={clienteEditando.cpf}
-                    onChange={(e) => updateClienteEditando('cpf', e.target.value)}
+                    onChange={(e) => updateClienteEditando('cpf', formatarCpf(e.target.value))}
                   />
                 </div>
 
@@ -2103,28 +2414,35 @@ const handleSalvarEdicao = async () => {
 
                 <div className="field">
                   <label>Cidade</label>
-                  <Dropdown
+                  <InputText
                     value={clienteEditando.cidade}
-                    options={cidadeOptions}
-                    onChange={(e) => updateClienteEditando('cidade', e.value)}
+                    onChange={(e) => updateClienteEditando('cidade', e.target.value)}
                   />
                 </div>
 
                 <div className="field">
                   <label>Estado</label>
-                  <Dropdown
+                  <InputText
                     value={clienteEditando.estado}
-                    options={estadoOptions}
-                    onChange={(e) => updateClienteEditando('estado', e.value)}
+                    onChange={(e) => updateClienteEditando('estado', e.target.value)}
                   />
                 </div>
 
                 <div className="field">
                   <label>CEP</label>
-                  <InputText
-                    value={clienteEditando.cep}
-                    onChange={(e) => updateClienteEditando('cep', e.target.value)}
-                  />
+                  <div className="p-inputgroup">
+                    <InputText
+                      value={clienteEditando.cep}
+                      onChange={(e) => updateClienteEditando('cep', formatarCep(e.target.value))}
+                      onBlur={() => void handleBuscarCepPessoalEdicao()}
+                      placeholder="00000-000"
+                    />
+                    <Button
+                      type="button"
+                      icon="pi pi-search"
+                      onClick={() => void handleBuscarCepPessoalEdicao()}
+                    />
+                  </div>
                 </div>
 
                 <div className="field">
@@ -2169,7 +2487,7 @@ const handleSalvarEdicao = async () => {
                   <Dropdown
                     value={clienteEditando.nomeBanco}
                     options={bancoOptions}
-                    onChange={(e) => updateClienteEditando('nomeBanco', e.value)}
+                    onChange={(e) => handleSelecionarBancoEdicao(e.value)}
                   />
                 </div>
 
@@ -2177,7 +2495,7 @@ const handleSalvarEdicao = async () => {
                   <label>Agência</label>
                   <InputText
                     value={clienteEditando.agencia}
-                    onChange={(e) => updateClienteEditando('agencia', e.target.value)}
+                    onChange={(e) => updateClienteEditando('agencia', formatarAgencia(e.target.value))}
                   />
                 </div>
 
@@ -2194,7 +2512,7 @@ const handleSalvarEdicao = async () => {
                   <label>Número da Conta</label>
                   <InputText
                     value={clienteEditando.numeroConta}
-                    onChange={(e) => updateClienteEditando('numeroConta', e.target.value)}
+                    onChange={(e) => updateClienteEditando('numeroConta', formatarConta(e.target.value))}
                   />
                 </div>
 
@@ -2311,7 +2629,7 @@ const handleSalvarEdicao = async () => {
                         { key: 'acompanhanteTaxaAdicional', label: 'Acompanhante (taxa adicional)' },
                         { key: 'fisioterapiaPosOperatoria', label: 'Fisioterapia pós-operatória' },
                         { key: 'medicamentosPosAlta', label: 'Medicamentos pós-alta' },
-                        { key: 'ortesesImobilizadores', label: 'Órteses e imobilizadores' },
+                        { key: 'ortesesImobilizadores', label: 'rteses e imobilizadores' },
                         { key: 'examesComplementares', label: 'Exames complementares extras' },
                         { key: 'custoCtiBemodinamica', label: 'Custo com CTI e hemodinâmica' },
                       ].map(({ key, label }) => (
@@ -2380,6 +2698,41 @@ const handleSalvarEdicao = async () => {
           </div>
         </Dialog>
 
+        <Dialog
+          header={previewNome || 'Visualizar arquivo'}
+          visible={previewVisible}
+          style={{ width: '85vw', maxWidth: '1100px' }}
+          modal
+          onHide={() => setPreviewVisible(false)}
+        >
+          {previewTipo === 'pdf' && (
+            <iframe
+              src={previewUrl}
+              title={previewNome}
+              style={{ width: '100%', height: '700px', border: 'none', borderRadius: '8px' }}
+            />
+          )}
+
+          {previewTipo === 'image' && (
+            <img
+              src={previewUrl}
+              alt={previewNome}
+              style={{ maxWidth: '100%', maxHeight: '70vh', display: 'block', margin: '0 auto' }}
+            />
+          )}
+
+          {previewTipo === 'other' && (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
+              <Button
+                type="button"
+                label="Abrir arquivo"
+                icon="pi pi-external-link"
+                onClick={() => window.open(previewUrl, '_blank', 'noopener,noreferrer')}
+              />
+            </div>
+          )}
+        </Dialog>
+
 
 
 
@@ -2402,4 +2755,6 @@ const handleSalvarEdicao = async () => {
     </div>
   );
 }
+
+
 
