@@ -2,6 +2,7 @@
 
 
 export const getOrders = () => api.get('/orders/listar/');
+export const getProcessosResumo = () => api.get('/orders/processos-resumo/');
 export const getStatusOrders = () => api.get('/orders/status/');
 export const atualizarOrder = (id: number, data: any) => api.patch(`/orders/${id}/atualizar/`, data);
 export const getMedicosSelect = () => api.get('/client/medicos/');

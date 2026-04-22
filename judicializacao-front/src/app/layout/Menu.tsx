@@ -1,86 +1,112 @@
 ﻿import { PanelMenu } from 'primereact/panelmenu'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import './Menu.css'
 
 export function Menu() {
   const navigate = useNavigate()
   const location = useLocation()
+  const currentPath = location.pathname
+
+  const isActive = (path: string) => currentPath === path
+  const isSectionActive = (paths: string[]) => paths.includes(currentPath)
+
+  const protocoloRoutes = [
+    '/juridico',
+    '/selecionar-medico',
+    '/orcamento-medico',
+    '/para-protocolar',
+    '/protocolados',
+    '/segredo-justica',
+  ]
+
+  const resultadoRoutes = ['/resultados', '/perdas']
+  const relatorioRoutes = ['/relatorios/resumido', '/relatorios/consolidado']
+  const adminRoutes = ['/usuarios', '/configuracoes', '/configuracoes-emails', '/logs']
 
   const items = [
     {
       label: 'Home',
       icon: 'pi pi-home',
       command: () => navigate('/home'),
-      className: location.pathname === '/home' || location.pathname === '/' ? 'menu-active-item' : '',
+      className: isActive('/home') || isActive('/') ? 'menu-active-item' : '',
     },
     {
       label: 'Dashboard',
       icon: 'pi pi-chart-bar',
       command: () => navigate('/dashboard'),
-      className: location.pathname === '/dashboard' ? 'menu-active-item' : '',
+      className: isActive('/dashboard') ? 'menu-active-item' : '',
     },
     {
       label: 'Processos',
       icon: 'pi pi-briefcase',
       command: () => navigate('/processos'),
-      className: location.pathname === '/processos' ? 'menu-active-item' : '',
+      className: isActive('/processos') ? 'menu-active-item' : '',
     },
     {
       label: 'Clientes',
       icon: 'pi pi-users',
       command: () => navigate('/clientes'),
-      className: location.pathname === '/clientes' ? 'menu-active-item' : '',
+      className: isActive('/clientes') ? 'menu-active-item' : '',
     },
     {
       label: 'Protocolos',
       icon: 'pi pi-file-edit',
+      className: isSectionActive(protocoloRoutes) ? 'menu-active-item' : '',
       items: [
         {
           label: 'Jurídico',
           icon: 'pi pi-angle-right',
           command: () => navigate('/juridico'),
-          className: location.pathname === '/juridico' ? 'menu-active-item' : '',
+          className: isActive('/juridico') ? 'menu-active-item' : '',
+        },
+        {
+          label: 'Selecionar Médico',
+          icon: 'pi pi-angle-right',
+          command: () => navigate('/selecionar-medico'),
+          className: isActive('/selecionar-medico') ? 'menu-active-item' : '',
         },
         {
           label: 'Orçamento Médico',
           icon: 'pi pi-angle-right',
           command: () => navigate('/orcamento-medico'),
-          className: location.pathname === '/orcamento-medico' ? 'menu-active-item' : '',
+          className: isActive('/orcamento-medico') ? 'menu-active-item' : '',
         },
         {
           label: 'Protocolar',
           icon: 'pi pi-angle-right',
           command: () => navigate('/para-protocolar'),
-          className: location.pathname === '/para-protocolar' ? 'menu-active-item' : '',
+          className: isActive('/para-protocolar') ? 'menu-active-item' : '',
         },
         {
           label: 'Protocolados',
           icon: 'pi pi-angle-right',
           command: () => navigate('/protocolados'),
-          className: location.pathname === '/protocolados' ? 'menu-active-item' : '',
+          className: isActive('/protocolados') ? 'menu-active-item' : '',
         },
         {
           label: 'Segredo de Justiça',
           icon: 'pi pi-angle-right',
           command: () => navigate('/segredo-justica'),
-          className: location.pathname === '/segredo-justica' ? 'menu-active-item' : '',
+          className: isActive('/segredo-justica') ? 'menu-active-item' : '',
         },
       ],
     },
     {
       label: 'Resultados',
       icon: 'pi pi-chart-line',
+      className: isSectionActive(resultadoRoutes) ? 'menu-active-item' : '',
       items: [
         {
           label: 'Resultados',
           icon: 'pi pi-angle-right',
           command: () => navigate('/resultados'),
-          className: location.pathname === '/resultados' ? 'menu-active-item' : '',
+          className: isActive('/resultados') ? 'menu-active-item' : '',
         },
         {
           label: 'Perdas',
           icon: 'pi pi-angle-right',
           command: () => navigate('/perdas'),
-          className: location.pathname === '/perdas' ? 'menu-active-item' : '',
+          className: isActive('/perdas') ? 'menu-active-item' : '',
         },
       ],
     },
@@ -88,53 +114,55 @@ export function Menu() {
       label: 'Emails',
       icon: 'pi pi-envelope',
       command: () => navigate('/emails'),
-      className: location.pathname === '/emails' ? 'menu-active-item' : '',
+      className: isActive('/emails') ? 'menu-active-item' : '',
     },
     {
       label: 'Relatórios',
       icon: 'pi pi-file-pdf',
+      className: isSectionActive(relatorioRoutes) ? 'menu-active-item' : '',
       items: [
         {
           label: 'Relatório Resumido',
           icon: 'pi pi-angle-right',
           command: () => navigate('/relatorios/resumido'),
-          className: location.pathname === '/relatorios/resumido' ? 'menu-active-item' : '',
+          className: isActive('/relatorios/resumido') ? 'menu-active-item' : '',
         },
         {
           label: 'Relatório Consolidado',
           icon: 'pi pi-angle-right',
           command: () => navigate('/relatorios/consolidado'),
-          className: location.pathname === '/relatorios/consolidado' ? 'menu-active-item' : '',
+          className: isActive('/relatorios/consolidado') ? 'menu-active-item' : '',
         },
       ],
     },
     {
       label: 'Admin',
       icon: 'pi pi-cog',
+      className: isSectionActive(adminRoutes) ? 'menu-active-item' : '',
       items: [
         {
           label: 'Usuários',
           icon: 'pi pi-angle-right',
           command: () => navigate('/usuarios'),
-          className: location.pathname === '/usuarios' ? 'menu-active-item' : '',
+          className: isActive('/usuarios') ? 'menu-active-item' : '',
         },
         {
           label: 'Configurações',
           icon: 'pi pi-angle-right',
           command: () => navigate('/configuracoes'),
-          className: location.pathname === '/configuracoes' ? 'menu-active-item' : '',
+          className: isActive('/configuracoes') ? 'menu-active-item' : '',
         },
         {
           label: 'Configurações Emails',
           icon: 'pi pi-angle-right',
           command: () => navigate('/configuracoes-emails'),
-          className: location.pathname === '/configuracoes-emails' ? 'menu-active-item' : '',
+          className: isActive('/configuracoes-emails') ? 'menu-active-item' : '',
         },
         {
           label: 'Logs',
           icon: 'pi pi-angle-right',
           command: () => navigate('/logs'),
-          className: location.pathname === '/logs' ? 'menu-active-item' : '',
+          className: isActive('/logs') ? 'menu-active-item' : '',
         },
       ],
     },

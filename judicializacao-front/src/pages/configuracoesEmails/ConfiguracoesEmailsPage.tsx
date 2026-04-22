@@ -11,7 +11,7 @@ import {
 } from '../../services/api/orders';
 import './ConfiguracoesEmailsPage.css';
 
-type TipoEmail = 'DAR_PERDA' | 'PEDIR_EXAMES' | 'ENVIAR_ORCAMENTO';
+type TipoEmail = 'DAR_PERDA' | 'PEDIR_EXAMES' | 'ENVIAR_ORCAMENTO' | 'RECEBIMENTO_PEDIDO';
 
 interface ConfiguracaoEmail {
   id?: number;
@@ -25,6 +25,7 @@ const CONFIG_PADRAO: Record<TipoEmail, ConfiguracaoEmail> = {
   DAR_PERDA: { tipoEmail: 'DAR_PERDA', assunto: '', corpo: '', ativo: true },
   PEDIR_EXAMES: { tipoEmail: 'PEDIR_EXAMES', assunto: '', corpo: '', ativo: true },
   ENVIAR_ORCAMENTO: { tipoEmail: 'ENVIAR_ORCAMENTO', assunto: '', corpo: '', ativo: true },
+  RECEBIMENTO_PEDIDO: { tipoEmail: 'RECEBIMENTO_PEDIDO', assunto: '', corpo: '', ativo: true },
 };
 
 const TIPOS_EMAIL: Array<{
@@ -50,6 +51,12 @@ const TIPOS_EMAIL: Array<{
     titulo: 'Enviar Orçamento',
     descricao: 'Configura o email usado quando o orçamento foi obtido e será enviado ao estado.',
     icon: 'pi pi-file',
+  },
+  {
+    tipoEmail: 'RECEBIMENTO_PEDIDO',
+    titulo: 'Recebimento Pedido',
+    descricao: 'Configura o email de confirmação de recebimento do pedido enviado pelo estado.',
+    icon: 'pi pi-inbox',
   },
 ];
 

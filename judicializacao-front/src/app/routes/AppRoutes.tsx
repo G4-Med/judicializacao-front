@@ -18,6 +18,7 @@ import { ConfiguracoesPage } from '../../pages/configuracoes/ConfiguracoesPage';
 import { LogsPage } from '../../pages/logs/LogsPage';
 import { JuridicoPage } from '../../pages/juridico/JuridicoPage';
 import { OrcamentoMedicoPage } from '../../pages/orcamentoMedico/OrcamentoMedicoPage';
+import { SelecionarMedicoPage } from '../../pages/selecionarMedico/SelecionarMedicoPage';
 import { RelatorioResumidoPage } from '../../pages/relatorios/RelatorioResumidoPage';
 import { RelatorioConsolidadoPage } from '../../pages/relatorios/RelatorioConsolidadoPage';
 import { EmailsPage } from '../../pages/emails/EmailsPage';
@@ -41,6 +42,7 @@ export function AppRoutes() {
         <Route path="/protocolados" element={<ProtocoladosPage />} />
         <Route path="/segredo-justica" element={<SegredoJusticaPage />} />
         <Route path="/juridico" element={<JuridicoPage />} />
+        <Route path="/selecionar-medico" element={<SelecionarMedicoPage />} />
         <Route path="/orcamento-medico" element={<OrcamentoMedicoPage />} />
 
         <Route path="/resultados" element={<ResultadosPage />} />

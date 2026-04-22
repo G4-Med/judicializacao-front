@@ -3,10 +3,11 @@ import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { InputNumber } from 'primereact/inputnumber';
 import { InputText } from 'primereact/inputtext';
+import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import { getBaseOrcamento } from '../../services/api/client';
+import { getBaseOrcamento, getDadosMedico } from '../../services/api/client';
 import { salvarOrcamentoMedico, uploadAnexoOrder } from '../../services/api/orders';
 import './OrcamentoMedicoPage.css';
 
@@ -156,6 +157,7 @@ export function EnviarOrcamentoDialog({
   const [baseOrcamento, setBaseOrcamento] = useState<BaseOrcamento>(baseOrcamentoInicial);
   const [loadingBaseOrcamento, setLoadingBaseOrcamento] = useState(false);
   const [basePdfCaptureReady, setBasePdfCaptureReady] = useState(false);
+  const [hospitalMedico, setHospitalMedico] = useState('');
 
   const previewDocumentoRef = useRef<HTMLDivElement>(null);
   const basePdfCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -171,6 +173,7 @@ export function EnviarOrcamentoDialog({
     setMedicamentos([itemVazio()]);
     setBaseOrcamento(baseOrcamentoInicial);
     setBasePdfCaptureReady(false);
+    setHospitalMedico('');
   }, [visible, processo?.id]);
 
   useEffect(() => {
@@ -242,9 +245,17 @@ export function EnviarOrcamentoDialog({
   const totalTaxas = useMemo(() => taxasPreview.reduce((acc, item) => acc + item.valor, 0), [taxasPreview]);
   const totalOpme = useMemo(() => opmePreview.reduce((acc, item) => acc + item.valor, 0), [opmePreview]);
   const totalMedicamentos = useMemo(() => medicamentosPreview.reduce((acc, item) => acc + item.valor, 0), [medicamentosPreview]);
-  const dataHoje = useMemo(() => new Date().toLocaleDateString('pt-BR'), []);
+  const dataHoje = useMemo(
+    () =>
+      new Date().toLocaleDateString('pt-BR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+    []
+  );
   const nomeMedicoPreview = (processo?.nomeMedico ?? processo?.medico ?? 'Médico responsável') as string;
-  const hospitalPreview = (processo?.hospital ?? processo?.nomeHospital ?? 'Hospital a definir') as string;
+  const hospitalPreview = (hospitalMedico || processo?.hospital || processo?.nomeHospital || 'Hospital a definir') as string;
   const assinaturaSrc = useMemo(() => {
     if (!baseOrcamento.linkAssinatura) return '';
     const separador = baseOrcamento.linkAssinatura.includes('?') ? '&' : '?';
@@ -295,15 +306,21 @@ export function EnviarOrcamentoDialog({
 
     setLoadingBaseOrcamento(true);
     try {
-      const { data } = await getBaseOrcamento(medicoId);
+      const [{ data }, { data: dadosMedico }] = await Promise.all([
+        getBaseOrcamento(medicoId),
+        getDadosMedico(medicoId),
+      ]);
+      const dadosMedicoItem = Array.isArray(dadosMedico) ? dadosMedico[0] : dadosMedico;
       setBaseOrcamento({
         ...baseOrcamentoInicial,
         ...data,
         exists: Boolean(data?.exists),
       });
+      setHospitalMedico(dadosMedicoItem?.hospital ?? '');
     } catch (error) {
       console.error('[EnviarOrcamentoDialog] erro ao carregar base de orçamento', error);
       setBaseOrcamento(baseOrcamentoInicial);
+      setHospitalMedico('');
     } finally {
       setLoadingBaseOrcamento(false);
     }
@@ -433,11 +450,18 @@ export function EnviarOrcamentoDialog({
             windowHeight: alturaPreview,
           });
 
-          const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-          if (blob) {
-            const file = new File([blob], `orcamento-manual-order-${processo.id}.png`, { type: 'image/png' });
-            await uploadAnexoOrder(processo.id, file, 'ORCAMENTO');
-          }
+          const imagemDataUrl = canvas.toDataURL('image/png');
+          const pdf = new jsPDF({
+            orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+            unit: 'px',
+            format: [canvas.width, canvas.height],
+          });
+
+          pdf.addImage(imagemDataUrl, 'PNG', 0, 0, canvas.width, canvas.height);
+
+          const pdfBlob = pdf.output('blob');
+          const file = new File([pdfBlob], `orcamento-manual-order-${processo.id}.pdf`, { type: 'application/pdf' });
+          await uploadAnexoOrder(processo.id, file, 'ORCAMENTO');
         } finally {
           cloneWrapper.remove();
         }

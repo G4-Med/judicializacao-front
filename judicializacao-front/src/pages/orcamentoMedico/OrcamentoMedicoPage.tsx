@@ -2,13 +2,13 @@
 import { DataTable } from 'primereact/datatable';
 import type { DataTableFilterMeta, DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { InputNumber } from 'primereact/inputnumber';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
-import { Tag } from 'primereact/tag';
 import { FilterMatchMode } from 'primereact/api';
 import html2canvas from 'html2canvas';
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
@@ -137,10 +137,13 @@ export function OrcamentoMedicoPage() {
     return dataComSequencial.map((item) => {
       const orderLookup = ordersLookup[item.id];
       const medicoId = item.idMedico ?? item.medicoId ?? item.medico_id ?? orderLookup?.idMedico ?? orderLookup?.medicoId ?? null;
-      const medicoNome = medicos.find((medico: any) => medico.id === medicoId)?.nomeSistema ?? '';
+      const medicoSelecionado = medicos.find((medico: any) => medico.id === medicoId);
+      const medicoNome = medicoSelecionado?.nomeSistema ?? '';
       return {
         ...item,
         medico: item.nomeMedico ?? orderLookup?.nomeMedico ?? orderLookup?.medico ?? medicoNome,
+        hospital: item.hospital ?? orderLookup?.hospital ?? medicoSelecionado?.hospital ?? '',
+        nomeHospital: orderLookup?.nomeHospital ?? medicoSelecionado?.hospital ?? '',
       };
     });
   }, [dataComSequencial, ordersLookup, medicos]);
@@ -345,8 +348,6 @@ ${linhasAnexos}
             filterElement={(o) => dropdownFilterElement(o, medicosOptions)} style={{ minWidth: '14rem' }} />
           <Column field="area" header="Área" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '10rem' }} />
-          <Column field="subarea" header="Subárea" sortable filter
-            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '12rem' }} />
           <Column field="dataStatusJuridico" header="Data Solicitação"
             body={(r) => formatarData(r.dataStatusJuridico)} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '12rem' }} />

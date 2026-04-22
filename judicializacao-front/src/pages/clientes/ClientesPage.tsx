@@ -1621,7 +1621,7 @@ const handleSalvarEdicao = async () => {
                   )}
                   {renderUploadSimples(
                     'novo-arquivo-adicional-arquivo',
-                    'Arquivo Adicional',
+                    'Cartão CNPJ',
                     novoCliente.arquivoAdicionalArquivo,
                     novoCliente.caminhoArquivoAdicional,
                     (file) => handleNovoClienteArquivo('arquivoAdicionalArquivo', file)
@@ -2335,7 +2335,7 @@ const handleSalvarEdicao = async () => {
 
                     {renderUploadSimples(
                       'editar-arquivo-adicional-arquivo',
-                      'Arquivo Adicional',
+                      'Cartão CNPJ',
                       clienteEditando.arquivoAdicionalArquivo,
                       clienteEditando.caminhoArquivoAdicional,
                       (file) => handleClienteEditandoArquivo('arquivoAdicionalArquivo', file)

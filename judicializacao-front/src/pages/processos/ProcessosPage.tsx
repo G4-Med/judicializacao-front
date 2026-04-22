@@ -145,6 +145,12 @@ interface ProcessAttachmentInput {
   file: File | null;
 }
 
+interface JsonBatchProcessItem {
+  id: number;
+  payload: OrderProcessJson;
+  attachments: ProcessAttachmentInput[];
+}
+
 const createAttachmentInput = (): ProcessAttachmentInput => ({
   id: Date.now() + Math.floor(Math.random() * 1000),
   file: null,
@@ -192,6 +198,8 @@ export function ProcessosPage() {
   const [novoProcessoTipoVisible, setNovoProcessoTipoVisible] = useState(false);
   const [novoProcessoManualVisible, setNovoProcessoManualVisible] = useState(false);
   const [novoProcessoJsonVisible, setNovoProcessoJsonVisible] = useState(false);
+  const [novoProcessoJsonLoteVisible, setNovoProcessoJsonLoteVisible] = useState(false);
+  const [novoProcessoJsonLoteAnexosVisible, setNovoProcessoJsonLoteAnexosVisible] = useState(false);
   const [enviandoNovoProcesso, setEnviandoNovoProcesso] = useState(false);
   const [buscandoPedidos, setBuscandoPedidos] = useState(false);
   const [executandoAcaoMassa, setExecutandoAcaoMassa] = useState(false);
@@ -200,6 +208,8 @@ export function ProcessosPage() {
   const [manualAttachments, setManualAttachments] = useState<ProcessAttachmentInput[]>([createAttachmentInput()]);
   const [jsonProcessInput, setJsonProcessInput] = useState('');
   const [jsonAttachments, setJsonAttachments] = useState<ProcessAttachmentInput[]>([createAttachmentInput()]);
+  const [jsonBatchInput, setJsonBatchInput] = useState('');
+  const [jsonBatchItems, setJsonBatchItems] = useState<JsonBatchProcessItem[]>([]);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -764,6 +774,11 @@ ${linhasAnexos}
     setJsonAttachments([createAttachmentInput()]);
   };
 
+  const resetNovoProcessoJsonLote = () => {
+    setJsonBatchInput('');
+    setJsonBatchItems([]);
+  };
+
   const abrirNovoProcessoManual = () => {
     setNovoProcessoTipoVisible(false);
     resetNovoProcessoManual();
@@ -774,6 +789,12 @@ ${linhasAnexos}
     setNovoProcessoTipoVisible(false);
     resetNovoProcessoJson();
     setNovoProcessoJsonVisible(true);
+  };
+
+  const abrirNovoProcessoJsonLote = () => {
+    setNovoProcessoTipoVisible(false);
+    resetNovoProcessoJsonLote();
+    setNovoProcessoJsonLoteVisible(true);
   };
 
   const updateManualProcessForm = (field: keyof ManualProcessForm, value: string | number | null) => {
@@ -807,6 +828,50 @@ ${linhasAnexos}
       }
       return prev.filter((item) => item.id !== id);
     });
+  };
+
+  const updateBatchAttachmentAt = (processId: number, attachmentId: number, file: File | null) => {
+    setJsonBatchItems((prev) =>
+      prev.map((item) =>
+        item.id === processId
+          ? {
+              ...item,
+              attachments: item.attachments.map((attachment) =>
+                attachment.id === attachmentId ? { ...attachment, file } : attachment
+              ),
+            }
+          : item
+      )
+    );
+  };
+
+  const addBatchAttachmentField = (processId: number) => {
+    setJsonBatchItems((prev) =>
+      prev.map((item) =>
+        item.id === processId
+          ? { ...item, attachments: [...item.attachments, createAttachmentInput()] }
+          : item
+      )
+    );
+  };
+
+  const removeBatchAttachmentField = (processId: number, attachmentId: number) => {
+    setJsonBatchItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== processId) return item;
+        if (item.attachments.length === 1) {
+          return {
+            ...item,
+            attachments: [{ ...item.attachments[0], file: null }],
+          };
+        }
+
+        return {
+          ...item,
+          attachments: item.attachments.filter((attachment) => attachment.id !== attachmentId),
+        };
+      })
+    );
   };
 
   const uploadAttachments = async (attachments: ProcessAttachmentInput[]) => {
@@ -937,6 +1002,48 @@ ${linhasAnexos}
     return null;
   };
 
+  const handleAvancarNovoProcessoJsonLote = () => {
+    let parsedPayload: any;
+
+    try {
+      parsedPayload = JSON.parse(jsonBatchInput);
+    } catch {
+      alert('O JSON informado é inválido.');
+      return;
+    }
+
+    parsedPayload = normalizeJsonPayloadStrings(parsedPayload);
+
+    if (!Array.isArray(parsedPayload)) {
+      alert('O JSON em lote precisa ser uma lista de pedidos.');
+      return;
+    }
+
+    if (parsedPayload.length === 0) {
+      alert('Informe pelo menos um pedido no JSON em lote.');
+      return;
+    }
+
+    for (let index = 0; index < parsedPayload.length; index += 1) {
+      const validationError = validateOrderProcessJson(parsedPayload[index]);
+      if (validationError) {
+        alert(`Pedido ${index + 1}: ${validationError}`);
+        return;
+      }
+    }
+
+    setJsonBatchItems(
+      parsedPayload.map((item: OrderProcessJson, index: number) => ({
+        id: Date.now() + index,
+        payload: item,
+        attachments: [createAttachmentInput()],
+      }))
+    );
+
+    setNovoProcessoJsonLoteVisible(false);
+    setNovoProcessoJsonLoteAnexosVisible(true);
+  };
+
   const handleEnviarNovoProcessoManual = async () => {
     const missingFields = validateManualForm(manualProcessForm);
     if (missingFields.length > 0) {
@@ -1020,6 +1127,38 @@ ${linhasAnexos}
     } catch (error) {
       console.error('Erro ao criar order process por JSON:', error);
       alert('Erro ao enviar o novo processo por JSON.');
+    } finally {
+      setEnviandoNovoProcesso(false);
+    }
+  };
+
+  const handleEnviarNovoProcessoJsonLote = async () => {
+    if (jsonBatchItems.length === 0) {
+      alert('Nenhum pedido em lote foi preparado para envio.');
+      return;
+    }
+
+    setEnviandoNovoProcesso(true);
+    try {
+      for (const item of jsonBatchItems) {
+        const anexos = await uploadAttachments(item.attachments);
+        const payload: OrderProcessJson = {
+          ...item.payload,
+          anexos: [...item.payload.anexos, ...anexos],
+        };
+
+        await criarOrderProcess({
+          json: normalizePayloadForStorage(payload) as Record<string, any>,
+          processado: false,
+        });
+      }
+
+      setNovoProcessoJsonLoteAnexosVisible(false);
+      resetNovoProcessoJsonLote();
+      alert(`${jsonBatchItems.length} pedido(s) enviados para a fila com sucesso.`);
+    } catch (error) {
+      console.error('Erro ao criar order process por JSON em lote:', error);
+      alert('Erro ao enviar os pedidos por JSON em lote.');
     } finally {
       setEnviandoNovoProcesso(false);
     }
@@ -1560,6 +1699,13 @@ ${linhasAnexos}
               className="novo-processo-tipo-button"
               onClick={abrirNovoProcessoJson}
             />
+            <Button
+              label="Vários Pedidos por Json"
+              icon="pi pi-clone"
+              outlined
+              className="novo-processo-tipo-button"
+              onClick={abrirNovoProcessoJsonLote}
+            />
           </div>
         </Dialog>
 
@@ -1727,6 +1873,118 @@ ${linhasAnexos}
               label={enviandoNovoProcesso ? 'Enviando...' : 'Enviar'}
               icon="pi pi-check"
               onClick={handleEnviarNovoProcessoJson}
+              loading={enviandoNovoProcesso}
+            />
+          </div>
+        </Dialog>
+
+        <Dialog
+          header="Vários Pedidos por Json"
+          visible={novoProcessoJsonLoteVisible}
+          style={{ width: '70rem', maxWidth: '96vw' }}
+          modal
+          onHide={() => setNovoProcessoJsonLoteVisible(false)}
+          className="processo-edit-dialog"
+        >
+          <div className="processo-form-grid-v2">
+            <div className="field field-span-4">
+              <label>Lista JSON de Pedidos *</label>
+              <InputTextarea
+                value={jsonBatchInput}
+                onChange={(e) => setJsonBatchInput(e.target.value)}
+                rows={18}
+                autoResize
+                placeholder='Cole aqui a lista JSON com vários pedidos'
+              />
+            </div>
+          </div>
+
+          <div className="dialog-footer-actions">
+            <Button
+              label="Cancelar"
+              outlined
+              onClick={() => setNovoProcessoJsonLoteVisible(false)}
+            />
+            <Button
+              label="Avançar"
+              icon="pi pi-arrow-right"
+              onClick={handleAvancarNovoProcessoJsonLote}
+            />
+          </div>
+        </Dialog>
+
+        <Dialog
+          header="Vincular Anexos aos Pedidos"
+          visible={novoProcessoJsonLoteAnexosVisible}
+          style={{ width: '76rem', maxWidth: '96vw' }}
+          modal
+          onHide={() => setNovoProcessoJsonLoteAnexosVisible(false)}
+          className="processo-edit-dialog"
+        >
+          <div className="novo-processo-lote-lista">
+            {jsonBatchItems.map((item, index) => (
+              <div key={item.id} className="novo-processo-lote-card">
+                <div className="novo-processo-lote-card-header">
+                  <div>
+                    <strong>{index + 1}. {item.payload.paciente}</strong>
+                    <p>{item.payload.procedimento}</p>
+                  </div>
+                  <Tag value={item.payload.area} severity="info" />
+                </div>
+
+                <div className="field field-span-4">
+                  <label>Anexos deste pedido</label>
+                  <div className="novo-processo-anexos">
+                    {item.attachments.map((attachment, attachmentIndex) => (
+                      <div key={attachment.id} className="novo-processo-anexo-row">
+                        <input
+                          type="file"
+                          onChange={(e) =>
+                            updateBatchAttachmentAt(
+                              item.id,
+                              attachment.id,
+                              e.target.files?.[0] ?? null
+                            )}
+                          className="novo-processo-anexo-input"
+                        />
+                        <Button
+                          icon="pi pi-trash"
+                          severity="danger"
+                          outlined
+                          rounded
+                          onClick={() => removeBatchAttachmentField(item.id, attachment.id)}
+                          disabled={item.attachments.length === 1 && !attachment.file}
+                          tooltip={`Remover anexo ${attachmentIndex + 1}`}
+                        />
+                      </div>
+                    ))}
+
+                    <Button
+                      type="button"
+                      icon="pi pi-plus"
+                      label="Adicionar anexo"
+                      outlined
+                      onClick={() => addBatchAttachmentField(item.id)}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="dialog-footer-actions">
+            <Button
+              label="Voltar"
+              outlined
+              onClick={() => {
+                setNovoProcessoJsonLoteAnexosVisible(false);
+                setNovoProcessoJsonLoteVisible(true);
+              }}
+            />
+            <Button
+              label={enviandoNovoProcesso ? 'Enviando...' : 'Enviar'}
+              icon="pi pi-check"
+              onClick={handleEnviarNovoProcessoJsonLote}
               loading={enviandoNovoProcesso}
             />
           </div>

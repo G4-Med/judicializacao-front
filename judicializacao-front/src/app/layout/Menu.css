@@ -1,0 +1,30 @@
+.g4med-panel-menu .p-panelmenu-panel.menu-active-item > .p-panelmenu-header,
+.g4med-panel-menu .p-panelmenu-panel.menu-active-item > .p-panelmenu-header > .p-panelmenu-header-content,
+.g4med-panel-menu .p-panelmenu-header.menu-active-item > .p-panelmenu-header-content,
+.g4med-panel-menu .p-menuitem.menu-active-item > .p-menuitem-content {
+  background: rgba(255, 107, 26, 0.14);
+  border-left: 3px solid #ff6b1a;
+}
+
+.g4med-panel-menu .p-panelmenu-panel.menu-active-item > .p-panelmenu-header > .p-panelmenu-header-link,
+.g4med-panel-menu .p-panelmenu-panel.menu-active-item > .p-panelmenu-header .p-panelmenu-header-link,
+.g4med-panel-menu .p-panelmenu-header.menu-active-item > .p-panelmenu-header-content .p-panelmenu-header-link,
+.g4med-panel-menu .p-menuitem.menu-active-item > .p-menuitem-content .p-menuitem-link {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.g4med-panel-menu .p-panelmenu-panel.menu-active-item > .p-panelmenu-header .p-menuitem-icon,
+.g4med-panel-menu .p-panelmenu-panel.menu-active-item > .p-panelmenu-header .p-submenu-icon,
+.g4med-panel-menu .p-panelmenu-header.menu-active-item > .p-panelmenu-header-content .p-menuitem-icon,
+.g4med-panel-menu .p-panelmenu-header.menu-active-item > .p-panelmenu-header-content .p-submenu-icon,
+.g4med-panel-menu .p-menuitem.menu-active-item > .p-menuitem-content .p-menuitem-icon {
+  color: #ff6b1a;
+}
+
+.g4med-panel-menu .p-panelmenu-header,
+.g4med-panel-menu .p-panelmenu-header-content,
+.g4med-panel-menu .p-menuitem-content {
+  border-radius: 10px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
