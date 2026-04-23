@@ -16,6 +16,8 @@ import { Timeline } from 'primereact/timeline';
 import { getProtocolados, salvarResultadoProtocolado, adicionarAcompanhamento, getAnexosOrder } from '../../services/api/orders';
 import { InputNumber } from 'primereact/inputnumber';
 import { getStatusTagStyle } from '../../utils/statusTag';
+import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
+import { useAccess } from '../../access/AccessContext';
 import './ProtocoladosPage.css';
 
 interface HistoricoAcompanhamento {
@@ -65,9 +67,10 @@ interface ProtocoladoTableRow extends Protocolado {
 type ResultadoType = 'ganho' | 'perda' | '';
 
 export function ProtocoladosPage() {
+  const { isReadOnly } = useAccess();
+  const readOnly = isReadOnly('protocolados');
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<Protocolado[]>([]);
-  const [selectedRegistros, setSelectedRegistros] = useState<ProtocoladoTableRow[]>([]);
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>(undefined);
@@ -364,12 +367,14 @@ export function ProtocoladosPage() {
         </div>
 
         <div className="page-actions">
-          <Button
+          {!readOnly && <Button
             label="Novo Protocolo"
             icon="pi pi-plus"
-          />
+          />}
         </div>
       </div>
+
+      {readOnly && <ReadOnlyBanner />}
 
       <div className="kpi-grid">
         <div className="kpi-card">
@@ -422,14 +427,11 @@ export function ProtocoladosPage() {
           onFilter={(e) => setFilters(e.filters)}
           filterDisplay="row"
           loading={loading}
-          selectionMode="multiple"
-          selection={selectedRegistros}
-          onSelectionChange={(e) => setSelectedRegistros(e.value as ProtocoladoTableRow[])}
           tableStyle={{ minWidth: '95rem' }}
           emptyMessage="Nenhum processo encontrado."
           className="protocolados-table"
         >
-          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+          {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
 
           <Column
             field="sequencial"
@@ -622,7 +624,7 @@ export function ProtocoladosPage() {
 
             <section className="update-section">
               <h3>Adicionar Acompanhamento</h3>
-              <div className="resultado-actions">
+              {!readOnly && <div className="resultado-actions">
                 <Button
                   label="Acompanhamento"
                   severity={tipoAcao === 'acompanhamento' ? 'info' : 'secondary'}
@@ -635,7 +637,7 @@ export function ProtocoladosPage() {
                   outlined={tipoAcao !== 'decisao'}
                   onClick={() => setTipoAcao('decisao')}
                 />
-              </div>
+              </div>}
 
               {tipoAcao === 'acompanhamento' && (
                 <div className="update-form-grid">

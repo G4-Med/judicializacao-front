@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import type { DataTableFilterMeta, DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
@@ -9,6 +9,8 @@ import { Dropdown } from 'primereact/dropdown';
 import { Dialog } from 'primereact/dialog';
 import { FilterMatchMode } from 'primereact/api';
 import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder } from '../../services/api/orders';
+import { useAccess } from '../../access/AccessContext';
+import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './JuridicoPage.css';
 
 interface ProcessoJuridico {
@@ -50,6 +52,8 @@ function calcularIdade(dataNascimento: string | null): number {
 
 
 export function JuridicoPage() {
+  const { isReadOnly } = useAccess();
+  const readOnly = isReadOnly('juridico');
   const [loading, setLoading] = useState(false);
   const [processos, setProcessos] = useState<ProcessoJuridico[]>([]);
   const [first, setFirst] = useState(0);
@@ -130,7 +134,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
   setNprocessoObrigatorio(false);
   setEditDialogVisible(true);
 
-  // 👇 adiciona isso
+  // adiciona isso
   setAnexos([])
   setLoadingAnexos(true)
   getAnexosOrder(rowData.id, 'RELATORIO')
@@ -159,15 +163,15 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
         obs: obs || null,
     };
 
-    console.log('🚀 PAYLOAD ENVIADO PARA salvarJuridico:', payload);
-    console.log('📌 PROCESSO EDITANDO:', processoEditando);
+      console.log('PAYLOAD ENVIADO PARA salvarJuridico:', payload);
+      console.log('PROCESSO EDITANDO:', processoEditando);
 
     try {
         await salvarJuridico(processoEditando.id, payload);
         carregarDados();
         setEditDialogVisible(false);
     } catch (err: any) {
-        console.error('❌ ERRO AO SALVAR JURÍDICO:', err);
+      console.error('ERRO AO SALVAR JURÍDICO:', err);
         alert(err?.response?.data?.error ?? 'Erro ao salvar. Tente novamente.');
     }
   };
@@ -213,6 +217,8 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           <p>Processos aguardando análise jurídica</p>
         </div>
       </div>
+
+      {readOnly && <ReadOnlyBanner />}
 
       <div className="kpi-grid">
         <div className="kpi-card">
@@ -394,6 +400,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                 }}
                 placeholder="Ex: 0012345-67.2026.8.13.0000"
                 className={nprocessoObrigatorio ? 'p-invalid' : ''}
+                disabled={readOnly}
               />
               {nprocessoObrigatorio && (
                 <small style={{ color: '#ef4444' }}>
@@ -444,6 +451,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                 autoResize
                 placeholder="Observações sobre o processo..."
                 className={obsObrigatorio ? 'p-invalid' : ''}
+                disabled={readOnly}
               />
               {obsObrigatorio && (
                 <small style={{ color: '#ef4444' }}>
@@ -456,7 +464,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
 
         <div className="dialog-footer-actions">
           <Button label="Cancelar" outlined onClick={() => setEditDialogVisible(false)} />
-          <Button label="Salvar" icon="pi pi-check" onClick={handleSalvar} />
+          {!readOnly && <Button label="Salvar" icon="pi pi-check" onClick={handleSalvar} />}
         </div>
       </Dialog>
 
@@ -516,3 +524,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
     </div>
   );
 }
+
+
+
+

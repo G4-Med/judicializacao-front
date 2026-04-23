@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import type {
   DataTableFilterMeta,
@@ -17,6 +17,8 @@ import { FilterMatchMode } from 'primereact/api';
 import { Dialog } from 'primereact/dialog';
 import { RadioButton } from 'primereact/radiobutton';
 import { getStatusTagStyle } from '../../utils/statusTag';
+import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
+import { useAccess } from '../../access/AccessContext';
 import './ParaProtocolarPage.css';
 
 interface ParaProtocolar {
@@ -49,9 +51,10 @@ interface ParaProtocolarTableRow extends ParaProtocolar {
 type NaoProtocolarOpcao = 'perda' | 'segredo' | 'diretoria' | '';
 
 export function ParaProtocolarPage() {
+  const { isReadOnly } = useAccess();
+  const readOnly = isReadOnly('paraProtocolar');
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<ParaProtocolar[]>([]);
-  const [selectedRegistros, setSelectedRegistros] = useState<ParaProtocolarTableRow[]>([]);
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>(undefined);
@@ -217,7 +220,7 @@ export function ParaProtocolarPage() {
       const listaAnexos: any[] = res.data.anexos ?? [];
 
       if (listaAnexos.length === 0) {
-        alert('Nenhum orçamento anexado para este pedido.');
+        alert('Nenhum orÃ§amento anexado para este pedido.');
         return;
       }
 
@@ -237,7 +240,7 @@ export function ParaProtocolarPage() {
 
       abrirPreview(anexo.linkImagem, nomeArquivo, tipo);
     } catch {
-      alert('Erro ao carregar o orçamento do pedido.');
+      alert('Erro ao carregar o orÃ§amento do pedido.');
     }
   };
 
@@ -248,7 +251,7 @@ export function ParaProtocolarPage() {
         rounded
         outlined
         severity="secondary"
-        aria-label={`Baixar orçamento do pedido ${rowData.id}`}
+        aria-label={`Baixar orÃ§amento do pedido ${rowData.id}`}
         onClick={() => abrirOrcamentoAnexo(rowData, 'download')}
       />
     );
@@ -301,7 +304,7 @@ export function ParaProtocolarPage() {
   const excluirBodyTemplate = (rowData: ParaProtocolarTableRow) => {
     return (
       <Button
-        label="Não Protocolar"
+        label="NÃ£o Protocolar"
         icon="pi pi-times"
         severity="danger"
         outlined
@@ -343,26 +346,26 @@ export function ParaProtocolarPage() {
 
   const handleSalvarEdicao = () => {
     if (!registroEditando) return;
-    console.log('Salvar edição:', registroEditando);
+    console.log('Salvar ediÃ§Ã£o:', registroEditando);
     setEditDialogVisible(false);
   };
 
 const handleConfirmarProtocolacao = async () => {
   if (!registroProtocolando) return
 
-  // Validações obrigatórias
+  // ValidaÃ§Ãµes obrigatÃ³rias
   if (!dataProtocolo) {
-    alert('A data de protocolação é obrigatória.')
+    alert('A data de protocolaÃ§Ã£o Ã© obrigatÃ³ria.')
     return
   }
   if (!arquivoPeticao) {
-    alert('O arquivo de petição é obrigatório.')
+    alert('O arquivo de petiÃ§Ã£o Ã© obrigatÃ³rio.')
     return
   }
 
   setEnviandoProtocolo(true)
   try {
-    // 1 — Upload dos arquivos para R2
+    // 1 â€” Upload dos arquivos para R2
     const uploads = []
 
     uploads.push(uploadAnexoOrder(registroProtocolando.id, arquivoPeticao, 'PROTOCOLO'))
@@ -376,7 +379,7 @@ const handleConfirmarProtocolacao = async () => {
 
     await Promise.all(uploads)
 
-    // 2 — Salva o protocolo
+    // 2 â€” Salva o protocolo
     await salvarProtocolar(registroProtocolando.id, {
       acao: 'protocolar',
       obs: registroProtocolando.observacoes || '',
@@ -389,7 +392,7 @@ const handleConfirmarProtocolacao = async () => {
     setArquivoExtra2(null)
     carregarDados()
   } catch (err) {
-    alert('Erro ao confirmar protocolação.')
+    alert('Erro ao confirmar protocolaÃ§Ã£o.')
   } finally {
     setEnviandoProtocolo(false)
   }
@@ -400,7 +403,7 @@ const handleConfirmarProtocolacao = async () => {
     if (!registroNaoProtocolar || !naoProtocolarOpcao) return;
 
     if (!naoProtocolarObs.trim()) {
-      alert('Observação é obrigatória.');
+      alert('ObservaÃ§Ã£o Ã© obrigatÃ³ria.');
       return;
     }
 
@@ -423,13 +426,15 @@ const handleConfirmarProtocolacao = async () => {
       <div className="page-header">
         <div>
           <h1>Para Protocolar</h1>
-          <p>Gestão dos processos prontos para protocolação</p>
+          <p>GestÃ£o dos processos prontos para protocolaÃ§Ã£o</p>
         </div>
 
         <div className="page-actions">
-          <Button label="Novo" icon="pi pi-plus" />
+          {!readOnly && <Button label="Novo" icon="pi pi-plus" />}
         </div>
       </div>
+
+      {readOnly && <ReadOnlyBanner />}
 
       <div className="kpi-grid kpi-grid-3">
         <div className="kpi-card">
@@ -473,14 +478,13 @@ const handleConfirmarProtocolacao = async () => {
           onFilter={(e) => setFilters(e.filters)}
           filterDisplay="row"
           loading={loading}
-          selectionMode="multiple"
-          selection={selectedRegistros}
-          onSelectionChange={(e) => setSelectedRegistros(e.value as ParaProtocolarTableRow[])}
           tableStyle={{ minWidth: '95rem' }}
           emptyMessage="Nenhum processo encontrado."
           className="para-protocolar-table"
         >
-          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+          {!readOnly && (
+            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+          )}
 
           <Column
             field="sequencial"
@@ -520,7 +524,7 @@ const handleConfirmarProtocolacao = async () => {
 
           <Column
             field="dataEnvioOrcamento"
-            header="Data Envio Orçamento"
+            header="Data Envio OrÃ§amento"
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -539,7 +543,7 @@ const handleConfirmarProtocolacao = async () => {
           />
 
           <Column
-            header="Orçamento"
+            header="OrÃ§amento"
             body={anexoBodyTemplate}
             style={{ minWidth: '7rem' }}
             bodyStyle={{ textAlign: 'center' }}
@@ -555,26 +559,26 @@ const handleConfirmarProtocolacao = async () => {
             style={{ minWidth: '12rem' }}
           />
 
-          <Column
+          {!readOnly && <Column
             header="Editar"
             body={editarBodyTemplate}
             style={{ minWidth: '7rem' }}
             bodyStyle={{ textAlign: 'center' }}
-          />
+          />}
 
-          <Column
+          {!readOnly && <Column
             header="Protocolar"
             body={protocolarBodyTemplate}
             style={{ minWidth: '10rem' }}
             bodyStyle={{ textAlign: 'center' }}
-          />
+          />}
 
-          <Column
+          {!readOnly && <Column
             header="Excluir"
             body={excluirBodyTemplate}
             style={{ minWidth: '12rem' }}
             bodyStyle={{ textAlign: 'center' }}
-          />
+          />}
         </DataTable>
       </div>
 
@@ -616,7 +620,7 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field">
-              <label>Número do Processo</label>
+              <label>NÃºmero do Processo</label>
               <InputText
                 value={registroEditando.numeroProcesso}
                 onChange={(e) => updateRegistroEditando('numeroProcesso', e.target.value)}
@@ -624,7 +628,7 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field">
-              <label>Data Envio Orçamento</label>
+              <label>Data Envio OrÃ§amento</label>
               <InputText value={formatarData(registroEditando.dataEnvioOrcamento)} disabled />
             </div>
 
@@ -636,25 +640,25 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field field-span-4">
-              <label>Orçamento do Pedido</label>
+              <label>OrÃ§amento do Pedido</label>
 
               {loadingAnexosOrcamento && (
                 <span style={{ fontSize: '0.9rem', color: '#888' }}>
                   <i className="pi pi-spin pi-spinner" style={{ marginRight: '6px' }} />
-                  Carregando orçamento...
+                  Carregando orÃ§amento...
                 </span>
               )}
 
               {!loadingAnexosOrcamento && anexosOrcamento.length === 0 && (
                 <span style={{ fontSize: '0.9rem', color: '#aaa' }}>
-                  Nenhum orçamento anexado.
+                  Nenhum orÃ§amento anexado.
                 </span>
               )}
 
               {!loadingAnexosOrcamento && anexosOrcamento.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {anexosOrcamento.map((anexo, index) => {
-                    const nomeArquivo = anexo.linkImagem.split('/').pop() || `Orçamento ${index + 1}`;
+                    const nomeArquivo = anexo.linkImagem.split('/').pop() || `OrÃ§amento ${index + 1}`;
                     const extensao = nomeArquivo.split('.').pop()?.toLowerCase();
                     const icone = extensao === 'pdf'
                       ? 'pi pi-file-pdf'
@@ -699,7 +703,7 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field field-span-4">
-              <label>Observações</label>
+              <label>ObservaÃ§Ãµes</label>
               <InputTextarea
                 value={registroEditando.observacoes}
                 onChange={(e) => updateRegistroEditando('observacoes', e.target.value)}
@@ -719,10 +723,10 @@ const handleConfirmarProtocolacao = async () => {
           </div>
         )}
 
-        <div className="dialog-footer-actions">
+        {!readOnly && <div className="dialog-footer-actions">
           <Button label="Cancelar" outlined onClick={() => setEditDialogVisible(false)} />
           <Button label="Salvar" icon="pi pi-check" onClick={handleSalvarEdicao} />
-        </div>
+        </div>}
       </Dialog>
 
       <Dialog
@@ -762,7 +766,7 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field">
-              <label>Número do Processo</label>
+              <label>NÃºmero do Processo</label>
               <InputText value={registroProtocolando.numeroProcesso} disabled />
             </div>
 
@@ -772,30 +776,30 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field field-span-4">
-              <label>Observações</label>
+              <label>ObservaÃ§Ãµes</label>
               <InputTextarea value={registroProtocolando.observacoes} rows={4} disabled />
             </div>
 
 <div className="field field-span-4">
-  <label>Orçamento do Pedido</label>
+  <label>OrÃ§amento do Pedido</label>
 
   {loadingAnexosOrcamento && (
     <span style={{ fontSize: '0.9rem', color: '#888' }}>
       <i className="pi pi-spin pi-spinner" style={{ marginRight: '6px' }} />
-      Carregando orçamento...
+      Carregando orÃ§amento...
     </span>
   )}
 
   {!loadingAnexosOrcamento && anexosOrcamento.length === 0 && (
     <span style={{ fontSize: '0.9rem', color: '#aaa' }}>
-      Nenhum orçamento anexado.
+      Nenhum orÃ§amento anexado.
     </span>
   )}
 
   {!loadingAnexosOrcamento && anexosOrcamento.length > 0 && (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
       {anexosOrcamento.map((anexo, index) => {
-        const nomeArquivo = anexo.linkImagem.split('/').pop() || `Orçamento ${index + 1}`;
+        const nomeArquivo = anexo.linkImagem.split('/').pop() || `OrÃ§amento ${index + 1}`;
         const extensao = nomeArquivo.split('.').pop()?.toLowerCase();
         const icone = extensao === 'pdf'
           ? 'pi pi-file-pdf'
@@ -841,7 +845,7 @@ const handleConfirmarProtocolacao = async () => {
 
 <div className="field field-span-2">
   <label>
-    Data Protocolação
+    Data ProtocolaÃ§Ã£o
     <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>
   </label>
   <Calendar
@@ -858,8 +862,8 @@ const handleConfirmarProtocolacao = async () => {
 
 <div className="field field-span-2">
   <label>
-    Petição
-    <span style={{ color: '#ef4444', marginLeft: '4px' }}>*obrigatório</span>
+    PetiÃ§Ã£o
+    <span style={{ color: '#ef4444', marginLeft: '4px' }}>*obrigatÃ³rio</span>
   </label>
   <label
     style={{
@@ -876,7 +880,7 @@ const handleConfirmarProtocolacao = async () => {
     }}
   >
     <i className={arquivoPeticao ? 'pi pi-file-check' : 'pi pi-upload'} />
-    <span>{arquivoPeticao ? arquivoPeticao.name : 'Selecionar petição...'}</span>
+    <span>{arquivoPeticao ? arquivoPeticao.name : 'Selecionar petiÃ§Ã£o...'}</span>
     <input
       type="file"
       accept=".pdf,.jpg,.jpeg,.png"
@@ -946,20 +950,20 @@ const handleConfirmarProtocolacao = async () => {
           </div>
         )}
 
-        <div className="dialog-footer-actions">
+        {!readOnly && <div className="dialog-footer-actions">
           <Button label="Cancelar" outlined onClick={() => setProtocolarDialogVisible(false)} />
 <Button
-  label={enviandoProtocolo ? 'Enviando...' : 'Confirmar Protocolação'}
+  label={enviandoProtocolo ? 'Enviando...' : 'Confirmar ProtocolaÃ§Ã£o'}
   icon="pi pi-check"
   onClick={handleConfirmarProtocolacao}
   loading={enviandoProtocolo}
   disabled={enviandoProtocolo}
 />
-        </div>
+        </div>}
       </Dialog>
 
       <Dialog
-        header="Não Protocolar"
+        header="NÃ£o Protocolar"
         visible={naoProtocolarDialogVisible}
         style={{ width: '64rem', maxWidth: '95vw' }}
         modal
@@ -995,7 +999,7 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field">
-              <label>Número do Processo</label>
+              <label>NÃºmero do Processo</label>
               <InputText value={registroNaoProtocolar.numeroProcesso} disabled />
             </div>
 
@@ -1005,30 +1009,30 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field field-span-4">
-              <label>Observações</label>
+              <label>ObservaÃ§Ãµes</label>
               <InputTextarea value={registroNaoProtocolar.observacoes} rows={4} disabled />
             </div>
 
             <div className="field field-span-4">
-              <label>Orçamento do Pedido</label>
+              <label>OrÃ§amento do Pedido</label>
 
               {loadingAnexosOrcamento && (
                 <span style={{ fontSize: '0.9rem', color: '#888' }}>
                   <i className="pi pi-spin pi-spinner" style={{ marginRight: '6px' }} />
-                  Carregando orçamento...
+                  Carregando orÃ§amento...
                 </span>
               )}
 
               {!loadingAnexosOrcamento && anexosOrcamento.length === 0 && (
                 <span style={{ fontSize: '0.9rem', color: '#aaa' }}>
-                  Nenhum orçamento anexado.
+                  Nenhum orÃ§amento anexado.
                 </span>
               )}
 
               {!loadingAnexosOrcamento && anexosOrcamento.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {anexosOrcamento.map((anexo, index) => {
-                    const nomeArquivo = anexo.linkImagem.split('/').pop() || `Orçamento ${index + 1}`;
+                    const nomeArquivo = anexo.linkImagem.split('/').pop() || `OrÃ§amento ${index + 1}`;
                     const extensao = nomeArquivo.split('.').pop()?.toLowerCase();
                     const icone = extensao === 'pdf'
                       ? 'pi pi-file-pdf'
@@ -1073,7 +1077,7 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field field-span-4">
-              <label>Escolha uma opção</label>
+              <label>Escolha uma opÃ§Ã£o</label>
 
               <div className="radio-group">
                 <div className="radio-item">
@@ -1095,7 +1099,7 @@ const handleConfirmarProtocolacao = async () => {
                     onChange={(e) => setNaoProtocolarOpcao(e.value)}
                     checked={naoProtocolarOpcao === 'segredo'}
                   />
-                  <label htmlFor="opcaoSegredo">Não Protocolar e marcar como Segredo de Justiça</label>
+                  <label htmlFor="opcaoSegredo">NÃ£o Protocolar e marcar como Segredo de JustiÃ§a</label>
                 </div>
 
                 <div className="radio-item">
@@ -1106,14 +1110,14 @@ const handleConfirmarProtocolacao = async () => {
                     onChange={(e) => setNaoProtocolarOpcao(e.value)}
                     checked={naoProtocolarOpcao === 'diretoria'}
                   />
-                  <label htmlFor="opcaoDiretoria">Diretoria falou para não protocolar</label>
+                  <label htmlFor="opcaoDiretoria">Diretoria falou para nÃ£o protocolar</label>
                 </div>
               </div>
             </div>
 
             <div className="field field-span-4">
               <label>
-                Obs <span style={{ color: '#ef4444' }}>*obrigatório</span>
+                Obs <span style={{ color: '#ef4444' }}>*obrigatÃ³rio</span>
               </label>
               <InputTextarea
                 value={naoProtocolarObs}
@@ -1125,7 +1129,7 @@ const handleConfirmarProtocolacao = async () => {
           </div>
         )}
 
-        <div className="dialog-footer-actions">
+        {!readOnly && <div className="dialog-footer-actions">
           <Button label="Cancelar" outlined onClick={() => setNaoProtocolarDialogVisible(false)} />
           <Button
             label="Confirmar"
@@ -1134,7 +1138,7 @@ const handleConfirmarProtocolacao = async () => {
             disabled={!naoProtocolarOpcao}
             onClick={handleConfirmarNaoProtocolar}
           />
-        </div>
+        </div>}
       </Dialog>
       <Dialog
         header={previewNome}

@@ -25,6 +25,7 @@ import { FilterMatchMode } from 'primereact/api';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { TabView, TabPanel } from 'primereact/tabview';
+import { useAccess } from '../../access/AccessContext';
 import './ClientesPage.css';
 
 interface Cliente {
@@ -191,6 +192,8 @@ const clienteInicial: ClienteTableRow = {
 };
 
 export function ClientesPage() {
+  const { isReadOnly } = useAccess();
+  const readOnly = isReadOnly('clientes');
   const [loading, setLoading] = useState(false);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [selectedClientes, setSelectedClientes] = useState<ClienteTableRow[]>([]);
@@ -393,23 +396,41 @@ const editarBodyTemplate = (rowData: ClienteTableRow) => {
       severity="secondary"
       aria-label={`Editar cliente ${rowData.id}`}
       onClick={async () => {
+        setUsuarioCadastrado(false);
+        setBaseOrcamento(baseOrcamentoInicial);
+        setBaseOrcamentoArquivo(null);
+        setClienteEditando({
+          ...clienteInicial,
+          ...rowData,
+          nomeMedico: rowData.nomeMedico ?? '',
+          nomeSistema: rowData.nomeSistema ?? '',
+          crm: rowData.crm ?? '',
+          especialidade: rowData.especialidade ?? '',
+          subespecialidade: rowData.subespecialidade ?? '',
+          status: rowData.status ?? true,
+        });
+        setEditDialogVisible(true);
+
         try {
-          const [dadosMed, empresa, pessoais, bancarios] = await Promise.all([
+          const [dadosMedResult, empresaResult, pessoaisResult, bancariosResult, usuarioResult] = await Promise.allSettled([
             getDadosMedico(rowData.id),
             getEmpresaMedico(rowData.id),
             getDadosPessoais(rowData.id),
             getDadosBancarios(rowData.id),
+            verificarUsuarioMedico(rowData.id),
           ]);
 
-          const { data: usuarioData } = await verificarUsuarioMedico(rowData.id);
-          setUsuarioCadastrado(usuarioData.cadastrado);
+          if (usuarioResult.status === 'fulfilled') {
+            setUsuarioCadastrado(!!usuarioResult.value.data?.cadastrado);
+          }
 
-          const dm = dadosMed.data[0] ?? {};
-          const em = empresa.data[0] ?? {};
-          const dp = pessoais.data[0] ?? {};
-          const db = bancarios.data[0] ?? {};
+          const dm = dadosMedResult.status === 'fulfilled' ? (dadosMedResult.value.data[0] ?? {}) : {};
+          const em = empresaResult.status === 'fulfilled' ? (empresaResult.value.data[0] ?? {}) : {};
+          const dp = pessoaisResult.status === 'fulfilled' ? (pessoaisResult.value.data[0] ?? {}) : {};
+          const db = bancariosResult.status === 'fulfilled' ? (bancariosResult.value.data[0] ?? {}) : {};
 
           setClienteEditando({
+            ...clienteInicial,
             ...rowData,
             crm: dm.CRM ?? '',
             rqe: dm.RQE ?? '',
@@ -453,31 +474,33 @@ const editarBodyTemplate = (rowData: ClienteTableRow) => {
             chavePix: db.chavePix ?? '',
           });
 
-
-          const { data: base } = await getBaseOrcamento(rowData.id);
-          if (base.exists) {
-            setBaseOrcamento({
-              honorariosEquipeMedica: base.honorariosEquipeMedica,
-              taxasHospitalares: base.taxasHospitalares,
-              materiaisOpme: base.materiaisOpme,
-              medicamentosDiaria: base.medicamentosDiaria,
-              examesPreOperatorios: base.examesPreOperatorios,
-              consultaPosOperatoria: base.consultaPosOperatoria,
-              atendimentoEnfermagem: base.atendimentoEnfermagem,
-              acompanhanteTaxaAdicional: base.acompanhanteTaxaAdicional,
-              fisioterapiaPosOperatoria: base.fisioterapiaPosOperatoria,
-              medicamentosPosAlta: base.medicamentosPosAlta,
-              ortesesImobilizadores: base.ortesesImobilizadores,
-              examesComplementares: base.examesComplementares,
-              custoCtiBemodinamica: base.custoCtiBemodinamica,
-              linkBaseOrcamento: base.linkBaseOrcamento ?? '',
-              linkAssinatura: base.linkAssinatura ?? '',
-            });
-          } else {
+          try {
+            const { data: base } = await getBaseOrcamento(rowData.id);
+            if (base.exists) {
+              setBaseOrcamento({
+                honorariosEquipeMedica: base.honorariosEquipeMedica,
+                taxasHospitalares: base.taxasHospitalares,
+                materiaisOpme: base.materiaisOpme,
+                medicamentosDiaria: base.medicamentosDiaria,
+                examesPreOperatorios: base.examesPreOperatorios,
+                consultaPosOperatoria: base.consultaPosOperatoria,
+                atendimentoEnfermagem: base.atendimentoEnfermagem,
+                acompanhanteTaxaAdicional: base.acompanhanteTaxaAdicional,
+                fisioterapiaPosOperatoria: base.fisioterapiaPosOperatoria,
+                medicamentosPosAlta: base.medicamentosPosAlta,
+                ortesesImobilizadores: base.ortesesImobilizadores,
+                examesComplementares: base.examesComplementares,
+                custoCtiBemodinamica: base.custoCtiBemodinamica,
+                linkBaseOrcamento: base.linkBaseOrcamento ?? '',
+                linkAssinatura: base.linkAssinatura ?? '',
+              });
+            } else {
+              setBaseOrcamento(baseOrcamentoInicial);
+            }
+          } catch (baseErr) {
+            console.error('Erro ao carregar base de orçamento do cliente:', baseErr);
             setBaseOrcamento(baseOrcamentoInicial);
           }
-
-          setEditDialogVisible(true);
         } catch (err) {
           console.error('Erro ao carregar dados do cliente:', err);
         }
@@ -1136,13 +1159,13 @@ const handleSalvarEdicao = async () => {
           <p>Gesto dos clientes cadastrados</p>
         </div>
 
-        <div className="page-actions">
+        {!readOnly && <div className="page-actions">
           <Button
             label="Cadastrar Cliente"
             icon="pi pi-plus"
             onClick={handleAbrirCadastro}
           />
-        </div>
+        </div>}
       </div>
 
       <div className="kpi-grid">
@@ -1391,7 +1414,7 @@ const handleSalvarEdicao = async () => {
                       setUsuarioCadastrado(true);
                       alert('Usuário cadastrado com sucesso!');
                     } catch (err: any) {
-                      alert(err?.response?.data?.error ?? 'Erro ao cadastrar usuário.');
+                alert(err?.response?.data?.error ?? 'Erro ao cadastrar usuário.');
                     } finally {
                       setLoadingUsuario(false);
                     }
@@ -1896,7 +1919,7 @@ const handleSalvarEdicao = async () => {
                   {/* NAO INCLUSOS */}
                   <div>
                     <p style={{ fontWeight: 700, color: '#ef4444', marginBottom: '12px' }}>
-                      NÃO INCLUSOS (marque o que NÃO está incluso)
+                                            NÃO INCLUSOS (marque o que NÃO está incluso)
                     </p>
                     {[
                       { key: 'acompanhanteTaxaAdicional', label: 'Acompanhante (taxa adicional)' },
@@ -1991,6 +2014,7 @@ const handleSalvarEdicao = async () => {
         className="cliente-edit-dialog"
       >
         {clienteEditando && (
+          <fieldset disabled={readOnly} style={{ border: 'none', padding: 0, margin: 0, minInlineSize: 0 }}>
           <TabView>
             <TabPanel header="Médico">
               <div className="cliente-form-grid">
@@ -2087,7 +2111,7 @@ const handleSalvarEdicao = async () => {
                       } catch (err: any) {
                         console.log('Erro completo:', err);
                         console.log('Erro response:', err?.response?.data);
-                        alert(err?.response?.data?.error ?? 'Erro ao cadastrar usuário.');
+                                    alert(err?.response?.data?.error ?? 'Erro ao cadastrar usuário.');
                       } finally {
                         setLoadingUsuario(false);
                       }
@@ -2623,7 +2647,7 @@ const handleSalvarEdicao = async () => {
 
                     <div>
                       <p style={{ fontWeight: 700, color: '#ef4444', marginBottom: '12px' }}>
-                        NÃO INCLUSOS (marque o que NÃO está incluso)
+                                            NÃO INCLUSOS (marque o que NÃO está incluso)
                       </p>
                       {[
                         { key: 'acompanhanteTaxaAdicional', label: 'Acompanhante (taxa adicional)' },
@@ -2658,6 +2682,7 @@ const handleSalvarEdicao = async () => {
               </div>
             </TabPanel>
           </TabView>
+          </fieldset>
         )}
 
 
@@ -2742,11 +2767,11 @@ const handleSalvarEdicao = async () => {
             outlined
             onClick={() => setEditDialogVisible(false)}
           />
-          <Button
+          {!readOnly && <Button
             label="Salvar"
             icon="pi pi-check"
             onClick={handleSalvarEdicao}
-          />
+          />}
         </div>
       </Dialog>
       {/* Fim Modal Editar Cliente */}
@@ -2755,6 +2780,9 @@ const handleSalvarEdicao = async () => {
     </div>
   );
 }
+
+
+
 
 
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import type { DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
@@ -9,6 +9,8 @@ import { InputText } from 'primereact/inputtext';
 import { FilterMatchMode } from 'primereact/api';
 import type { DataTableFilterMeta } from 'primereact/datatable';
 import { atualizarOrder, getMedicosCompleto, getProcessosResumo, marcarSemProfissional } from '../../services/api/orders';
+import { useAccess } from '../../access/AccessContext';
+import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './SelecionarMedicoPage.css';
 
 interface ProcessoResumo {
@@ -33,6 +35,8 @@ interface MedicoOption {
 }
 
 export function SelecionarMedicoPage() {
+  const { isReadOnly, filterMedicosByAccess } = useAccess();
+  const readOnly = isReadOnly('selecionarMedico');
   const [loading, setLoading] = useState(false);
   const [processos, setProcessos] = useState<ProcessoResumo[]>([]);
   const [selectedProcessos, setSelectedProcessos] = useState<ProcessoResumoTableRow[]>([]);
@@ -66,7 +70,10 @@ export function SelecionarMedicoPage() {
         getMedicosCompleto(),
       ]);
 
-      const medicos = Array.isArray(medicosRes.data) ? medicosRes.data : [];
+      const medicos = filterMedicosByAccess(
+        Array.isArray(medicosRes.data) ? medicosRes.data : [],
+        (item: any) => item?.id
+      );
       const medicosLookup = new Map<number, string>(
         medicos.map((item: any) => [item.id, item.nomeSistema ?? item.nomeCompleto ?? ''])
       );
@@ -248,24 +255,28 @@ export function SelecionarMedicoPage() {
           <h1>Selecionar Médico</h1>
           <p>Defina o médico responsável para os processos pendentes.</p>
         </div>
-        <div className="page-actions">
-          <Button
-            label="Selecionar Médico"
-            icon="pi pi-user-edit"
-            outlined
-            onClick={abrirDialogMassa}
-            disabled={executandoAcaoMassa}
-          />
-          <Button
-            label={executandoAcaoMassa ? 'Processando...' : 'Perda por falta de profissional'}
-            icon="pi pi-user-minus"
-            severity="danger"
-            outlined
-            onClick={() => void handleMarcarSemProfissionalEmMassa()}
-            loading={executandoAcaoMassa}
-          />
-        </div>
+        {!readOnly && (
+          <div className="page-actions">
+            <Button
+              label="Selecionar Médico"
+              icon="pi pi-user-edit"
+              outlined
+              onClick={abrirDialogMassa}
+              disabled={executandoAcaoMassa}
+            />
+            <Button
+              label={executandoAcaoMassa ? 'Processando...' : 'Perda por falta de profissional'}
+              icon="pi pi-user-minus"
+              severity="danger"
+              outlined
+              onClick={() => void handleMarcarSemProfissionalEmMassa()}
+              loading={executandoAcaoMassa}
+            />
+          </div>
+        )}
       </div>
+
+      {readOnly && <ReadOnlyBanner />}
 
       <div className="kpi-grid">
         <div className="kpi-card">
@@ -316,7 +327,7 @@ export function SelecionarMedicoPage() {
           className="selecionar-medico-table"
           emptyMessage="Nenhum processo encontrado."
         >
-          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+          {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
           <Column
             field="paciente"
@@ -366,33 +377,37 @@ export function SelecionarMedicoPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '7rem' }}
           />
-          <Column
-            header="Selecionar Médico"
-            body={(rowData: ProcessoResumoTableRow) => (
-              <Button
-                label="Selecionar Médico"
-                icon="pi pi-user-edit"
-                outlined
-                onClick={() => abrirDialog(rowData)}
-              />
-            )}
-            style={{ minWidth: '14rem' }}
-            bodyStyle={{ textAlign: 'center' }}
-          />
-          <Column
-            header="Perda"
-            body={(rowData: ProcessoResumoTableRow) => (
-              <Button
-                label="Perda por falta de Profissional"
-                icon="pi pi-user-minus"
-                severity="danger"
-                outlined
-                onClick={() => void handleMarcarSemProfissional(rowData)}
-              />
-            )}
-            style={{ minWidth: '18rem' }}
-            bodyStyle={{ textAlign: 'center' }}
-          />
+          {!readOnly && (
+            <Column
+              header="Selecionar Médico"
+              body={(rowData: ProcessoResumoTableRow) => (
+                <Button
+                  label="Selecionar Médico"
+                  icon="pi pi-user-edit"
+                  outlined
+                  onClick={() => abrirDialog(rowData)}
+                />
+              )}
+              style={{ minWidth: '14rem' }}
+              bodyStyle={{ textAlign: 'center' }}
+            />
+          )}
+          {!readOnly && (
+            <Column
+              header="Perda"
+              body={(rowData: ProcessoResumoTableRow) => (
+                <Button
+                  label="Perda por falta de Profissional"
+                  icon="pi pi-user-minus"
+                  severity="danger"
+                  outlined
+                  onClick={() => void handleMarcarSemProfissional(rowData)}
+                />
+              )}
+              style={{ minWidth: '18rem' }}
+              bodyStyle={{ textAlign: 'center' }}
+            />
+          )}
         </DataTable>
       </div>
 
@@ -433,17 +448,20 @@ export function SelecionarMedicoPage() {
                 onChange={(e) => setMedicoSelecionado(e.value)}
                 placeholder="Selecione o médico"
                 filter
+                disabled={readOnly}
               />
             </div>
 
             <div className="dialog-footer-actions">
               <Button label="Cancelar" outlined onClick={() => setDialogVisible(false)} />
-              <Button
-                label={salvandoMedico ? 'Salvando...' : 'Salvar'}
-                icon="pi pi-check"
-                onClick={handleSalvarMedico}
-                loading={salvandoMedico}
-              />
+              {!readOnly && (
+                <Button
+                  label={salvandoMedico ? 'Salvando...' : 'Salvar'}
+                  icon="pi pi-check"
+                  onClick={handleSalvarMedico}
+                  loading={salvandoMedico}
+                />
+              )}
             </div>
           </div>
         )}
@@ -482,15 +500,19 @@ export function SelecionarMedicoPage() {
 
           <div className="dialog-footer-actions">
             <Button label="Cancelar" outlined onClick={() => setDialogMassaVisible(false)} />
-            <Button
-              label={executandoAcaoMassa ? 'Salvando...' : 'Salvar'}
-              icon="pi pi-check"
-              onClick={handleSelecionarMedicoEmMassa}
-              loading={executandoAcaoMassa}
-            />
+            {!readOnly && (
+              <Button
+                label={executandoAcaoMassa ? 'Salvando...' : 'Salvar'}
+                icon="pi pi-check"
+                onClick={handleSelecionarMedicoEmMassa}
+                loading={executandoAcaoMassa}
+              />
+            )}
           </div>
         </div>
       </Dialog>
     </div>
   );
 }
+
+

@@ -21,6 +21,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { InputNumber } from 'primereact/inputnumber';
 import { getStatusTagStyle } from '../../utils/statusTag';
 import { EnviarOrcamentoDialog } from '../orcamentoMedico/EnviarOrcamentoDialog';
+import { useAccess } from '../../access/AccessContext';
 import './ProcessosPage.css';
 
 const STATUS_PROCESSO_FALLBACK = [
@@ -171,6 +172,8 @@ const createManualProcessForm = (): ManualProcessForm => ({
 });
 
 export function ProcessosPage() {
+  const { isReadOnly } = useAccess();
+  const readOnly = isReadOnly('processos');
   const [loading, setLoading] = useState(false);
   const [processos, setProcessos] = useState<Processo[]>([]);
   const [selectedProcessos, setSelectedProcessos] = useState<ProcessoTableRow[]>([]);
@@ -357,7 +360,7 @@ Paciente: ${rowData.paciente}
 Idade: ${rowData.idade}
 Procedimento: ${rowData.procedimento}
 Área: ${rowData.area}
-Subárea: ${rowData.subarea}
+SubÁrea: ${rowData.subarea}
 Data Solicitação: ${formatarData(rowData.dataStatusJuridico)}
 Status: ${rowData.statusOrcamento}
 Dias em Aberto: ${diasEmAberto} dias
@@ -395,7 +398,7 @@ ${linhasAnexos}
       });
     } catch (error) {
       console.error('Erro na ação da linha:', error);
-      alert('Erro ao executar ação da linha.');
+      alert('Erro ao executar a ação da linha.');
     }
   };
 
@@ -592,7 +595,7 @@ ${linhasAnexos}
       await carregarDados();
     } catch (error) {
       console.error('Erro na ação em massa:', error);
-      alert('Erro ao executar ação em massa.');
+      alert('Erro ao executar a ação em massa.');
     } finally {
       setExecutandoAcaoMassa(false);
     }
@@ -897,7 +900,7 @@ ${linhasAnexos}
     if (!form.procedimento.trim()) missingFields.push('Procedimento');
     if (form.refPreco === null || Number.isNaN(form.refPreco)) missingFields.push('Ref. Preço');
     if (!form.area.trim()) missingFields.push('Área');
-    if (!form.subarea.trim()) missingFields.push('Subárea');
+    if (!form.subarea.trim()) missingFields.push('SubÁrea');
     if (!form.dataPedido.trim()) missingFields.push('Data do Pedido');
     if (!form.emailRemetente.trim()) missingFields.push('E-mail Remetente');
 
@@ -983,12 +986,12 @@ ${linhasAnexos}
 
     for (const [field, label] of requiredStringFields) {
       if (typeof payload[field] !== 'string' || !payload[field].trim()) {
-        return `O campo ${label} é obrigatório e deve ser texto.`;
+    return `O campo ${label} é obrigatório e deve ser texto.`;
       }
     }
 
     if (typeof payload.refPreco !== 'number') {
-      return 'O campo refPreco é obrigatório e deve ser numérico.';
+    return 'O campo refPreco é obrigatório e deve ser numérico.';
     }
 
     if (!isValidEmailPayload(payload.email)) {
@@ -1404,7 +1407,7 @@ ${linhasAnexos}
           <p>Gestão dos processos de judicialização</p>
         </div>
 
-      <div className="page-actions">
+      {!readOnly && <div className="page-actions">
         <TieredMenu model={massActionItems} popup ref={massActionMenuRef} id="mass_action_menu" />
 
       <Button
@@ -1431,7 +1434,7 @@ ${linhasAnexos}
           icon="pi pi-plus"
           onClick={() => setNovoProcessoTipoVisible(true)}
         />
-      </div>
+      </div>}
       </div>
 
       <div className="kpi-grid">
@@ -1508,7 +1511,7 @@ ${linhasAnexos}
       />
 
       <EnviarOrcamentoDialog
-        visible={enviarOrcamentoVisible}
+        visible={enviarOrcamentoVisible && !readOnly}
         processo={processoMenuSelecionado}
         onHide={() => {
           setEnviarOrcamentoVisible(false);
@@ -1556,12 +1559,12 @@ ${linhasAnexos}
           />
 
 
-        <Column
+        {!readOnly && <Column
             header="Ações"
             body={acoesBodyTemplate}
             style={{ minWidth: '7rem' }}
             bodyStyle={{ textAlign: 'center' }}
-          />
+          />}
 
           <Column
             field="paciente"
@@ -1774,7 +1777,7 @@ ${linhasAnexos}
             </div>
 
             <div className="field field-span-2">
-              <label>Subárea *</label>
+              <label>SubÁrea *</label>
               <InputText
                 value={manualProcessForm.subarea}
                 onChange={(e) => updateManualProcessForm('subarea', e.target.value)}
@@ -1894,7 +1897,7 @@ ${linhasAnexos}
                 onChange={(e) => setJsonBatchInput(e.target.value)}
                 rows={18}
                 autoResize
-                placeholder='Cole aqui a lista JSON com vários pedidos'
+                            placeholder='Cole aqui a lista JSON com vários pedidos'
               />
             </div>
           </div>
@@ -2001,7 +2004,7 @@ ${linhasAnexos}
           className="processo-edit-dialog"
         >
           {processoEditando && (
-            <div className="processo-form-grid-v2">
+            <fieldset className="processo-form-grid-v2" disabled={readOnly} style={{ border: 'none', padding: 0, margin: 0, minInlineSize: 0 }}>
               <div className="field field-span-3">
                 <label>Paciente</label>
                 <InputText
@@ -2036,7 +2039,7 @@ ${linhasAnexos}
               </div>
 
               <div className="field field-span-2">
-                <label>Subárea</label>
+                <label>SubÁrea</label>
                 <InputText
                   value={processoEditando.subarea}
                   onChange={(e) => updateProcessoEditando('subarea', e.target.value)}
@@ -2059,9 +2062,9 @@ ${linhasAnexos}
                     } : null);
                   }}
                   placeholder="Selecione"
-                  disabled={processoEditando.status !== 'Aguardando Orçamento'}
+                  disabled={readOnly || processoEditando.status !== 'Aguardando Orçamento'}
                   tooltip={processoEditando.status !== 'Aguardando Orçamento'
-                    ? 'Disponível apenas quando status é Aguardando Orçamento'
+                                                                ? 'Disponível apenas quando status é Aguardando Orçamento'
                     : undefined}
                   tooltipOptions={{ position: 'top' }}
                 />
@@ -2084,6 +2087,7 @@ ${linhasAnexos}
                   label="Atualizar Ref. Preço"
                   icon="pi pi-refresh"
                   outlined
+                  disabled={readOnly}
                   onClick={() => console.log('Atualizar referência de preço', processoEditando)}
                 />
               </div>
@@ -2200,7 +2204,7 @@ ${linhasAnexos}
                 <label>Empresa</label>
                 <InputText value={processoEditando.empresa} disabled />
               </div>
-            </div>
+            </fieldset>
           )}
 
 
@@ -2344,11 +2348,11 @@ ${linhasAnexos}
               outlined
               onClick={() => setEditDialogVisible(false)}
             />
-            <Button
+            {!readOnly && <Button
               label="Salvar"
               icon="pi pi-check"
               onClick={handleSalvarEdicao}
-            />
+            />}
           </div>
         </Dialog>
         {/* Fim Dialog para edição de processo */}
@@ -2363,5 +2367,9 @@ ${linhasAnexos}
 
   );
 }
+
+
+
+
 
 

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { persistAuthProfile } from '../../access/authProfile';
+import { getDefaultRouteForGroup } from '../../access/permissions';
 import { login } from '../../services/auth';
 import logo from '../../assets/logog4med.png';
 import './LoginPage.css';
@@ -70,8 +72,14 @@ const LoginForms = ({ view, toggleView }: LoginFormsProps) => {
     setLoading(true);
 
     try {
-      await login(username, password);
-      navigate('/home');
+      const data = await login(username, password);
+      const profile = persistAuthProfile(data);
+      console.log('[LoginPage] grupo recebido no login:', {
+        rawGroup: profile.rawGroup,
+        normalizedGroup: profile.group,
+        payload: data,
+      });
+      navigate(getDefaultRouteForGroup(profile.group));
     } catch {
       setError('Usuário ou senha incorretos.');
     } finally {

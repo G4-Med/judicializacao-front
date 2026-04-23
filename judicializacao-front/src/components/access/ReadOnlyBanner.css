@@ -1,0 +1,29 @@
+.read-only-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px solid #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+  border-radius: 12px;
+}
+
+.read-only-banner i {
+  font-size: 1.1rem;
+}
+
+.read-only-banner div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.read-only-banner strong {
+  font-size: 0.95rem;
+}
+
+.read-only-banner span {
+  font-size: 0.85rem;
+}

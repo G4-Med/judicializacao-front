@@ -15,6 +15,8 @@ import { FilterMatchMode } from 'primereact/api';
 import { getSegredoJustica, salvarResultadoSegredo, getAnexosOrder } from '../../services/api/orders';
 import { Dialog } from 'primereact/dialog';
 import { getStatusTagStyle } from '../../utils/statusTag';
+import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
+import { useAccess } from '../../access/AccessContext';
 import './SegredoJusticaPage.css';
 
 interface DocumentoProcesso {
@@ -54,9 +56,10 @@ interface SegredoJusticaTableRow extends SegredoJustica {
 type ResultadoType = 'ganho' | 'perda' | '';
 
 export function SegredoJusticaPage() {
+  const { isReadOnly } = useAccess();
+  const readOnly = isReadOnly('segredoJustica');
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<SegredoJustica[]>([]);
-  const [selectedRegistros, setSelectedRegistros] = useState<SegredoJusticaTableRow[]>([]);
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>(undefined);
@@ -283,12 +286,14 @@ useEffect(() => { carregarDados(); }, []);
         </div>
 
         <div className="page-actions">
-          <Button
+          {!readOnly && <Button
             label="Novo Protocolo"
             icon="pi pi-plus"
-          />
+          />}
         </div>
       </div>
+
+      {readOnly && <ReadOnlyBanner />}
 
       <div className="kpi-grid">
         <div className="kpi-card">
@@ -341,14 +346,11 @@ useEffect(() => { carregarDados(); }, []);
           onFilter={(e) => setFilters(e.filters)}
           filterDisplay="row"
           loading={loading}
-          selectionMode="multiple"
-          selection={selectedRegistros}
-          onSelectionChange={(e) => setSelectedRegistros(e.value as SegredoJusticaTableRow[])}
           tableStyle={{ minWidth: '95rem' }}
           emptyMessage="Nenhum processo encontrado."
           className="segredo-justica-table"
         >
-          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+          {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
 
           <Column
             field="sequencial"
@@ -504,7 +506,7 @@ useEffect(() => { carregarDados(); }, []);
               <h3>Resultado</h3>
 
               <div className="resultado-only-layout">
-                <div className="resultado-actions">
+                {!readOnly && <div className="resultado-actions">
                   <Button
                     label="Procedente (Ganho)"
                     severity={resultadoSelecionado === 'ganho' ? 'success' : 'secondary'}
@@ -523,7 +525,7 @@ useEffect(() => { carregarDados(); }, []);
                       setValorGanho(null);
                     }}
                   />
-                </div>
+                </div>}
 
                 {resultadoSelecionado !== '' && (
                   <div className="field">
@@ -553,7 +555,7 @@ useEffect(() => { carregarDados(); }, []);
           </div>
         )}
 
-        <div className="dialog-footer-actions">
+        {!readOnly && <div className="dialog-footer-actions">
           <Button
             label="Cancelar"
             outlined
@@ -564,7 +566,7 @@ useEffect(() => { carregarDados(); }, []);
             icon="pi pi-check"
             onClick={handleSalvarAtualizacao}
           />
-        </div>
+        </div>}
       </Dialog>
 
       <Dialog

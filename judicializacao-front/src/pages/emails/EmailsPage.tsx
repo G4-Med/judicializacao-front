@@ -20,6 +20,8 @@ import {
   getEmailsPendentesKpis,
   uploadAnexoOrder,
 } from '../../services/api/orders';
+import { useAccess } from '../../access/AccessContext';
+import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './EmailsPage.css';
 
 type TipoEmail = 'ENVIAR_ORCAMENTO' | 'PEDIR_EXAMES' | 'DAR_PERDA';
@@ -111,6 +113,8 @@ const tipoEmailStyle: Record<TipoEmail, React.CSSProperties> = {
 };
 
 export function EmailsPage() {
+  const { isReadOnly } = useAccess();
+  const readOnly = isReadOnly('emails');
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<EmailPendente[]>([]);
   const [kpis, setKpis] = useState<EmailsKpis>({
@@ -541,18 +545,22 @@ export function EmailsPage() {
           <h1>Enviar Emails</h1>
           <p>Gestão dos emails pendentes para devolutiva ao estado</p>
         </div>
-        <Button
-          label={
-            enviandoMassa
-              ? 'Enviando...'
-              : `Enviar selecionados${selectedEmails.length ? ` (${selectedEmails.length})` : ''}`
-          }
-          icon="pi pi-send"
-          loading={enviandoMassa}
-          disabled={enviandoMassa || selectedEmails.length === 0}
-          onClick={() => void handleEnviarEmailsSelecionados()}
-        />
+        {!readOnly && (
+          <Button
+            label={
+              enviandoMassa
+                ? 'Enviando...'
+                : `Enviar selecionados${selectedEmails.length ? ` (${selectedEmails.length})` : ''}`
+            }
+            icon="pi pi-send"
+            loading={enviandoMassa}
+            disabled={enviandoMassa || selectedEmails.length === 0}
+            onClick={() => void handleEnviarEmailsSelecionados()}
+          />
+        )}
       </div>
+
+      {readOnly && <ReadOnlyBanner />}
 
       <div className="kpi-grid kpi-grid-4">
         <div className="kpi-card">
@@ -611,7 +619,7 @@ export function EmailsPage() {
           emptyMessage="Nenhum email pendente encontrado."
           className="emails-table"
         >
-          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+          {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
 
           <Column
             field="sequencial"
@@ -678,12 +686,14 @@ export function EmailsPage() {
             style={{ minWidth: '10rem' }}
           />
 
-          <Column
-            header="Enviar Email"
-            body={enviarBodyTemplate}
-            style={{ minWidth: '11rem' }}
-            bodyStyle={{ textAlign: 'center' }}
-          />
+          {!readOnly && (
+            <Column
+              header="Enviar Email"
+              body={enviarBodyTemplate}
+              style={{ minWidth: '11rem' }}
+              bodyStyle={{ textAlign: 'center' }}
+            />
+          )}
         </DataTable>
       </div>
 
@@ -738,15 +748,17 @@ export function EmailsPage() {
                   className="email-anexo-input"
                   onChange={(e) => void handleAdicionarAnexo(e)}
                 />
-                <Button
-                  type="button"
-                  label={uploadingAnexo ? 'Enviando anexo...' : 'Adicionar anexo'}
-                  icon="pi pi-plus"
-                  outlined
-                  loading={uploadingAnexo}
-                  disabled={!emailSelecionado || uploadingAnexo}
-                  onClick={() => inputAnexoRef.current?.click()}
-                />
+                {!readOnly && (
+                  <Button
+                    type="button"
+                    label={uploadingAnexo ? 'Enviando anexo...' : 'Adicionar anexo'}
+                    icon="pi pi-plus"
+                    outlined
+                    loading={uploadingAnexo}
+                    disabled={!emailSelecionado || uploadingAnexo}
+                    onClick={() => inputAnexoRef.current?.click()}
+                  />
+                )}
               </div>
               <div className="email-anexos-lista">
                 {loadingDialog ? (
@@ -773,14 +785,16 @@ export function EmailsPage() {
                           <span>{nomeArquivo}</span>
                           <i className="pi pi-external-link" />
                         </button>
-                        <Button
-                          type="button"
-                          icon="pi pi-trash"
-                          text
-                          rounded
-                          severity="danger"
-                          onClick={() => removerAnexoSelecionado(index)}
-                        />
+                        {!readOnly && (
+                          <Button
+                            type="button"
+                            icon="pi pi-trash"
+                            text
+                            rounded
+                            severity="danger"
+                            onClick={() => removerAnexoSelecionado(index)}
+                          />
+                        )}
                       </div>
                     );
                   })
@@ -791,13 +805,15 @@ export function EmailsPage() {
 
           <div className="email-dialog-actions">
             <Button label="Cancelar" outlined onClick={fecharDialogEmail} />
-            <Button
-              label={enviandoId === emailSelecionado?.id ? 'Enviando...' : 'Enviar Email'}
-              icon="pi pi-send"
-              loading={enviandoId === emailSelecionado?.id}
-              disabled={!emailSelecionado || enviandoId !== null}
-              onClick={() => void handleEnviarEmail()}
-            />
+            {!readOnly && (
+              <Button
+                label={enviandoId === emailSelecionado?.id ? 'Enviando...' : 'Enviar Email'}
+                icon="pi pi-send"
+                loading={enviandoId === emailSelecionado?.id}
+                disabled={!emailSelecionado || enviandoId !== null}
+                onClick={() => void handleEnviarEmail()}
+              />
+            )}
           </div>
         </div>
       </Dialog>

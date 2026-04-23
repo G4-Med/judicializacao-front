@@ -1,7 +1,8 @@
-import { Avatar } from 'primereact/avatar'
+﻿import { Avatar } from 'primereact/avatar'
 import { Button } from 'primereact/button'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { logout } from '../../services/auth'
 import { setTheme } from '../../utils/theme'
 import { getEmailsPendentesCount } from '../../services/api/orders'
 import logo from '../../assets/logog4med.png'
@@ -65,12 +66,6 @@ export function Header({ onMenuClick }: Props) {
     document.addEventListener('mousedown', handleClickFora)
     return () => document.removeEventListener('mousedown', handleClickFora)
   }, [])
-
-  const handleLogout = () => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    navigate('/login')
-  }
 
   const toggleTheme = () => {
     const newDark = !dark
@@ -221,7 +216,7 @@ export function Header({ onMenuClick }: Props) {
           text
           rounded
           style={{ color: 'white' }}
-          onClick={handleLogout}
+          onClick={logout}
           tooltip="Sair"
           tooltipOptions={{ position: 'bottom' }}
         />

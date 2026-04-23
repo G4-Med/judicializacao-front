@@ -17,6 +17,7 @@ import { getOrcamentoMedico, getOrders, salvarOrcamentoMedico, getAnexosOrder, u
 import { getBaseOrcamento } from '../../services/api/client';
 import { getStatusTagStyle } from '../../utils/statusTag';
 import { EnviarOrcamentoDialog } from './EnviarOrcamentoDialog';
+import { useAccess } from '../../access/AccessContext';
 import './OrcamentoMedicoPage.css';
 
 GlobalWorkerOptions.workerSrc = pdfWorker;
@@ -70,6 +71,8 @@ function calcularIdade(dataNascimento: string | null): number {
 
 
 export function OrcamentoMedicoPage() {
+  const { isReadOnly } = useAccess();
+  const readOnly = isReadOnly('orcamentoMedico');
   const [loading, setLoading] = useState(false);
   const [processos, setProcessos] = useState<ProcessoOrcamento[]>([]);
   const [first, setFirst] = useState(0);
@@ -364,6 +367,7 @@ ${linhasAnexos}
                 onClick={() => abrirDetalhe(rowData)} />
             )}
             style={{ minWidth: '10rem' }} bodyStyle={{ textAlign: 'center' }} />
+          
             <Column
               header="Copiar"
               body={(rowData) => (
@@ -498,23 +502,24 @@ ${linhasAnexos}
             </div>
 
             <div className="field field-span-4 action-buttons">
-              <Button
+              {!readOnly && <Button
                 label="Enviar Orçamento"
                 icon="pi pi-send"
                 onClick={() => setEscolhaVisible(true)}
-              />
-              <Button label="Solicitar Exames" icon="pi pi-search"
+              />}
+              {!readOnly && <Button label="Solicitar Exames" icon="pi pi-search"
                 severity="warning" outlined
-                onClick={() => { setExames(''); setExamesVisible(true); }} />
-              <Button label="Não faço esse procedimento" icon="pi pi-times"
+                onClick={() => { setExames(''); setExamesVisible(true); }} />}
+              {!readOnly && <Button label="Não faço esse procedimento" icon="pi pi-times"
                 severity="danger" outlined onClick={handleNaoFaco} />
+              }
             </div>
           </div>
         )}
       </Dialog>
 
       <EnviarOrcamentoDialog
-        visible={escolhaVisible}
+        visible={escolhaVisible && !readOnly}
         processo={processoSelecionado}
         orderLookup={processoSelecionado ? ordersLookup[processoSelecionado.id] : null}
         onHide={() => setEscolhaVisible(false)}
@@ -538,10 +543,10 @@ ${linhasAnexos}
             style={{ width: '100%', marginTop: '8px' }}
           />
         </div>
-        <div className="dialog-footer-actions">
+        {!readOnly && <div className="dialog-footer-actions">
           <Button label="Cancelar" outlined onClick={() => setExamesVisible(false)} />
           <Button label="Solicitar" icon="pi pi-check" onClick={handleSolicitarExames} />
-        </div>
+        </div>}
       </Dialog>
 
       <Dialog

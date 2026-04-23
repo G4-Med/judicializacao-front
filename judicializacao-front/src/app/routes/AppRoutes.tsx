@@ -1,4 +1,4 @@
-﻿import { Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 
 import { MainLayout } from '../layout/MainLayout';
 
@@ -23,6 +23,8 @@ import { RelatorioResumidoPage } from '../../pages/relatorios/RelatorioResumidoP
 import { RelatorioConsolidadoPage } from '../../pages/relatorios/RelatorioConsolidadoPage';
 import { EmailsPage } from '../../pages/emails/EmailsPage';
 import { ConfiguracoesEmailsPage } from '../../pages/configuracoesEmails/ConfiguracoesEmailsPage';
+import { AccessProvider } from '../../access/AccessContext';
+import { ProtectedScreen, RequireAuth } from '../../access/ProtectedRoute';
 
 export function AppRoutes() {
   return (
@@ -30,32 +32,40 @@ export function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/recuperar-senha" element={<RecuperarSenhaPage />} />
 
-      <Route element={<MainLayout />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/home" element={<HomePage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
+      <Route
+        element={(
+          <RequireAuth>
+            <AccessProvider>
+              <MainLayout />
+            </AccessProvider>
+          </RequireAuth>
+        )}
+      >
+        <Route path="/" element={<ProtectedScreen screen="home"><HomePage /></ProtectedScreen>} />
+        <Route path="/home" element={<ProtectedScreen screen="home"><HomePage /></ProtectedScreen>} />
+        <Route path="/dashboard" element={<ProtectedScreen screen="dashboard"><DashboardPage /></ProtectedScreen>} />
 
-        <Route path="/processos" element={<ProcessosPage />} />
-        <Route path="/clientes" element={<ClientesPage />} />
+        <Route path="/processos" element={<ProtectedScreen screen="processos"><ProcessosPage /></ProtectedScreen>} />
+        <Route path="/clientes" element={<ProtectedScreen screen="clientes"><ClientesPage /></ProtectedScreen>} />
 
-        <Route path="/para-protocolar" element={<ParaProtocolarPage />} />
-        <Route path="/protocolados" element={<ProtocoladosPage />} />
-        <Route path="/segredo-justica" element={<SegredoJusticaPage />} />
-        <Route path="/juridico" element={<JuridicoPage />} />
-        <Route path="/selecionar-medico" element={<SelecionarMedicoPage />} />
-        <Route path="/orcamento-medico" element={<OrcamentoMedicoPage />} />
+        <Route path="/para-protocolar" element={<ProtectedScreen screen="paraProtocolar"><ParaProtocolarPage /></ProtectedScreen>} />
+        <Route path="/protocolados" element={<ProtectedScreen screen="protocolados"><ProtocoladosPage /></ProtectedScreen>} />
+        <Route path="/segredo-justica" element={<ProtectedScreen screen="segredoJustica"><SegredoJusticaPage /></ProtectedScreen>} />
+        <Route path="/juridico" element={<ProtectedScreen screen="juridico"><JuridicoPage /></ProtectedScreen>} />
+        <Route path="/selecionar-medico" element={<ProtectedScreen screen="selecionarMedico"><SelecionarMedicoPage /></ProtectedScreen>} />
+        <Route path="/orcamento-medico" element={<ProtectedScreen screen="orcamentoMedico"><OrcamentoMedicoPage /></ProtectedScreen>} />
 
-        <Route path="/resultados" element={<ResultadosPage />} />
-        <Route path="/perdas" element={<PerdasPage />} />
-        <Route path="/emails" element={<EmailsPage />} />
+        <Route path="/resultados" element={<ProtectedScreen screen="resultados"><ResultadosPage /></ProtectedScreen>} />
+        <Route path="/perdas" element={<ProtectedScreen screen="perdas"><PerdasPage /></ProtectedScreen>} />
+        <Route path="/emails" element={<ProtectedScreen screen="emails"><EmailsPage /></ProtectedScreen>} />
 
-        <Route path="/relatorios/resumido" element={<RelatorioResumidoPage />} />
-        <Route path="/relatorios/consolidado" element={<RelatorioConsolidadoPage />} />
+        <Route path="/relatorios/resumido" element={<ProtectedScreen screen="relatorioResumido"><RelatorioResumidoPage /></ProtectedScreen>} />
+        <Route path="/relatorios/consolidado" element={<ProtectedScreen screen="relatorioConsolidado"><RelatorioConsolidadoPage /></ProtectedScreen>} />
 
-        <Route path="/usuarios" element={<UsuariosPage />} />
-        <Route path="/configuracoes" element={<ConfiguracoesPage />} />
-        <Route path="/configuracoes-emails" element={<ConfiguracoesEmailsPage />} />
-        <Route path="/logs" element={<LogsPage />} />
+        <Route path="/usuarios" element={<ProtectedScreen screen="usuarios"><UsuariosPage /></ProtectedScreen>} />
+        <Route path="/configuracoes" element={<ProtectedScreen screen="configuracoes"><ConfiguracoesPage /></ProtectedScreen>} />
+        <Route path="/configuracoes-emails" element={<ProtectedScreen screen="configuracoesEmails"><ConfiguracoesEmailsPage /></ProtectedScreen>} />
+        <Route path="/logs" element={<ProtectedScreen screen="logs"><LogsPage /></ProtectedScreen>} />
       </Route>
     </Routes>
   );
