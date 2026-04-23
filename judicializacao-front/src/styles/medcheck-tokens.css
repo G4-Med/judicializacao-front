@@ -1,0 +1,95 @@
+/* ============================================================
+   MEDCHECK — Design Tokens globais
+   Importar no main.tsx / App.tsx antes dos CSS de páginas.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Brand */
+  --mc-green-50:  #e6f7ef;
+  --mc-green-100: #c2ecd7;
+  --mc-green-300: #4fc588;
+  --mc-green-500: #00a651;
+  --mc-green-600: #008f46;
+  --mc-green-700: #007a3d;
+
+  --mc-navy-50:  #e8f0f5;
+  --mc-navy-100: #cfe0eb;
+  --mc-navy-500: #1d5a8a;
+  --mc-navy-700: #0a3d62;
+  --mc-navy-900: #062a45;
+
+  --mc-amber:   #d08a1c;
+  --mc-amber-50:#fdf3e2;
+  --mc-rose:    #c8394d;
+  --mc-rose-50: #fde8ea;
+
+  /* Surface */
+  --mc-bg:        #f5f7f9;
+  --mc-surface:   #ffffff;
+  --mc-surface-2: #f9fbfc;
+  --mc-border:    #e3eaef;
+  --mc-border-2:  #d6e0e6;
+
+  /* Text */
+  --mc-ink:     #0f2236;
+  --mc-ink-2:   #2b4158;
+  --mc-muted:   #5b6b7a;
+  --mc-muted-2: #8a96a3;
+
+  /* Shadow / radius / font */
+  --mc-shadow-sm: 0 1px 2px rgba(10, 61, 98, 0.05);
+  --mc-shadow:    0 4px 14px rgba(10, 61, 98, 0.07);
+  --mc-shadow-lg: 0 12px 32px rgba(10, 61, 98, 0.10);
+
+  --mc-radius-sm: 8px;
+  --mc-radius:    12px;
+  --mc-radius-lg: 16px;
+  --mc-radius-xl: 20px;
+
+  --mc-font-heading: "Poppins", "Inter", system-ui, sans-serif;
+  --mc-font-body:    "Inter", "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  font-family: var(--mc-font-body);
+  color: var(--mc-ink);
+  background: var(--mc-bg);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { font-family: var(--mc-font-heading); letter-spacing: -0.01em; }
+
+/* ---------- Botões e utilitários reutilizáveis ---------- */
+.mc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform .12s ease, background .15s ease;
+  font-family: inherit;
+  line-height: 1;
+}
+.mc-btn:hover { transform: translateY(-1px); }
+.mc-btn--primary { background: var(--mc-green-500); color: #fff; }
+.mc-btn--primary:hover { background: var(--mc-green-600); }
+.mc-btn--ghost   { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.22); color: #fff; }
+.mc-btn--outline { background: #fff; border-color: var(--mc-border-2); color: var(--mc-ink-2); }
+.mc-btn--outline:hover { background: var(--mc-green-50); border-color: var(--mc-green-100); color: var(--mc-green-700); }
+
+body.dark-theme {
+  --mc-bg: #0b1524;
+  --mc-surface: #0f1f33;
+  --mc-surface-2: #0d1b2a;
+  --mc-border: #1e2d42;
+  --mc-border-2: #2a3b55;
+  --mc-ink: #e6eef6;
+  --mc-ink-2: #c6d2df;
+  --mc-muted: #94a3b8;
+  --mc-muted-2: #64748b;
+}

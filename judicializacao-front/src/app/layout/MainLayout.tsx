@@ -1,20 +1,21 @@
 import 'primereact/resources/primereact.min.css'
 import 'primeicons/primeicons.css'
 import 'primeflex/primeflex.css'
+import '../../styles/medcheck-tokens.css'   // ← ADICIONAR (antes do global.css)
 import '../../styles/global.css'
 import { Outlet } from 'react-router-dom'
 import { useState } from 'react'
 import { Header } from './Header'
-import { MenuSidebar } from './MenuSidebar'
+import { Menu } from './Menu'                // ← trocar MenuSidebar por Menu
 
 export function MainLayout() {
   const [menuVisible, setMenuVisible] = useState(false)
 
   return (
     <div style={{ minHeight: '100vh' }}>
-      <Header onMenuClick={() => setMenuVisible(true)} />
+      <Header onMenuClick={() => setMenuVisible((v) => !v)} />
 
-      <MenuSidebar
+      <Menu
         visible={menuVisible}
         onHide={() => setMenuVisible(false)}
       />

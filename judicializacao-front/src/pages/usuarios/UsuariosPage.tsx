@@ -36,7 +36,9 @@ interface ApiUsuario {
   is_superuser?: boolean;
   date_joined?: string;
   last_login?: string | null;
-  group?: { id: number; name: string } | null;
+  lastLogin?: string | null;
+  group?: { id: number; name: string } | string | null;
+  groups?: Array<{ id?: number; name?: string } | string> | null;
   group_id?: number | null;
   group_name?: string | null;
   medico?: { id: number; nome?: string } | null;
@@ -132,14 +134,14 @@ export function UsuariosPage() {
     nomeCompleto: { value: '', matchMode: FilterMatchMode.CONTAINS },
     username: { value: '', matchMode: FilterMatchMode.CONTAINS },
     email: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    groupName: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    medicoNome: { value: '', matchMode: FilterMatchMode.CONTAINS }
+    groupName: { value: '', matchMode: FilterMatchMode.CONTAINS }
   });
 
   const [dialogVisible, setDialogVisible] = useState(false);
   const [dialogModo, setDialogModo] = useState<'criar' | 'editar'>('criar');
   const [form, setForm] = useState<FormUsuario>(formVazio);
   const [salvando, setSalvando] = useState(false);
+  const [medicosDropdownIds, setMedicosDropdownIds] = useState<number[]>([]);
 
   const [vincularDialogVisible, setVincularDialogVisible] = useState(false);
   const [usuarioVinculando, setUsuarioVinculando] = useState<UsuarioRow | null>(null);
@@ -153,16 +155,30 @@ export function UsuariosPage() {
   );
 
   const medicoOptions = useMemo(
-    () => [
-      { label: 'Sem vínculo', value: null },
-      ...medicos.map((m) => ({ label: nomeMedico(m), value: m.id }))
-    ],
-    [medicos]
+    () =>
+      medicos
+        .filter((m) => medicosDropdownIds.includes(m.id))
+        .map((m) => ({ label: nomeMedico(m), value: m.id })),
+    [medicos, medicosDropdownIds]
   );
 
   const mapUsuario = (u: ApiUsuario, index: number): UsuarioRow => {
-    const groupId = u.group?.id ?? u.group_id ?? null;
-    const groupName = u.group?.name ?? u.group_name ?? '--';
+    const firstGroup = Array.isArray(u.groups) ? u.groups[0] : null;
+    const groupId =
+      (typeof u.group === 'object' && u.group ? u.group.id : null) ??
+      (typeof firstGroup === 'object' && firstGroup ? firstGroup.id ?? null : null) ??
+      u.group_id ??
+      null;
+    const groupName =
+      (typeof u.group === 'string' ? u.group : null) ??
+      (typeof u.group === 'object' && u.group ? u.group.name ?? null : null) ??
+      (typeof firstGroup === 'string'
+        ? firstGroup
+        : typeof firstGroup === 'object' && firstGroup
+          ? firstGroup.name ?? null
+          : null) ??
+      u.group_name ??
+      '--';
     const medicoId = u.medico?.id ?? u.medico_id ?? null;
     const medicoNomeVal = u.medico?.nome ?? u.medico_nome ?? '';
     const first = u.first_name ?? '';
@@ -185,7 +201,7 @@ export function UsuariosPage() {
       medicoId,
       medicoNome: medicoNomeVal || (medicoId ? `Médico ${medicoId}` : '--'),
       dateJoined: u.date_joined ?? null,
-      lastLogin: u.last_login ?? null
+      lastLogin: u.last_login ?? u.lastLogin ?? null
     };
   };
 
@@ -241,10 +257,11 @@ export function UsuariosPage() {
   const abrirCriar = () => {
     setDialogModo('criar');
     setForm({ ...formVazio });
+    setMedicosDropdownIds([]);
     setDialogVisible(true);
   };
 
-  const abrirEditar = (row: UsuarioRow) => {
+  const abrirEditar = async (row: UsuarioRow) => {
     setDialogModo('editar');
     setForm({
       id: row.id,
@@ -259,7 +276,22 @@ export function UsuariosPage() {
       groupId: row.groupId,
       medicoId: row.medicoId
     });
+    setMedicosDropdownIds(row.medicoId ? [row.medicoId] : []);
     setDialogVisible(true);
+
+    try {
+      const res = await getMedicosUsuario(row.id);
+      const lista = Array.isArray(res.data) ? res.data : res.data?.results ?? [];
+      const ids = lista
+        .map((item: any) => item?.medico_id ?? item?.medico?.id ?? item?.id)
+        .filter((id: any): id is number => typeof id === 'number');
+
+      const idsUnicos: number[] = Array.from(new Set<number>(row.medicoId ? [...ids, row.medicoId] : ids));
+      setMedicosDropdownIds(idsUnicos);
+    } catch (error) {
+      console.error('Erro ao carregar médicos vinculados para edição do usuário', error);
+      setMedicosDropdownIds(row.medicoId ? [row.medicoId] : []);
+    }
   };
 
   const updateForm = <K extends keyof FormUsuario>(field: K, value: FormUsuario[K]) => {
@@ -333,7 +365,7 @@ export function UsuariosPage() {
       const res = await getMedicosUsuario(row.id);
       const lista = Array.isArray(res.data) ? res.data : res.data?.results ?? [];
       const ids = lista
-        .map((item: any) => item?.id ?? item?.medico_id ?? item?.medico?.id)
+        .map((item: any) => item?.medico_id ?? item?.medico?.id ?? item?.id)
         .filter((id: any): id is number => typeof id === 'number');
       setMedicosVinculados(ids);
     } catch (error) {
@@ -499,15 +531,6 @@ export function UsuariosPage() {
             filter
             filterElement={(o) => filterElement(o, 'Buscar')}
             style={{ minWidth: '12rem' }}
-          />
-
-          <Column
-            field="medicoNome"
-            header="Médico vinculado"
-            sortable
-            filter
-            filterElement={(o) => filterElement(o, 'Buscar')}
-            style={{ minWidth: '16rem' }}
           />
 
           <Column

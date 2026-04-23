@@ -1,5 +1,8 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { getOrders, getPerdas, getResultados } from '../../services/api/orders';
+import { Button } from 'primereact/button'
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import './HomePage.css';
 
 interface OrderResumo {
@@ -7,6 +10,7 @@ interface OrderResumo {
   paciente?: string;
   procedimento?: string;
   dataPedido?: string | null;
+  dataStatusPerda?: string | null;
   statusProcesso?: string | null;
   statusOrcamento?: string | null;
   refPreco?: number | null;
@@ -54,6 +58,7 @@ interface GraficoPerdaProcedimento {
   procedimento: string;
   valorOrcamentoEnviado: number;
   valorOrcamentoGanho: number;
+  dataStatusPerda?: string | null;
 }
 
 const STATUS_AGUARDANDO_ORCAMENTO = 'Aguardando Orçamento';
@@ -127,9 +132,12 @@ function truncateProcedimento(value: string): string {
 
 export function HomePage() {
   const [loading, setLoading] = useState(false);
+  const [exportando, setExportando] = useState(false);
   const [orders, setOrders] = useState<OrderResumo[]>([]);
   const [resultados, setResultados] = useState<ResultadoResumo[]>([]);
   const [perdas, setPerdas] = useState<PerdaResumo[]>([]);
+  const metricCardVariants = ['home-card--navy', 'home-card--green', 'home-card--amber', 'home-card--rose'];
+  const valueCardVariants = ['home-card--amber', 'home-card--green', 'home-card--rose', 'home-card--navy'];
 
   useEffect(() => {
     setLoading(true);
@@ -210,25 +218,25 @@ export function HomePage() {
 
     const cardsMesVida: CardMesVida[] = [
       {
-        titulo: 'Quantidade de pedidos',
+        titulo: 'QTDE de Pedidos',
         icone: 'pi pi-inbox',
         valorMes: pedidosMes,
         valorVida: pedidosVida,
       },
       {
-        titulo: 'Quantidade de orçamentos enviados',
+        titulo: 'QTDE Orçamentos Enviados',
         icone: 'pi pi-send',
         valorMes: orcamentosEnviadosMes,
         valorVida: orcamentosEnviadosVida,
       },
       {
-        titulo: 'Quantidade de aguardando orçamento',
+        titulo: 'QTDE Aguardando Orçamento',
         icone: 'pi pi-clock',
         valorMes: aguardandoOrcamentoMes,
         valorVida: aguardandoOrcamentoVida,
       },
       {
-        titulo: 'Quantidade de pedidos recusados',
+        titulo: 'QTDE Pedidos Recusados',
         icone: 'pi pi-ban',
         valorMes: pedidosRecusadosMes,
         valorVida: pedidosRecusadosVida,
@@ -237,28 +245,28 @@ export function HomePage() {
 
     const cardsValorQuantidade: CardValorQuantidade[] = [
       {
-        titulo: 'Valor em aberto',
+        titulo: 'Valor em Aberto',
         icone: 'pi pi-wallet',
         valorPrincipal: valorEmAberto,
         quantidade: pedidosEmAbertoComOrcamento.length,
         tipo: 'warning',
       },
       {
-        titulo: 'Valor ganho',
+        titulo: 'Valor Ganho',
         icone: 'pi pi-check-circle',
         valorPrincipal: valorGanho,
         quantidade: ganhosQuantidade,
         tipo: 'success',
       },
       {
-        titulo: 'Valor perda',
+        titulo: 'Valor Perda',
         icone: 'pi pi-times-circle',
         valorPrincipal: valorPerda,
         quantidade: perdasQuantidade,
         tipo: 'danger',
       },
       {
-        titulo: 'Conversão valor ganho / (valor ganho + valor perda)',
+        titulo: 'Conversão',
         icone: 'pi pi-percentage',
         valorPrincipal: conversaoValor,
         quantidade: conversaoQuantidade,
@@ -281,16 +289,26 @@ export function HomePage() {
         procedimento,
         valorOrcamentoEnviado: 0,
         valorOrcamentoGanho: 0,
+        dataStatusPerda: item.dataStatusPerda ?? null,
       };
 
       atual.valorOrcamentoEnviado += toNumber(item.valorOrcamento);
       atual.valorOrcamentoGanho += toNumber(item.valorGanho);
+      const dataAtual = parseApiDate(atual.dataStatusPerda);
+      const dataItem = parseApiDate(item.dataStatusPerda);
+      if (dataItem && (!dataAtual || dataItem.getTime() > dataAtual.getTime())) {
+        atual.dataStatusPerda = item.dataStatusPerda ?? null;
+      }
       mapaGrafico.set(procedimento, atual);
     });
 
     const graficoProcedimentos = Array.from(mapaGrafico.values())
-      .sort((a, b) => b.valorOrcamentoEnviado - a.valorOrcamentoEnviado)
-      .slice(0, 8);
+      .sort((a, b) => {
+        const dataA = parseApiDate(a.dataStatusPerda)?.getTime() ?? 0;
+        const dataB = parseApiDate(b.dataStatusPerda)?.getTime() ?? 0;
+        return dataB - dataA;
+      })
+      .slice(0, 10);
 
     const maiorValorGrafico = graficoProcedimentos.reduce((acc, item) => {
       return Math.max(acc, item.valorOrcamentoEnviado, item.valorOrcamentoGanho);
@@ -310,16 +328,74 @@ export function HomePage() {
     };
   }, [orders, perdas, resultados]);
 
+  const handleExportarRelatorio = async () => {
+    const elemento = document.getElementById('home-report-export');
+    if (!elemento || exportando) return;
+
+    try {
+      setExportando(true);
+
+      const canvas = await html2canvas(elemento, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#f7fafc',
+        logging: false,
+        windowWidth: elemento.scrollWidth,
+        windowHeight: elemento.scrollHeight,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const usableWidth = pageWidth - margin * 2;
+      const imageHeight = (canvas.height * usableWidth) / canvas.width;
+
+      let remainingHeight = imageHeight;
+      let position = margin;
+
+      pdf.addImage(imgData, 'PNG', margin, position, usableWidth, imageHeight);
+      remainingHeight -= pageHeight - margin * 2;
+
+      while (remainingHeight > 0) {
+        pdf.addPage();
+        position = margin - (imageHeight - remainingHeight);
+        pdf.addImage(imgData, 'PNG', margin, position, usableWidth, imageHeight);
+        remainingHeight -= pageHeight - margin * 2;
+      }
+
+      const dataArquivo = new Date().toISOString().slice(0, 10);
+      pdf.save(`home-relatorio-${dataArquivo}.pdf`);
+    } catch (error) {
+      console.error('Erro ao exportar relatório da Home:', error);
+      alert('Não foi possível exportar o relatório em PDF.');
+    } finally {
+      setExportando(false);
+    }
+  };
+
   return (
-    <div className="home-page">
+    <div className="home-page" id="home-report-export">
       <section className="home-hero">
         <div className="home-hero__content">
-          <span className="home-hero__eyebrow">Home</span>
-          <h1>Painel principal da operação</h1>
+          <span className="home-hero__eyebrow"><Button icon="pi pi-circle-fill"></Button> PAINEL PRINCIPAL · {indicadores.mesAtualLabel}</span>
+          <h1>Acompanhe a <span>judicialização</span> da operação em um só lugar</h1>
           <p>
-            Acompanhe o volume do mês, o histórico acumulado, os valores em aberto e a conversão
-            financeira dos pedidos da operação.
+            Auditoria e gestão dos processos do mês com o histórico consolidado da base. 
+            Visualize valores em aberto, conversão financeira e a performance dos procedimentos 
+            com a precisão que a MEDCHECK entrega ao setor de saúde.
           </p>
+          <div className="home-hero__actions">
+            <Button
+              label={exportando ? 'Exportando...' : 'Exportar relatório'}
+              icon="pi pi-download"
+              outlined
+              disabled={loading || exportando}
+              onClick={handleExportarRelatorio}
+              className="home-hero__export-button"
+            />
+          </div>
         </div>
 
         <div className="home-hero__panel">
@@ -336,7 +412,7 @@ export function HomePage() {
             <span>
               {loading
                 ? '--'
-                : `${indicadores.ganhosQuantidade} ganhos / ${indicadores.perdasQuantidade} perdas`}
+                : `${indicadores.ganhosQuantidade}  / ${indicadores.perdasQuantidade} `}
             </span>
           </div>
         </div>
@@ -349,17 +425,18 @@ export function HomePage() {
         </div>
 
         <div className="home-grid home-grid--four">
-          {indicadores.cardsMesVida.map((card) => (
-            <article key={card.titulo} className="home-card home-card--metric">
-              <div className="home-card__icon">
-                <i className={card.icone} />
+          {indicadores.cardsMesVida.map((card, index) => (
+            <article key={card.titulo} className={`home-card home-card--metric ${metricCardVariants[index] ?? 'home-card--navy'}`}>
+              <div className="home-card__top">
+                <h3 className="home-card__title">{card.titulo}</h3>
+                <div className="home-card__icon">
+                  <i className={card.icone} />
+                </div>
               </div>
-              <div className="home-card__body">
-                <h3>{card.titulo}</h3>
-                <div className="home-card__metric">{loading ? '--' : card.valorMes}</div>
-                <p>
-                  Vida toda: <strong>{loading ? '--' : card.valorVida}</strong>
-                </p>
+              <div className="home-card__metric">{loading ? '--' : card.valorMes}</div>
+              <div className="home-card__meta">
+                <span>Vida toda:</span>
+                <strong>{loading ? '--' : card.valorVida}</strong>
               </div>
             </article>
           ))}
@@ -373,35 +450,48 @@ export function HomePage() {
         </div>
 
         <div className="home-grid home-grid--four">
-          {indicadores.cardsValorQuantidade.map((card) => (
-            <article key={card.titulo} className={`home-card home-card--metric home-card--${card.tipo ?? 'info'}`}>
-              <div className="home-card__icon">
-                <i className={card.icone} />
-              </div>
-              <div className="home-card__body">
-                <h3>{card.titulo}</h3>
-                <div className="home-card__metric">
-                  {loading
-                    ? '--'
-                    : card.percentual
-                      ? formatPercent(card.valorPrincipal)
-                      : formatCurrency(card.valorPrincipal)}
+          {indicadores.cardsValorQuantidade.map((card, index) => (
+            <article key={card.titulo} className={`home-card home-card--metric ${valueCardVariants[index] ?? 'home-card--navy'}`}>
+              <div className="home-card__top">
+                <h3 className="home-card__title">{card.titulo}</h3>
+                <div className="home-card__icon">
+                  <i className={card.icone} />
                 </div>
-                <p>
-                  Quantidade: <strong>{loading ? '--' : card.percentual ? `${card.quantidade}%` : card.quantidade}</strong>
-                </p>
+              </div>
+              <div className="home-card__metric">
+                {loading
+                  ? '--'
+                  : card.percentual
+                    ? formatPercent(card.valorPrincipal)
+                    : formatCurrency(card.valorPrincipal)}
+              </div>
+              <div className="home-card__meta">
+                {card.percentual ? (
+                  <>
+                    <span>ganho / (ganho + perda)</span>
+                    <strong>{loading ? '--' : `${card.quantidade}%`}</strong>
+                  </>
+                ) : (
+                  <>
+                    <span>processos</span>
+                    <strong>{loading ? '--' : card.quantidade}</strong>
+                  </>
+                )}
               </div>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="home-placeholder">
-        <div className="home-placeholder__header">
-          <h2>Análise de perdas</h2>
-          <p>
-            Procedimentos perdidos comparando o valor do orçamento enviado com o valor do orçamento ganho.
-          </p>
+      <section className="home-panel home-panel--chart">
+        <div className="home-panel__head">
+          <div>
+            <div className="home-panel__title">Análise de perdas por procedimento</div>
+            <div className="home-panel__sub">
+              Orçamento enviado x orçamento ganho nos procedimentos perdidos mais recentes.
+            </div>
+          </div>
+          <div className="home-panel__badge">Top 10 recentes</div>
         </div>
 
         <div className="home-chart-legend">
@@ -412,7 +502,8 @@ export function HomePage() {
         {indicadores.graficoProcedimentos.length === 0 ? (
           <div className="home-empty-state">Nenhum dado consolidado disponível para montar o gráfico.</div>
         ) : (
-          <div className="home-placeholder__canvas home-placeholder__canvas--chart">
+          <div className="home-chart-frame">
+            <div className="home-chart-list">
             {indicadores.graficoProcedimentos.map((item) => {
               const ganhoWidth =
                 indicadores.maiorValorGrafico > 0
@@ -445,6 +536,7 @@ export function HomePage() {
                 </article>
               );
             })}
+            </div>
           </div>
         )}
       </section>

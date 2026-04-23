@@ -1,0 +1,139 @@
+/* MEDCHECK — Header */
+.mc-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--mc-border, #e3eaef);
+}
+.mc-header::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -3px;
+  height: 3px;
+  background: linear-gradient(90deg,
+    var(--mc-green-500, #00a651) 0%,
+    var(--mc-green-500, #00a651) 55%,
+    var(--mc-navy-700, #0a3d62) 55%,
+    var(--mc-navy-700, #0a3d62) 100%);
+}
+
+
+
+.mc-brand { display: flex; align-items: center; gap: 12px; }
+
+.mc-brand__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+
+.mc-header__tools { display: flex; align-items: center; gap: 4px; }
+
+/* Sobrescreve Button text rounded do PrimeReact */
+.mc-header .mc-iconbtn.p-button.p-button-text {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  color: #2b4158;
+  background: transparent;
+  border: 1px solid transparent;
+}
+.mc-header .mc-iconbtn.p-button.p-button-text:hover {
+  background: #e6f7ef;
+  border-color: #c2ecd7;
+  color: #007a3d;
+}
+.mc-iconbtn--menu { margin-right: 6px; }
+
+.mc-notif { position: relative; display: inline-flex; }
+.mc-iconbtn__dot {
+  position: absolute;
+  top: -2px; right: -2px;
+  min-width: 16px; height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+  pointer-events: none;
+  line-height: 1;
+  z-index: 2;
+}
+body.dark-theme .mc-iconbtn__dot { border-color: #0d1b2a; }
+
+.mc-notif__panel {
+  position: absolute;
+  top: calc(100% + 10px); right: 0;
+  width: 320px;
+  background: #fff;
+  border: 1px solid #e3eaef;
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(10, 61, 98, 0.12);
+  overflow: hidden;
+  z-index: 1000;
+}
+.mc-notif__head {
+  padding: 14px 16px;
+  border-bottom: 1px solid #eef2f5;
+  color: #0f2236;
+  font-size: 14px;
+  font-weight: 700;
+}
+.mc-notif__body { padding: 8px; }
+.mc-notif__item {
+  width: 100%;
+  border: 1px solid #e3eaef;
+  border-radius: 12px;
+  background: #f9fbfc;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  text-align: left;
+  transition: background .15s ease;
+}
+.mc-notif__item:hover { background: #e6f7ef; border-color: #c2ecd7; }
+.mc-notif__item strong { color: #0f2236; font-size: 13.5px; }
+.mc-notif__item span { color: #5b6b7a; font-size: 12.5px; }
+.mc-notif__empty {
+  border: 1px dashed #cfd8df;
+  border-radius: 12px;
+  background: #f9fbfc;
+  padding: 14px;
+  color: #5b6b7a;
+  font-size: 13px;
+  text-align: center;
+}
+
+.mc-avatar {
+  width: 36px; height: 36px;
+  background: #cfe0eb !important;
+  color: #0a3d62 !important;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+/* Dark */
+body.dark-theme .mc-header { background: #0d1b2a; border-bottom-color: #1e293b; }
+body.dark-theme .mc-brand__text { color: #e2e8f0; }
+body.dark-theme .mc-brand__sub { color: #94a3b8; }
+body.dark-theme .mc-header .mc-iconbtn.p-button.p-button-text { color: #e2e8f0; }
+body.dark-theme .mc-header .mc-iconbtn.p-button.p-button-text:hover { background: rgba(0,166,81,.15); color: #4fc588; border-color: rgba(0,166,81,.3); }
+body.dark-theme .mc-notif__panel { background: #111827; border-color: #1f2937; }
+body.dark-theme .mc-notif__head { color: #fff; border-color: #1f2937; }
+body.dark-theme .mc-notif__item { background: #0f172a; border-color: #1f2937; }
+body.dark-theme .mc-notif__item strong { color: #fff; }
+body.dark-theme .mc-notif__item span { color: #cbd5e1; }
