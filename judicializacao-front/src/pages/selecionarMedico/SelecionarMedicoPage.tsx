@@ -8,7 +8,14 @@ import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { FilterMatchMode } from 'primereact/api';
 import type { DataTableFilterMeta } from 'primereact/datatable';
-import { atualizarOrder, getMedicosCompleto, getProcessosResumo, marcarSemProfissional } from '../../services/api/orders';
+import {
+  atualizarOrder,
+  getMedicosCompleto,
+  getProcessosResumo,
+  marcarSemProfissional,
+  sugerirMedicoIA,
+  type SugestaoIAResposta,
+} from '../../services/api/orders';
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './SelecionarMedicoPage.css';
@@ -20,6 +27,8 @@ interface ProcessoResumo {
   area: string;
   subarea: string;
   dataPedido: string;
+  diasSolicitados: number;
+  refPreco: number;
   idMedico: number | null;
   medico: string;
 }
@@ -52,6 +61,7 @@ export function SelecionarMedicoPage() {
   const [medicoSelecionadoMassa, setMedicoSelecionadoMassa] = useState<number | null>(null);
   const [salvandoMedico, setSalvandoMedico] = useState(false);
   const [executandoAcaoMassa, setExecutandoAcaoMassa] = useState(false);
+  const [iaLoadingId, setIaLoadingId] = useState<number | null>(null);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -94,6 +104,8 @@ export function SelecionarMedicoPage() {
           area: item.area ?? '',
           subarea: item.subarea ?? '',
           dataPedido: item.dataPedido ?? '',
+          diasSolicitados: Number(item.diasSolicitados ?? 0),
+          refPreco: Number(item.refPreco ?? 0),
           idMedico: item.idMedico ?? null,
           medico:
             item.medico ??
@@ -112,33 +124,33 @@ export function SelecionarMedicoPage() {
   }, []);
 
   const dataComCamposCalculados = useMemo<ProcessoResumoTableRow[]>(() => {
-    const hoje = new Date();
-
     return processos.map((item, index) => {
-      const dataBase = item.dataPedido ? new Date(item.dataPedido) : null;
-      const dias = dataBase && !Number.isNaN(dataBase.getTime())
-        ? Math.max(0, Math.floor((hoje.getTime() - dataBase.getTime()) / (1000 * 60 * 60 * 24)))
-        : 0;
-
       return {
         ...item,
         sequencial: index + 1,
-        dias,
+        dias: Number(item.diasSolicitados ?? 0),
       };
     });
   }, [processos]);
 
   const kpis = useMemo(() => {
     const total = dataComCamposCalculados.length;
-    const comMedico = dataComCamposCalculados.filter((item) => item.idMedico).length;
-    const semMedico = total - comMedico;
+    const somaRefPreco = dataComCamposCalculados.reduce(
+      (acc, item) => acc + (item.refPreco ?? 0),
+      0,
+    );
+    const valorMedio = total > 0 ? somaRefPreco / total : 0;
+    const maisAntigo = total > 0 ? Math.max(...dataComCamposCalculados.map((p) => p.dias)) : 0;
 
     return {
       total,
-      comMedico,
-      semMedico,
+      valorMedio,
+      maisAntigo,
     };
   }, [dataComCamposCalculados]);
+
+  const formatarMoeda = (valor: number) =>
+    valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   const onPage = (event: DataTablePageEvent) => {
     setFirst(event.first);
@@ -248,6 +260,30 @@ export function SelecionarMedicoPage() {
     }
   };
 
+  const handleSugerirMedicoIA = async (rowData: ProcessoResumoTableRow) => {
+    setIaLoadingId(rowData.id);
+    try {
+      const { data } = await sugerirMedicoIA(rowData.id);
+      const sug = data as SugestaoIAResposta;
+
+      // TODO Front-3: substituir alert por dialog de confirmação
+      const fallbackTxt = sug.isFallback ? '\n\n⚠️ FALLBACK (Hospital IBG)' : '';
+      alert(
+        `🤖 Sugestão da IA:\n\n` +
+        `${sug.nomeMedico ?? '(nenhum)'}\n\n` +
+        `Justificativa: ${sug.justificativa}\n\n` +
+        `Confiança: ${sug.confianca}` +
+        fallbackTxt +
+        `\n\nsugestaoId: ${sug.sugestaoId}`,
+      );
+    } catch (error: any) {
+      console.error('Erro ao sugerir médico via IA:', error);
+      alert(error?.response?.data?.detail ?? 'Erro ao gerar sugestão.');
+    } finally {
+      setIaLoadingId(null);
+    }
+  };
+
   return (
     <div className="selecionar-medico-page">
       <div className="page-header">
@@ -258,14 +294,26 @@ export function SelecionarMedicoPage() {
         {!readOnly && (
           <div className="page-actions">
             <Button
-              label="Selecionar Médico"
+              label=""
+              tooltip='Sugerir médico via IA (em lote) — em breve'
+              tooltipOptions={{ position: 'bottom' }}
+              icon="pi pi-sparkles"
+              outlined
+              disabled
+            />
+            <Button
+              label=""
+              tooltip='Selecionar médico Manualmente'
+              tooltipOptions={ { position: 'bottom' } }
               icon="pi pi-user-edit"
               outlined
               onClick={abrirDialogMassa}
               disabled={executandoAcaoMassa}
             />
             <Button
-              label={executandoAcaoMassa ? 'Processando...' : 'Perda por falta de profissional'}
+              label={executandoAcaoMassa ? 'Processando...' : ''}
+              tooltip='Perda por falta de profissional'
+              tooltipOptions={ { position: 'bottom' } }
               icon="pi pi-user-minus"
               severity="danger"
               outlined
@@ -282,25 +330,25 @@ export function SelecionarMedicoPage() {
         <div className="kpi-card">
           <div className="kpi-header">
             <span>Total de Processos</span>
-            <i className="pi pi-briefcase" />
+            <i className="pi pi-list" />
           </div>
           <div className="kpi-value">{kpis.total}</div>
         </div>
 
         <div className="kpi-card">
           <div className="kpi-header">
-            <span>Com Médico</span>
-            <i className="pi pi-user-plus" />
+            <span>Valor Médio dos Processos</span>
+            <i className="pi pi-dollar" />
           </div>
-          <div className="kpi-value">{kpis.comMedico}</div>
+          <div className="kpi-value">{formatarMoeda(kpis.valorMedio)}</div>
         </div>
 
         <div className="kpi-card">
           <div className="kpi-header">
-            <span>Sem Médico</span>
-            <i className="pi pi-user-minus" />
+            <span>Processo mais antigo em dias</span>
+            <i className="pi pi-clock" />
           </div>
-          <div className="kpi-value">{kpis.semMedico}</div>
+          <div className="kpi-value">{kpis.maisAntigo}</div>
         </div>
       </div>
 
@@ -379,16 +427,35 @@ export function SelecionarMedicoPage() {
           />
           {!readOnly && (
             <Column
+              header="Sugerir IA"
+              body={(rowData: ProcessoResumoTableRow) => (
+                <Button
+                  label=""
+                  tooltip="Sugerir médico via IA"
+                  tooltipOptions={{ position: 'bottom' }}
+                  icon="pi pi-sparkles"
+                  outlined
+                  loading={iaLoadingId === rowData.id}
+                  disabled={iaLoadingId !== null && iaLoadingId !== rowData.id}
+                  onClick={() => void handleSugerirMedicoIA(rowData)}
+                />
+              )}
+              style={{ minWidth: '7rem' }}
+              bodyStyle={{ textAlign: 'center' }}
+            />
+          )}
+          {!readOnly && (
+            <Column
               header="Selecionar Médico"
               body={(rowData: ProcessoResumoTableRow) => (
                 <Button
-                  label="Selecionar Médico"
+                  label=""
                   icon="pi pi-user-edit"
                   outlined
                   onClick={() => abrirDialog(rowData)}
                 />
               )}
-              style={{ minWidth: '14rem' }}
+              style={{ minWidth: '8rem' }}
               bodyStyle={{ textAlign: 'center' }}
             />
           )}
@@ -397,14 +464,14 @@ export function SelecionarMedicoPage() {
               header="Perda"
               body={(rowData: ProcessoResumoTableRow) => (
                 <Button
-                  label="Perda por falta de Profissional"
+                  label=""
                   icon="pi pi-user-minus"
                   severity="danger"
                   outlined
                   onClick={() => void handleMarcarSemProfissional(rowData)}
                 />
               )}
-              style={{ minWidth: '18rem' }}
+              style={{ minWidth: '5rem' }}
               bodyStyle={{ textAlign: 'center' }}
             />
           )}

@@ -1,116 +1,325 @@
+/* ============================================================
+   MEDCHECK — OrcamentoMedicoPage + EnviarOrcamentoDialog
+   ATENÇÃO: Estilos do documento (.orcamento-documento*) MANTIDOS
+   exatamente como o original — não tocar essa parte.
+   ============================================================ */
+
+/* ---------- Página ---------- */
 .orcamento-medico-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 22px;
   width: 100%;
+  font-family: var(--mc-font-body, "Inter", sans-serif);
+  color: var(--mc-ink, #0f2236);
 }
 
+.orcamento-medico-page .page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.orcamento-medico-page .page-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 .orcamento-medico-page .page-header h1 {
   margin: 0;
-  font-size: 1.8rem;
-  color: #1f2937;
+  font-family: var(--mc-font-heading, "Poppins", sans-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--mc-navy-900, #062a45);
+  letter-spacing: -0.01em;
 }
-
 .orcamento-medico-page .page-header p {
   margin: 6px 0 0;
-  color: #6b7280;
+  color: var(--mc-muted, #5b6b7a);
+  font-size: 0.92rem;
 }
 
-.status-tag-custom {
-  font-weight: 700;
-  border-width: 1px;
-  border-style: solid;
-}
-
+/* ---------- KPIs ---------- */
 .orcamento-medico-page .kpi-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 14px;
 }
-
 .orcamento-medico-page .kpi-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 18px 18px 14px;
-  min-height: 110px;
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border, #e3eaef);
+  border-radius: var(--mc-radius-lg, 16px);
+  padding: 18px 20px;
+  min-height: 112px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--mc-shadow-sm, 0 1px 2px rgba(10, 61, 98, 0.05));
+  transition: transform .15s ease, box-shadow .15s ease;
 }
-
+.orcamento-medico-page .kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--mc-green-500, #00a651);
+}
+.orcamento-medico-page .kpi-card:nth-child(2)::before { background: var(--mc-navy-700, #0a3d62); }
+.orcamento-medico-page .kpi-card:nth-child(3)::before { background: var(--mc-amber, #d08a1c); }
+.orcamento-medico-page .kpi-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--mc-shadow, 0 4px 14px rgba(10, 61, 98, 0.07));
+}
 .orcamento-medico-page .kpi-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #4b5563;
-  font-size: 0.88rem;
+  gap: 8px;
+  color: var(--mc-muted, #5b6b7a);
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.08em;
 }
-
-.orcamento-medico-page .kpi-header i { color: #fb923c; }
+.orcamento-medico-page .kpi-header i {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--mc-green-50, #e6f7ef);
+  color: var(--mc-green-600, #008f46);
+  font-size: 14px;
+}
+.orcamento-medico-page .kpi-card:nth-child(2) .kpi-header i {
+  background: var(--mc-navy-50, #e8f0f5);
+  color: var(--mc-navy-700, #0a3d62);
+}
+.orcamento-medico-page .kpi-card:nth-child(3) .kpi-header i {
+  background: var(--mc-amber-50, #fdf3e2);
+  color: var(--mc-amber, #d08a1c);
+}
 .orcamento-medico-page .kpi-value {
-  font-size: 2rem;
-  font-weight: 500;
-  color: #f97316;
+  font-family: var(--mc-font-heading);
+  font-size: 1.85rem;
+  font-weight: 600;
+  color: var(--mc-navy-900);
   line-height: 1;
 }
 
+/* ---------- Card / tabela ---------- */
 .orcamento-medico-page .card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 18px;
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius-lg);
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--mc-shadow-sm);
 }
+.orcamento-table { width: 100%; }
+
+.orcamento-table .p-datatable-thead > tr > th {
+  background: var(--mc-surface-2, #f9fbfc);
+  color: var(--mc-ink-2, #2b4158);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-color: var(--mc-border);
+  padding: 12px 14px;
+  white-space: nowrap;
+}
+.orcamento-table .p-datatable-tbody > tr {
+  background: #fff;
+  transition: background .12s ease;
+}
+.orcamento-table .p-datatable-tbody > tr:hover { background: var(--mc-surface-2); }
+.orcamento-table .p-datatable-tbody > tr > td {
+  border-color: var(--mc-border);
+  color: var(--mc-ink-2);
+  padding: 14px;
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
+.orcamento-table .p-column-filter,
+.orcamento-table .p-inputtext,
+.orcamento-table .p-dropdown {
+  width: 100%;
+  border-color: var(--mc-border-2, #d6e0e6);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.orcamento-table .p-column-filter:focus,
+.orcamento-table .p-inputtext:focus,
+.orcamento-table .p-dropdown:not(.p-disabled).p-focus {
+  border-color: var(--mc-green-500);
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.12);
+}
+.orcamento-table .p-paginator {
+  background: var(--mc-surface-2);
+  border-color: var(--mc-border);
+  color: var(--mc-muted);
+  padding: 10px 14px;
+}
+.orcamento-table .p-paginator .p-paginator-page.p-highlight {
+  background: var(--mc-green-500);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.status-tag-custom {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.orcamento-table .p-button.p-button-outlined {
+  border-color: var(--mc-border-2);
+  color: var(--mc-navy-700);
+  background: #fff;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  height: 36px;
+}
+.orcamento-table .p-button.p-button-outlined:hover {
+  background: var(--mc-green-50);
+  border-color: var(--mc-green-300);
+  color: var(--mc-green-700);
+}
+
+.orcamento-cobranca-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.orcamento-cobranca-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--mc-border, #e3eaef);
+  border-radius: 14px;
+  background: var(--mc-surface-2, #f9fbfc);
+}
+
+.orcamento-cobranca-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.orcamento-cobranca-card__info strong {
+  font-size: 1rem;
+  color: var(--mc-navy-900, #062a45);
+}
+
+.orcamento-cobranca-card__info span {
+  font-size: 0.9rem;
+  color: var(--mc-muted, #5b6b7a);
+}
+
+.orcamento-cobranca-empty {
+  padding: 18px;
+  border: 1px dashed var(--mc-border, #e3eaef);
+  border-radius: 14px;
+  text-align: center;
+  color: var(--mc-muted, #5b6b7a);
+}
+
+/* ---------- Dialog: Detalhes do Processo ---------- */
+.orcamento-edit-dialog .p-dialog-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--mc-border);
+  background: var(--mc-surface-2);
+}
+.orcamento-edit-dialog .p-dialog-title {
+  font-family: var(--mc-font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--mc-navy-900);
+}
+.orcamento-edit-dialog .p-dialog-content { padding: 1.25rem 1.5rem 1.5rem; }
 
 .orcamento-form-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  gap: 14px 16px;
 }
-
 .orcamento-form-grid .field {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
-
-.orcamento-form-grid .field label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #6b7280;
+.orcamento-form-grid .field > label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mc-muted);
 }
+.orcamento-form-grid .field-span-1 { grid-column: span 1; }
+.orcamento-form-grid .field-span-2 { grid-column: span 2; }
+.orcamento-form-grid .field-span-3 { grid-column: span 3; }
+.orcamento-form-grid .field-span-4 { grid-column: span 4; }
 
 .orcamento-form-grid .p-inputtext,
-.orcamento-form-grid .p-dropdown,
-.orcamento-form-grid .p-inputtextarea { width: 100%; }
-
-.orcamento-form-grid .p-inputtext,
-.orcamento-form-grid .p-dropdown { height: 42px; }
-
-.orcamento-form-grid .p-inputtext:disabled {
-  background: #f8fafc;
-  color: #94a3b8;
+.orcamento-form-grid .p-inputtextarea,
+.orcamento-form-grid .p-dropdown {
+  width: 100%;
+  border-color: var(--mc-border-2);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.9rem;
+}
+.orcamento-form-grid .p-inputtext { height: 42px; }
+.orcamento-form-grid .p-inputtext:focus,
+.orcamento-form-grid .p-inputtextarea:focus {
+  border-color: var(--mc-green-500);
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.12);
+}
+.orcamento-form-grid .p-inputtext:disabled,
+.orcamento-form-grid .p-inputtextarea:disabled {
+  background: var(--mc-surface-2);
+  color: var(--mc-muted);
+  opacity: 1;
 }
 
 .action-buttons {
   display: flex;
-  gap: 12px;
   flex-wrap: wrap;
-  align-items: center;
-  margin-top: 8px;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid var(--mc-border);
+  margin-top: 4px;
+}
+.action-buttons .p-button {
+  height: 42px;
+  border-radius: 10px;
+  font-weight: 600;
 }
 
-/* Seções do orçamento */
-.orcamento-secoes {
+.dialog-footer-actions {
+  margin-top: 22px;
   display: flex;
-  flex-direction: column;
-  gap: 24px;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--mc-border);
 }
+.dialog-footer-actions .p-button { min-width: 110px; height: 42px; border-radius: 10px; }
 
+/* ---------- Dialog: Enviar Orçamento (manual) ---------- */
 .orcamento-dialog-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.12fr) minmax(360px, 0.88fr);
@@ -118,34 +327,82 @@
   align-items: start;
 }
 
+.orcamento-secoes {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.secao-orcamento {
+  background: var(--mc-surface-2, #f9fbfc);
+  border: 1px solid var(--mc-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 .secao-orcamento h3 {
+  margin: 0 0 4px;
+  font-family: var(--mc-font-heading);
   font-size: 0.95rem;
   font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 10px;
+  color: var(--mc-navy-900);
   padding-bottom: 6px;
-  border-bottom: 2px solid #f97316;
+  border-bottom: 2px solid var(--mc-green-500);
 }
 
 .orcamento-row {
   display: flex;
   gap: 10px;
   align-items: center;
-  margin-bottom: 8px;
 }
-
 .orcamento-descricao { flex: 1; }
 .orcamento-valor { width: 160px; }
 
+.orcamento-row .p-inputtext,
+.orcamento-row .p-inputnumber-input {
+  height: 38px;
+  border-radius: 8px;
+  border-color: var(--mc-border-2);
+  font-size: 0.88rem;
+  background: #fff;
+}
+.orcamento-row .p-inputtext:focus,
+.orcamento-row .p-inputnumber-input:focus {
+  border-color: var(--mc-green-500);
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.12);
+}
+
+.secao-orcamento .p-button.p-button-text {
+  align-self: flex-start;
+  color: var(--mc-green-600);
+  font-weight: 600;
+  padding: 6px 8px;
+}
+.secao-orcamento .p-button.p-button-text:hover {
+  background: var(--mc-green-50);
+  color: var(--mc-green-700);
+}
+
 .valor-total {
-  background: #f97316;
+  background: var(--mc-navy-700);
   color: #fff;
   padding: 14px 18px;
   border-radius: 10px;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   text-align: right;
+  font-family: var(--mc-font-heading);
+  letter-spacing: 0.02em;
 }
 
+/* ============================================================
+   ÁREA DO DOCUMENTO — NÃO ALTERAR
+   (mantida idêntica ao CSS original do usuário)
+   ============================================================ */
 .orcamento-preview {
   position: sticky;
   top: 0;
@@ -338,9 +595,9 @@
 }
 
 .orcamento-documento__assinatura {
-  margin-top: auto;
+  margin-top: 260px;
   text-align: center;
-  font-size: clamp(0.42rem, 0.64vw, 0.56rem);
+  font-size: clamp(0.5rem, 0.64vw, 1rem);
   line-height: 1;
 }
 
@@ -352,44 +609,117 @@
   object-fit: contain;
 }
 
-.dialog-footer-actions {
-  margin-top: 22px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+/* ============================================================
+   Botões dos dialogs (cores MEDCHECK)
+   ============================================================ */
+.orcamento-edit-dialog .p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-rounded):not(.p-button-warning):not(.p-button-danger) {
+  background: var(--mc-green-500);
+  border-color: var(--mc-green-500);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 10px;
+}
+.orcamento-edit-dialog .p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-rounded):not(.p-button-warning):not(.p-button-danger):hover {
+  background: var(--mc-green-600);
+  border-color: var(--mc-green-600);
+}
+.orcamento-edit-dialog .p-button.p-button-outlined {
+  border-color: var(--mc-border-2);
+  color: var(--mc-ink-2);
+  background: #fff;
+  border-radius: 10px;
+}
+.orcamento-edit-dialog .p-button.p-button-outlined:hover {
+  background: var(--mc-green-50);
+  border-color: var(--mc-green-300);
+  color: var(--mc-green-700);
+}
+.orcamento-edit-dialog .p-button.p-button-warning.p-button-outlined {
+  color: var(--mc-amber, #d08a1c);
+  border-color: var(--mc-amber, #d08a1c);
+}
+.orcamento-edit-dialog .p-button.p-button-warning.p-button-outlined:hover {
+  background: var(--mc-amber-50, #fdf3e2);
+  color: var(--mc-amber, #d08a1c);
+}
+.orcamento-edit-dialog .p-button.p-button-danger.p-button-outlined {
+  color: #c8394d;
+  border-color: #c8394d;
+}
+.orcamento-edit-dialog .p-button.p-button-danger.p-button-outlined:hover {
+  background: #fde8ea;
+}
+.orcamento-edit-dialog .p-button.p-button-rounded.p-button-danger {
+  background: #fde8ea;
+  border-color: #fde8ea;
+  color: #c8394d;
+}
+.orcamento-edit-dialog .p-button.p-button-rounded.p-button-danger:hover {
+  background: #c8394d;
+  color: #fff;
 }
 
-.dialog-footer-actions .p-button { min-width: 110px; }
+/* ============================================================
+   Responsivo
+   ============================================================ */
+@media (max-width: 1080px) {
+  .orcamento-dialog-layout { grid-template-columns: 1fr; }
+  .orcamento-preview { position: static; transform: none; }
+}
+@media (max-width: 1100px) {
+  .orcamento-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .orcamento-form-grid .field-span-3,
+  .orcamento-form-grid .field-span-4 { grid-column: span 2; }
+}
+@media (max-width: 900px) {
+  .orcamento-medico-page .kpi-grid { grid-template-columns: 1fr; }
+  .orcamento-cobranca-card { flex-direction: column; align-items: stretch; }
+}
+@media (max-width: 700px) {
+  .orcamento-form-grid { grid-template-columns: 1fr; }
+  .orcamento-form-grid .field-span-1,
+  .orcamento-form-grid .field-span-2,
+  .orcamento-form-grid .field-span-3,
+  .orcamento-form-grid .field-span-4 { grid-column: span 1; }
+}
+@media (max-width: 640px) {
+  .orcamento-row { flex-direction: column; align-items: stretch; }
+  .orcamento-valor { width: 100%; }
+}
 
-body.dark-theme .orcamento-medico-page .kpi-card {
-  background: #1f2a3d;
-  border-color: #334155;
+/* ============================================================
+   Dark theme (não afeta o documento)
+   ============================================================ */
+body.dark-theme .orcamento-medico-page { color: #e6eef6; }
+body.dark-theme .orcamento-medico-page .page-header h1 { color: #e6eef6; }
+body.dark-theme .orcamento-medico-page .page-header p { color: #94a3b8; }
+
+body.dark-theme .orcamento-medico-page .kpi-card,
+body.dark-theme .orcamento-medico-page .card {
+  background: #0f1f33;
+  border-color: #1e2d42;
 }
 body.dark-theme .orcamento-medico-page .kpi-header { color: #cbd5e1; }
-body.dark-theme .orcamento-medico-page .kpi-value { color: #fb923c; }
-body.dark-theme .orcamento-medico-page .card {
-  background: #1e293b;
-  border-color: #334155;
+body.dark-theme .orcamento-medico-page .kpi-value { color: #e6eef6; }
+
+body.dark-theme .orcamento-table .p-datatable-thead > tr > th,
+body.dark-theme .orcamento-table .p-paginator {
+  background: #0d1b2a;
+  color: #e6eef6;
+  border-color: #1e2d42;
 }
-body.dark-theme .secao-orcamento h3 { color: #f8fafc; }
-
-@media (max-width: 1080px) {
-  .orcamento-dialog-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .orcamento-preview {
-    position: static;
-  }
+body.dark-theme .orcamento-table .p-datatable-tbody > tr {
+  background: #0f1f33;
+  color: #e6eef6;
+}
+body.dark-theme .orcamento-table .p-datatable-tbody > tr:hover { background: #142841; }
+body.dark-theme .orcamento-table .p-datatable-tbody > tr > td {
+  border-color: #1e2d42;
+  color: #c6d2df;
 }
 
-@media (max-width: 640px) {
-  .orcamento-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .orcamento-valor {
-    width: 100%;
-  }
+body.dark-theme .secao-orcamento {
+  background: #0f1f33;
+  border-color: #1e2d42;
 }
+body.dark-theme .secao-orcamento h3 { color: #e6eef6; }

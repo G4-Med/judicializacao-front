@@ -94,6 +94,7 @@ export function OrcamentoMedicoPage() {
   const [previewUrl, setPreviewUrl] = useState('');
   const [previewTipo, setPreviewTipo] = useState<'pdf' | 'imagem' | 'outro'>('outro');
   const [previewNome, setPreviewNome] = useState('');
+  const [cobrancaVisible, setCobrancaVisible] = useState(false);
   
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
@@ -159,6 +160,30 @@ export function OrcamentoMedicoPage() {
   const medicosOptions = useMemo(() => {
     return Array.from(new Set(dataComMedico.map((item) => item.medico).filter(Boolean)))
       .map((medico) => ({ label: medico, value: medico }));
+  }, [dataComMedico]);
+
+  const cobrancasPorMedico = useMemo(() => {
+    const lookup = new Map<string, ProcessoOrcamentoRow[]>();
+
+    dataComMedico.forEach((item) => {
+      const medicoNome = (item.medico ?? '').trim();
+      if (!medicoNome || medicoNome.toUpperCase() === 'SEM PROFISSIONAL') {
+        return;
+      }
+
+      const atual = lookup.get(medicoNome) ?? [];
+      atual.push(item);
+      lookup.set(medicoNome, atual);
+    });
+
+    return Array.from(lookup.entries())
+      .map(([medico, itens]) => ({
+        medico,
+        total: itens.length,
+        especialidades: new Set(itens.map((item) => item.area).filter(Boolean)).size,
+        itens: [...itens].sort((a, b) => (a.dias ?? 0) - (b.dias ?? 0)),
+      }))
+      .sort((a, b) => a.medico.localeCompare(b.medico, 'pt-BR'));
   }, [dataComMedico]);
 
   const kpis = useMemo(() => {
@@ -250,7 +275,9 @@ const copiarParaWhatsapp = async (rowData: ProcessoOrcamentoRow) => {
     const res: any = await getAnexosOrder(rowData.id, 'RELATORIO')
     const listaAnexos: any[] = res.data.anexos
     if (listaAnexos.length > 0) {
-      linhasAnexos = listaAnexos.map((a: any) => a.linkImagem).join('\n')
+      linhasAnexos = listaAnexos
+        .map((a: any, index: number) => `Anexo ${index + 1}\n${a.linkImagem}`)
+        .join('\n')
     }
   } catch {
     linhasAnexos = 'Erro ao carregar anexos'
@@ -305,12 +332,89 @@ ${linhasAnexos}
     alert('Não foi possível copiar.')
   }
 }
+
+const copiarTexto = async (texto: string) => {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(texto)
+  } else {
+    const textarea = document.createElement('textarea')
+    textarea.value = texto
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.focus()
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+  }
+}
+
+const gerarTextoCobranca = async (medico: string, itens: ProcessoOrcamentoRow[]) => {
+  const totalEspecialidades = new Set(itens.map((item) => item.area).filter(Boolean)).size
+  const agrupado = itens.reduce<Record<string, Record<string, ProcessoOrcamentoRow[]>>>((acc, item) => {
+    const area = item.area?.trim() || 'SEM ÁREA'
+    const subarea = item.subarea?.trim() || 'Sem subárea'
+    acc[area] = acc[area] || {}
+    acc[area][subarea] = acc[area][subarea] || []
+    acc[area][subarea].push(item)
+    return acc
+  }, {})
+
+  let contador = 1
+  const blocos = Object.entries(agrupado).map(([area, subareas]) => {
+    const subareaTexto = Object.entries(subareas).map(([subarea, registros]) => {
+      const linhas = registros.map((registro) => {
+        const linha = `     ${contador}. *${registro.paciente}* [~]1
+        [D] ${formatarData(registro.dataStatusJuridico)} - ${registro.dias} dias
+        [P] ${registro.procedimento}`
+        contador += 1
+        return linha
+      }).join('\n')
+
+      return `  └ _${subarea}_ (${registros.length} orçamento${registros.length > 1 ? 's' : ''})
+${linhas}`
+    }).join('\n')
+
+    return `[${area.toUpperCase()}] *${area}*
+${subareaTexto}`
+  }).join('\n\n')
+
+  const texto = `[#] *COBRANCA - ORCAMENTOS PENDENTES*
+
+[MED] *Medico: ${medico}*
+
+[G] Total: *${itens.length} orcamento${itens.length > 1 ? 's' : ''}* em ${totalEspecialidades} especialidade${totalEspecialidades > 1 ? 's' : ''}
+
+--------------------
+
+${blocos}
+
+--------------------
+[!] *Por favor, providenciar envio dos orcamentos!*
+[TEL] Qualquer duvida, entrar em contato com a equipe G4Med.`
+
+  try {
+    await copiarTexto(texto)
+    alert('Cobrança copiada! Cole no WhatsApp.')
+  } catch {
+    alert('Não foi possível copiar a cobrança.')
+  }
+}
+
   return (
     <div className="orcamento-medico-page">
       <div className="page-header">
         <div>
           <h1>Orçamento Médico</h1>
           <p>Processos aguardando orçamento do médico</p>
+        </div>
+        <div className="page-actions">
+          <Button
+            label="Cobrança"
+            icon="pi pi-whatsapp"
+            outlined
+            onClick={() => setCobrancaVisible(true)}
+          />
         </div>
       </div>
 
@@ -600,6 +704,39 @@ ${linhasAnexos}
               </div>
             </div>
           )}
+        </div>
+      </Dialog>
+
+      <Dialog
+        header="Cobrança de Orçamentos Pendentes"
+        visible={cobrancaVisible}
+        style={{ width: '52rem', maxWidth: '96vw' }}
+        modal
+        onHide={() => setCobrancaVisible(false)}
+        className="orcamento-cobranca-dialog"
+      >
+        <div className="orcamento-cobranca-list">
+          {cobrancasPorMedico.length === 0 && (
+            <div className="orcamento-cobranca-empty">
+              Nenhum médico com orçamento pendente para cobrança.
+            </div>
+          )}
+
+          {cobrancasPorMedico.map((grupo) => (
+            <div key={grupo.medico} className="orcamento-cobranca-card">
+              <div className="orcamento-cobranca-card__info">
+                <strong>{grupo.medico}</strong>
+                <span>
+                  {grupo.total} orçamento{grupo.total > 1 ? 's' : ''} pendente{grupo.total > 1 ? 's' : ''} em {grupo.especialidades} especialidade{grupo.especialidades > 1 ? 's' : ''}
+                </span>
+              </div>
+              <Button
+                label="Gerar cobrança"
+                icon="pi pi-copy"
+                onClick={() => void gerarTextoCobranca(grupo.medico, grupo.itens)}
+              />
+            </div>
+          ))}
         </div>
       </Dialog>
     </div>

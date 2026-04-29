@@ -1,144 +1,461 @@
+/* ============================================================
+   MEDCHECK — ParaProtocolarPage
+   Estilo aplicado às classes JÁ EXISTENTES no TSX.
+   ============================================================ */
+
 .para-protocolar-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 22px;
+  width: 100%;
+  font-family: var(--mc-font-body, "Inter", sans-serif);
+  color: var(--mc-ink, #0f2236);
 }
 
-.kpi-grid-3 {
+/* ---------- Header ---------- */
+.para-protocolar-page .page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.para-protocolar-page .page-header h1 {
+  margin: 0;
+  font-family: var(--mc-font-heading, "Poppins", sans-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--mc-navy-900, #062a45);
+  letter-spacing: -0.01em;
+}
+.para-protocolar-page .page-header p {
+  margin: 6px 0 0;
+  color: var(--mc-muted, #5b6b7a);
+  font-size: 0.92rem;
+}
+.para-protocolar-page .page-actions {
+  display: flex;
+  gap: 10px;
+}
+.para-protocolar-page .page-actions .p-button {
+  background: var(--mc-green-500, #00a651);
+  border-color: var(--mc-green-500, #00a651);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 10px;
+  height: 40px;
+}
+.para-protocolar-page .page-actions .p-button:hover {
+  background: var(--mc-green-600, #008f46);
+  border-color: var(--mc-green-600, #008f46);
+}
+
+/* ---------- KPIs ---------- */
+.para-protocolar-page .kpi-grid {
+  display: grid;
+  gap: 14px;
+}
+.para-protocolar-page .kpi-grid-3 {
   grid-template-columns: repeat(3, 1fr);
 }
+.para-protocolar-page .kpi-card {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border, #e3eaef);
+  border-radius: var(--mc-radius-lg, 16px);
+  padding: 18px 20px;
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--mc-shadow-sm, 0 1px 2px rgba(10, 61, 98, 0.05));
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.para-protocolar-page .kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--mc-green-500, #00a651);
+}
+.para-protocolar-page .kpi-card:nth-child(2)::before { background: var(--mc-navy-700, #0a3d62); }
+.para-protocolar-page .kpi-card:nth-child(3)::before { background: var(--mc-amber, #d08a1c); }
+.para-protocolar-page .kpi-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--mc-shadow, 0 4px 14px rgba(10, 61, 98, 0.07));
+}
+.para-protocolar-page .kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--mc-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.para-protocolar-page .kpi-header i {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--mc-green-50, #e6f7ef);
+  color: var(--mc-green-600, #008f46);
+  font-size: 14px;
+}
+.para-protocolar-page .kpi-card:nth-child(2) .kpi-header i {
+  background: var(--mc-navy-50, #e8f0f5);
+  color: var(--mc-navy-700, #0a3d62);
+}
+.para-protocolar-page .kpi-card:nth-child(3) .kpi-header i {
+  background: var(--mc-amber-50, #fdf3e2);
+  color: var(--mc-amber, #d08a1c);
+}
+.para-protocolar-page .kpi-value {
+  font-family: var(--mc-font-heading);
+  font-size: 1.85rem;
+  font-weight: 600;
+  color: var(--mc-navy-900);
+  line-height: 1;
+}
+
+/* ---------- Card / tabela ---------- */
+.para-protocolar-page .card {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--mc-shadow-sm);
+}
+.para-protocolar-table { width: 100%; }
 
 .para-protocolar-table .p-datatable-thead > tr > th {
+  background: var(--mc-surface-2, #f9fbfc);
+  color: var(--mc-ink-2, #2b4158);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-color: var(--mc-border);
+  padding: 12px 14px;
   white-space: nowrap;
 }
-
-.para-protocolar-table .p-tag {
-  font-size: 0.78rem;
-  font-weight: 700;
+.para-protocolar-table .p-datatable-tbody > tr {
+  background: #fff;
+  transition: background .12s ease;
+}
+.para-protocolar-table .p-datatable-tbody > tr:hover { background: var(--mc-surface-2); }
+.para-protocolar-table .p-datatable-tbody > tr > td {
+  border-color: var(--mc-border);
+  color: var(--mc-ink-2);
+  padding: 14px;
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
+.para-protocolar-table .p-column-filter,
+.para-protocolar-table .p-inputtext {
+  width: 100%;
+  border-color: var(--mc-border-2, #d6e0e6);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.para-protocolar-table .p-column-filter:focus,
+.para-protocolar-table .p-inputtext:focus {
+  border-color: var(--mc-green-500);
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.12);
+}
+.para-protocolar-table .p-paginator {
+  background: var(--mc-surface-2);
+  border-color: var(--mc-border);
+  color: var(--mc-muted);
+  padding: 10px 14px;
+}
+.para-protocolar-table .p-paginator .p-paginator-page.p-highlight {
+  background: var(--mc-green-500);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 6px;
 }
 
+/* dias destaque */
+.para-protocolar-table .dias-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--mc-amber-50, #fdf3e2);
+  color: var(--mc-amber, #b8730e);
+  font-weight: 600;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* status tag */
 .status-tag-custom {
+  font-size: 0.72rem;
   font-weight: 700;
+  letter-spacing: 0.02em;
   border-width: 1px;
   border-style: solid;
+  border-radius: 999px;
+  padding: 4px 10px;
 }
 
+/* botões da tabela */
+.para-protocolar-table .p-button.p-button-rounded.p-button-outlined {
+  width: 36px;
+  height: 36px;
+  border-color: var(--mc-border-2);
+  color: var(--mc-navy-700);
+  background: #fff;
+}
+.para-protocolar-table .p-button.p-button-rounded.p-button-outlined:hover {
+  background: var(--mc-green-50);
+  border-color: var(--mc-green-300, #86d6ad);
+  color: var(--mc-green-700, #067b3d);
+}
+.para-protocolar-table .p-button.p-button-success.p-button-outlined {
+  border-color: var(--mc-green-500);
+  color: var(--mc-green-600);
+  background: #fff;
+  border-radius: 8px;
+  font-weight: 600;
+  height: 36px;
+}
+.para-protocolar-table .p-button.p-button-success.p-button-outlined:hover {
+  background: var(--mc-green-500);
+  color: #fff;
+}
+.para-protocolar-table .p-button.p-button-danger.p-button-outlined {
+  border-color: #c8394d;
+  color: #c8394d;
+  background: #fff;
+  border-radius: 8px;
+  font-weight: 600;
+  height: 36px;
+}
+.para-protocolar-table .p-button.p-button-danger.p-button-outlined:hover {
+  background: #c8394d;
+  color: #fff;
+}
+
+/* ---------- Dialog: pp-dialog ---------- */
 .pp-dialog .p-dialog-header {
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--mc-border);
+  background: var(--mc-surface-2);
 }
-
 .pp-dialog .p-dialog-title {
+  font-family: var(--mc-font-heading);
   font-size: 1rem;
-  font-weight: 700;
-  color: #1f2937;
+  font-weight: 600;
+  color: var(--mc-navy-900);
 }
-
-.pp-dialog .p-dialog-content {
-  padding: 1rem 1.25rem 1.25rem;
-}
+.pp-dialog .p-dialog-content { padding: 1.25rem 1.5rem 1.5rem; }
 
 .pp-form-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  gap: 14px 16px;
 }
-
 .pp-form-grid .field {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
-
-.pp-form-grid .field label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #6b7280;
+.pp-form-grid .field > label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mc-muted);
 }
+.pp-form-grid .field-span-2 { grid-column: span 2; }
+.pp-form-grid .field-span-3 { grid-column: span 3; }
+.pp-form-grid .field-span-4 { grid-column: span 4; }
 
 .pp-form-grid .p-inputtext,
-.pp-form-grid .p-dropdown,
-.pp-form-grid .p-inputnumber,
+.pp-form-grid .p-inputtextarea,
 .pp-form-grid .p-inputnumber-input,
-.pp-form-grid .p-calendar,
-.pp-form-grid .p-calendar .p-inputtext,
-.pp-form-grid .p-inputtextarea {
+.pp-form-grid .p-calendar input {
   width: 100%;
+  border-color: var(--mc-border-2);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.9rem;
+}
+.pp-form-grid .p-inputtext { height: 42px; }
+.pp-form-grid .p-inputnumber { width: 100%; }
+.pp-form-grid .p-calendar { width: 100%; }
+.pp-form-grid .p-calendar input { height: 42px; }
+.pp-form-grid .p-calendar .p-button {
+  background: var(--mc-surface-2);
+  border-color: var(--mc-border-2);
+  color: var(--mc-navy-700);
+}
+.pp-form-grid .p-calendar .p-button:hover {
+  background: var(--mc-green-50);
+  color: var(--mc-green-700);
 }
 
-.pp-form-grid .p-inputtext,
-.pp-form-grid .p-inputnumber-input,
-.pp-form-grid .p-dropdown,
-.pp-form-grid .p-calendar .p-inputtext {
-  height: 42px;
+.pp-form-grid .p-inputtext:focus,
+.pp-form-grid .p-inputtextarea:focus,
+.pp-form-grid .p-inputnumber-input:focus,
+.pp-form-grid .p-calendar input:focus {
+  border-color: var(--mc-green-500);
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.12);
 }
-
-.pp-form-grid .p-inputtextarea {
-  min-height: 110px;
-  resize: vertical;
-}
-
 .pp-form-grid .p-inputtext:disabled,
-.pp-form-grid .p-inputnumber-input:disabled,
-.pp-form-grid .p-inputtextarea:disabled {
-  background: #f8fafc;
-  color: #94a3b8;
+.pp-form-grid .p-inputtextarea:disabled,
+.pp-form-grid .p-inputnumber-input:disabled {
+  background: var(--mc-surface-2);
+  color: var(--mc-muted);
   opacity: 1;
+  cursor: not-allowed;
 }
 
-.field-button {
-  justify-content: flex-end;
-}
-
-.field-button .p-button {
-  width: 100%;
+.pp-form-grid .tag-box {
+  display: flex;
+  align-items: center;
   height: 42px;
 }
 
-.radio-group {
+.pp-form-grid .field-button .p-button {
+  height: 42px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+/* radio group (Não Protocolar) */
+.pp-form-grid .radio-group {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding-top: 6px;
+  gap: 10px;
+  background: var(--mc-surface-2);
+  border: 1px solid var(--mc-border);
+  border-radius: 12px;
+  padding: 14px 16px;
 }
-
-.radio-item {
+.pp-form-grid .radio-item {
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 6px 4px;
+  border-radius: 8px;
+  cursor: pointer;
 }
-
-.radio-item label {
+.pp-form-grid .radio-item:hover { background: rgba(0, 166, 81, 0.06); }
+.pp-form-grid .radio-item label {
   margin: 0;
+  font-size: 0.92rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--mc-ink);
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+.pp-form-grid .radio-item .p-radiobutton .p-radiobutton-box.p-highlight {
+  border-color: var(--mc-green-500);
+  background: var(--mc-green-500);
+}
+.pp-form-grid .radio-item .p-radiobutton .p-radiobutton-box .p-radiobutton-icon { background: #fff; }
+
+/* dialog footer */
+.dialog-footer-actions {
+  margin-top: 22px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--mc-border);
+}
+.dialog-footer-actions .p-button { min-width: 110px; height: 42px; border-radius: 10px; }
+
+.pp-dialog .p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-rounded):not(.p-button-danger) {
+  background: var(--mc-green-500);
+  border-color: var(--mc-green-500);
+  color: #fff;
+  font-weight: 600;
+}
+.pp-dialog .p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-rounded):not(.p-button-danger):hover {
+  background: var(--mc-green-600);
+  border-color: var(--mc-green-600);
+}
+.pp-dialog .p-button.p-button-outlined {
+  border-color: var(--mc-border-2);
+  color: var(--mc-ink-2);
+  background: #fff;
+}
+.pp-dialog .p-button.p-button-outlined:hover {
+  background: var(--mc-green-50);
+  border-color: var(--mc-green-300);
+  color: var(--mc-green-700);
+}
+.pp-dialog .p-button.p-button-danger {
+  background: #c8394d;
+  border-color: #c8394d;
+  color: #fff;
+  font-weight: 600;
+}
+.pp-dialog .p-button.p-button-danger:hover {
+  background: #a92c3e;
+  border-color: #a92c3e;
 }
 
+/* ---------- Responsivo ---------- */
 @media (max-width: 1100px) {
-  .kpi-grid-3 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .pp-form-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .field-span-4 {
-    grid-column: span 2;
-  }
+  .pp-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pp-form-grid .field-span-3,
+  .pp-form-grid .field-span-4 { grid-column: span 2; }
 }
-
+@media (max-width: 900px) {
+  .para-protocolar-page .kpi-grid-3 { grid-template-columns: 1fr; }
+}
 @media (max-width: 700px) {
-  .kpi-grid-3 {
-    grid-template-columns: 1fr;
-  }
-
-  .pp-form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .field-span-2,
-  .field-span-4 {
-    grid-column: span 1;
-  }
+  .pp-form-grid { grid-template-columns: 1fr; }
+  .pp-form-grid .field-span-2,
+  .pp-form-grid .field-span-3,
+  .pp-form-grid .field-span-4 { grid-column: span 1; }
 }
+
+/* ---------- Dark theme ---------- */
+body.dark-theme .para-protocolar-page { color: #e6eef6; }
+body.dark-theme .para-protocolar-page .page-header h1 { color: #e6eef6; }
+body.dark-theme .para-protocolar-page .page-header p { color: #94a3b8; }
+
+body.dark-theme .para-protocolar-page .kpi-card,
+body.dark-theme .para-protocolar-page .card {
+  background: #0f1f33;
+  border-color: #1e2d42;
+}
+body.dark-theme .para-protocolar-page .kpi-header { color: #cbd5e1; }
+body.dark-theme .para-protocolar-page .kpi-value { color: #e6eef6; }
+
+body.dark-theme .para-protocolar-table .p-datatable-thead > tr > th,
+body.dark-theme .para-protocolar-table .p-paginator {
+  background: #0d1b2a;
+  color: #e6eef6;
+  border-color: #1e2d42;
+}
+body.dark-theme .para-protocolar-table .p-datatable-tbody > tr {
+  background: #0f1f33;
+  color: #e6eef6;
+}
+body.dark-theme .para-protocolar-table .p-datatable-tbody > tr:hover { background: #142841; }
+body.dark-theme .para-protocolar-table .p-datatable-tbody > tr > td {
+  border-color: #1e2d42;
+  color: #c6d2df;
+}
+
+body.dark-theme .pp-form-grid .radio-group {
+  background: #0d1b2a;
+  border-color: #1e2d42;
+}
+body.dark-theme .pp-form-grid .radio-item label { color: #e6eef6; }
+body.dark-theme .pp-form-grid .radio-item:hover { background: rgba(0, 166, 81, 0.12); }

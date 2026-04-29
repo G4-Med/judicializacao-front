@@ -532,7 +532,6 @@ const editarBodyTemplate = (rowData: ClienteTableRow) => {
 
 const formatarData = (data: string) => {
   if (!data || data.includes('T')) {
-    // se vier com hora, pega só a parte da data
     data = data?.split('T')[0] ?? '';
   }
   if (!data || data.length < 10) return '-';
@@ -748,7 +747,6 @@ const formatarConta = (valor: string) => {
   };
 
 
- //  Salvar cadastro (POST em cascata) 
 const handleSalvarCadastro = async () => {
   try {
     const nomeCompletoMedico = (novoCliente.nomeMedico || novoCliente.nomeCompleto || '').trim();
@@ -763,7 +761,6 @@ const handleSalvarCadastro = async () => {
       return;
     }
 
-    // 1. Cria o médico
     const { data: medico } = await createMedico({
       nomeCompleto: nomeCompletoMedico,
       nomeSistema: novoCliente.nomeSistema,
@@ -786,7 +783,6 @@ const handleSalvarCadastro = async () => {
       ? (await uploadArquivoStorage(novoCliente.arquivoAdicionalArquivo)).data?.url ?? ''
       : '';
 
-    // 2. Cria dados médico
     await createDadosMedico({
       idMedico,
       CRM: novoCliente.crm,
@@ -798,7 +794,6 @@ const handleSalvarCadastro = async () => {
     });
 
 
-    // 3. Cria empresa
     await createEmpresaMedico({
       idMedico,
       CNPJ: novoCliente.cnpj,
@@ -820,7 +815,6 @@ const handleSalvarCadastro = async () => {
     });
 
 
-        // 4. Cria dados pessoais
     await createDadosPessoais({
       idMedico,
       nomeCompleto: nomeCompletoMedico,
@@ -836,7 +830,6 @@ const handleSalvarCadastro = async () => {
       cep: novoCliente.cep,
     });
 
-       // 5. Cria dados bancários
     await createDadosBancarios({
       idMedico,
       nomeConta: novoCliente.nomeConta,
@@ -848,7 +841,6 @@ const handleSalvarCadastro = async () => {
       chavePix: novoCliente.chavePix,
     });
 
-     // Recarrega a lista
     await carregarClientes();
     setCreateDialogVisible(false);
 
@@ -862,7 +854,6 @@ const handleSalvarCadastro = async () => {
 };
 
 
-//  Salvar edição (PATCH) 
 const handleSalvarEdicao = async () => {
   if (!clienteEditando) return;
   try {
@@ -876,7 +867,6 @@ const handleSalvarEdicao = async () => {
       ? (await uploadArquivoStorage(clienteEditando.arquivoAdicionalArquivo)).data?.url ?? clienteEditando.caminhoArquivoAdicional ?? ''
       : clienteEditando.caminhoArquivoAdicional ?? '';
 
-    // 1. Atualiza tabela Medico
     await updateMedico(clienteEditando.id, {
       nomeCompleto: clienteEditando.nomeMedico,
       nomeSistema: clienteEditando.nomeSistema,
@@ -887,7 +877,6 @@ const handleSalvarEdicao = async () => {
       status: clienteEditando.status,
     });
 
-    // 2. Busca IDs dos registros relacionados e atualiza
     const [dadosMed, empresa, pessoais, bancarios] = await Promise.all([
       getDadosMedico(clienteEditando.id),
       getEmpresaMedico(clienteEditando.id),
@@ -895,7 +884,6 @@ const handleSalvarEdicao = async () => {
       getDadosBancarios(clienteEditando.id),
     ]);
 
-    // DadosMedico
     if (dadosMed.data[0]) {
       await updateDadosMedico(dadosMed.data[0].id, {
         CRM: clienteEditando.crm,
@@ -907,7 +895,6 @@ const handleSalvarEdicao = async () => {
       });
     }
 
-    // EmpresaMedico
     if (empresa.data[0]) {
       await updateEmpresaMedico(empresa.data[0].id, {
         CNPJ: clienteEditando.cnpj,
@@ -929,7 +916,6 @@ const handleSalvarEdicao = async () => {
       });
     }
 
-    // DadosPessoais
     if (pessoais.data[0]) {
       await updateDadosPessoais(pessoais.data[0].id, {
         nomeCompleto: clienteEditando.nomeCompleto,
@@ -946,7 +932,6 @@ const handleSalvarEdicao = async () => {
       });
     }
 
-    // DadosBancarios
     if (bancarios.data[0]) {
       await updateDadosBancarios(bancarios.data[0].id, {
         nomeConta: clienteEditando.nomeConta,
@@ -1147,7 +1132,7 @@ const handleSalvarEdicao = async () => {
         alert('Erro ao salvar assinatura.');
       }
     }, 'image/png');
-  };  
+  };
 
 
 
@@ -1156,7 +1141,7 @@ const handleSalvarEdicao = async () => {
       <div className="page-header">
         <div>
           <h1>Clientes</h1>
-          <p>Gesto dos clientes cadastrados</p>
+          <p>Gestão dos clientes cadastrados</p>
         </div>
 
         {!readOnly && <div className="page-actions">
@@ -1168,7 +1153,7 @@ const handleSalvarEdicao = async () => {
         </div>}
       </div>
 
-      <div className="kpi-grid">
+      <div className="kpi-grid kpi-grid-4">
         <div className="kpi-card">
           <div className="kpi-header">
             <span>Total Clientes</span>
@@ -1278,7 +1263,7 @@ const handleSalvarEdicao = async () => {
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             body={(rowData: ClienteTableRow) => getBooleanTag(rowData.status)}
-            style={{ minWidth: '10rem' }}
+            style={{ minWidth: '6rem' }}
           />
 
           <Column
@@ -1288,7 +1273,7 @@ const handleSalvarEdicao = async () => {
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             body={(rowData: ClienteTableRow) => getDocumentoTag(rowData.contrato)}
-            style={{ minWidth: '10rem' }}
+            style={{ minWidth: '6 rem' }}
           />
 
           <Column
@@ -1298,31 +1283,20 @@ const handleSalvarEdicao = async () => {
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             body={(rowData: ClienteTableRow) => getDocumentoTag(rowData.procuracao)}
-            style={{ minWidth: '10rem' }}
+            style={{ minWidth: '6rem' }}
           />
 
           <Column
             header="Editar"
             body={editarBodyTemplate}
-            style={{ minWidth: '7rem' }}
+            style={{ minWidth: '4rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
         </DataTable>
 
       </div>
 
-
-
-
-
-
-
-
-
-
-
-
-      {/* Modal para cadastrar cliente */}
+      {/* Modal cadastrar */}
       <Dialog
         header="Cadastrar Cliente"
         visible={createDialogVisible}
@@ -1331,71 +1305,39 @@ const handleSalvarEdicao = async () => {
         onHide={() => setCreateDialogVisible(false)}
         className="cliente-edit-dialog"
       >
-
         <TabView>
           <TabPanel header="Médico">
             <div className="cliente-form-grid">
               <div className="field field-span-2">
                 <label>Nome Médico</label>
-                <InputText
-                  value={novoCliente.nomeMedico}
-                  onChange={(e) => updateNovoCliente('nomeMedico', e.target.value)}
-                />
+                <InputText value={novoCliente.nomeMedico} onChange={(e) => updateNovoCliente('nomeMedico', e.target.value)} />
               </div>
               <div className="field field-span-2">
                 <label>Nome Sistema</label>
-                <InputText
-                  value={novoCliente.nomeSistema}
-                  onChange={(e) => updateNovoCliente('nomeSistema', e.target.value)}
-                />
+                <InputText value={novoCliente.nomeSistema} onChange={(e) => updateNovoCliente('nomeSistema', e.target.value)} />
               </div>
               <div className="field">
                 <label>Especialidade</label>
-                <Dropdown
-                  value={novoCliente.especialidade}
-                  options={especialidadeOptions}
-                  onChange={(e) => updateNovoCliente('especialidade', e.value)}
-                  placeholder="Selecione"
-                />
+                <Dropdown value={novoCliente.especialidade} options={especialidadeOptions} onChange={(e) => updateNovoCliente('especialidade', e.value)} placeholder="Selecione" />
               </div>
               <div className="field">
                 <label>Subespecialidade</label>
-                <Dropdown
-                  value={novoCliente.subespecialidade}
-                  options={subespecialidadeOptions}
-                  onChange={(e) => updateNovoCliente('subespecialidade', e.value)}
-                  placeholder="Selecione"
-                />
+                <Dropdown value={novoCliente.subespecialidade} options={subespecialidadeOptions} onChange={(e) => updateNovoCliente('subespecialidade', e.value)} placeholder="Selecione" />
               </div>
               <div className="field field-span-2">
                 <label>Keywords</label>
-                <InputText
-                  value={novoCliente.keywords}
-                  onChange={(e) => updateNovoCliente('keywords', e.target.value)}
-                />
+                <InputText value={novoCliente.keywords} onChange={(e) => updateNovoCliente('keywords', e.target.value)} />
               </div>
               <div className="field field-span-2">
                 <label>Grupo WhatsApp</label>
-                <InputText
-                  value={novoCliente.grupoWhatsapp}
-                  onChange={(e) => updateNovoCliente('grupoWhatsapp', e.target.value)}
-                />
+                <InputText value={novoCliente.grupoWhatsapp} onChange={(e) => updateNovoCliente('grupoWhatsapp', e.target.value)} />
               </div>
               <div className="field">
                 <label>Status</label>
-                <Dropdown
-                  value={novoCliente.status}
-                  options={statusOptions}
-                  optionLabel="label"
-                  onChange={(e) => updateNovoCliente('status', e.value)}
-                  itemTemplate={statusTemplate}
-                  valueTemplate={statusTemplate}
-                  placeholder="Selecione"
-                />
+                <Dropdown value={novoCliente.status} options={statusOptions} optionLabel="label" onChange={(e) => updateNovoCliente('status', e.value)} itemTemplate={statusTemplate} valueTemplate={statusTemplate} placeholder="Selecione" />
               </div>
 
-              {/* Cadastrar Usuário */}
-              <div className="field field-span-4" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '8px' }}>
+              <div className="field field-span-4 cadastrar-usuario-row">
                 <Button
                   label="Cadastrar Usuário"
                   icon="pi pi-user-plus"
@@ -1414,489 +1356,144 @@ const handleSalvarEdicao = async () => {
                       setUsuarioCadastrado(true);
                       alert('Usuário cadastrado com sucesso!');
                     } catch (err: any) {
-                alert(err?.response?.data?.error ?? 'Erro ao cadastrar usuário.');
+                      alert(err?.response?.data?.error ?? 'Erro ao cadastrar usuário.');
                     } finally {
                       setLoadingUsuario(false);
                     }
                   }}
                 />
-
-                <Tag
-                  value={usuarioCadastrado ? 'Cadastrado' : 'Não cadastrado'}
-                  severity={usuarioCadastrado ? 'success' : 'danger'}
-                />
+                <Tag value={usuarioCadastrado ? 'Cadastrado' : 'Não cadastrado'} severity={usuarioCadastrado ? 'success' : 'danger'} />
               </div>
-
-
 
               <div className="field">
                 <label>CreateDate</label>
-                <InputText
-                  value={formatarData(novoCliente.createDate)}
-                  disabled
-                />
+                <InputText value={formatarData(novoCliente.createDate)} disabled />
               </div>
               <div className="field">
                 <label>UpdateDate</label>
-                <InputText
-                  value={formatarData(novoCliente.updateDate)}
-                  disabled
-                />
+                <InputText value={formatarData(novoCliente.updateDate)} disabled />
               </div>
             </div>
           </TabPanel>
 
           <TabPanel header="Dados Médico">
             <div className="cliente-form-grid">
-              <div className="field field-span-2">
-                <label>Nome Médico</label>
-                <InputText
-                  value={novoCliente.nomeMedico}
-                  onChange={(e) => updateNovoCliente('nomeMedico', e.target.value)}
-                />
-              </div>
-              <div className="field field-span-2">
-                <label>Nome Sistema</label>
-                <InputText
-                  value={novoCliente.nomeSistema}
-                  onChange={(e) => updateNovoCliente('nomeSistema', e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label>CRM</label>
-                <InputText
-                  value={novoCliente.crm}
-                  onChange={(e) => updateNovoCliente('crm', e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label>RQE</label>
-                <InputText
-                  value={novoCliente.rqe}
-                  onChange={(e) => updateNovoCliente('rqe', e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label>Hospital</label>
-                <Dropdown
-                  value={novoCliente.hospital}
-                  options={hospitalOptions}
-                  onChange={(e) => updateNovoCliente('hospital', e.value)}
-                  placeholder="Selecione"
-                />
-              </div>
-              <div className="field">
-                <label>Telefone</label>
-                <InputText
-                  value={novoCliente.telefone}
-                  onChange={(e) => updateNovoCliente('telefone', formatarTelefone(e.target.value))}
-                />
-              </div>
-
-              <div className="field field-span-2">
-                <label>Email</label>
-                <InputText
-                  value={novoCliente.email}
-                  onChange={(e) => updateNovoCliente('email', e.target.value)}
-                />
-              </div>
-              <div className="field field-span-2">
-                <label>Email de Acesso</label>
-                <InputText
-                  value={novoCliente.emailAcesso}
-                  onChange={(e) => updateNovoCliente('emailAcesso', e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label>CreateDate</label>
-                <InputText
-                  value={formatarData(novoCliente.createDate)}
-                  disabled
-                />
-              </div>
-              <div className="field">
-                <label>UpdateDate</label>
-                <InputText
-                  value={formatarData(novoCliente.updateDate)}
-                  disabled
-                />
-              </div>
+              <div className="field field-span-2"><label>Nome Médico</label><InputText value={novoCliente.nomeMedico} onChange={(e) => updateNovoCliente('nomeMedico', e.target.value)} /></div>
+              <div className="field field-span-2"><label>Nome Sistema</label><InputText value={novoCliente.nomeSistema} onChange={(e) => updateNovoCliente('nomeSistema', e.target.value)} /></div>
+              <div className="field"><label>CRM</label><InputText value={novoCliente.crm} onChange={(e) => updateNovoCliente('crm', e.target.value)} /></div>
+              <div className="field"><label>RQE</label><InputText value={novoCliente.rqe} onChange={(e) => updateNovoCliente('rqe', e.target.value)} /></div>
+              <div className="field"><label>Hospital</label><Dropdown value={novoCliente.hospital} options={hospitalOptions} onChange={(e) => updateNovoCliente('hospital', e.value)} placeholder="Selecione" /></div>
+              <div className="field"><label>Telefone</label><InputText value={novoCliente.telefone} onChange={(e) => updateNovoCliente('telefone', formatarTelefone(e.target.value))} /></div>
+              <div className="field field-span-2"><label>Email</label><InputText value={novoCliente.email} onChange={(e) => updateNovoCliente('email', e.target.value)} /></div>
+              <div className="field field-span-2"><label>Email de Acesso</label><InputText value={novoCliente.emailAcesso} onChange={(e) => updateNovoCliente('emailAcesso', e.target.value)} /></div>
+              <div className="field"><label>CreateDate</label><InputText value={formatarData(novoCliente.createDate)} disabled /></div>
+              <div className="field"><label>UpdateDate</label><InputText value={formatarData(novoCliente.updateDate)} disabled /></div>
             </div>
           </TabPanel>
+
           <TabPanel header="Dados Empresa">
             <div className="cliente-form-grid">
-              <div className="field">
-                <label>CNPJ</label>
-                <InputText
-                  value={novoCliente.cnpj}
-                  onChange={(e) => updateNovoCliente('cnpj', formatarCnpj(e.target.value))}
-                />
-              </div>
-              <div className="field field-span-2">
-                <label>Razão Social</label>
-                <InputText
-                  value={novoCliente.razaoSocial}
-                  onChange={(e) => updateNovoCliente('razaoSocial', e.target.value)}
-                />
-              </div>
-              <div className="field field-span-2">
-                <label>Fantasia</label>
-                <InputText
-                  value={novoCliente.fantasia}
-                  onChange={(e) => updateNovoCliente('fantasia', e.target.value)}
-                />
-              </div>
-              <div className="field field-span-2">
-                <label>Rua</label>
-                <InputText
-                  value={novoCliente.pjRua}
-                  onChange={(e) => updateNovoCliente('pjRua', e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label>Número</label>
-                <InputText
-                  value={novoCliente.pjNumero}
-                  onChange={(e) => updateNovoCliente('pjNumero', e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label>Complemento</label>
-                <InputText
-                  value={novoCliente.pjComplemento}
-                  onChange={(e) => updateNovoCliente('pjComplemento', e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label>Bairro</label>
-                <InputText
-                  value={novoCliente.pjBairro}
-                  onChange={(e) => updateNovoCliente('pjBairro', e.target.value)}
-                />
-              </div>
-
-              <div className="field field-span-2">
-                <label>Cidade</label>
-                <InputText
-                  value={novoCliente.pjCidade}
-                  onChange={(e) => updateNovoCliente('pjCidade', e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label>Estado</label>
-                <InputText
-                  value={novoCliente.pjEstado}
-                  onChange={(e) => updateNovoCliente('pjEstado', e.target.value)}
-                />
-              </div>
-
+              <div className="field"><label>CNPJ</label><InputText value={novoCliente.cnpj} onChange={(e) => updateNovoCliente('cnpj', formatarCnpj(e.target.value))} /></div>
+              <div className="field field-span-2"><label>Razão Social</label><InputText value={novoCliente.razaoSocial} onChange={(e) => updateNovoCliente('razaoSocial', e.target.value)} /></div>
+              <div className="field field-span-2"><label>Fantasia</label><InputText value={novoCliente.fantasia} onChange={(e) => updateNovoCliente('fantasia', e.target.value)} /></div>
+              <div className="field field-span-2"><label>Rua</label><InputText value={novoCliente.pjRua} onChange={(e) => updateNovoCliente('pjRua', e.target.value)} /></div>
+              <div className="field"><label>Número</label><InputText value={novoCliente.pjNumero} onChange={(e) => updateNovoCliente('pjNumero', e.target.value)} /></div>
+              <div className="field"><label>Complemento</label><InputText value={novoCliente.pjComplemento} onChange={(e) => updateNovoCliente('pjComplemento', e.target.value)} /></div>
+              <div className="field"><label>Bairro</label><InputText value={novoCliente.pjBairro} onChange={(e) => updateNovoCliente('pjBairro', e.target.value)} /></div>
+              <div className="field field-span-2"><label>Cidade</label><InputText value={novoCliente.pjCidade} onChange={(e) => updateNovoCliente('pjCidade', e.target.value)} /></div>
+              <div className="field"><label>Estado</label><InputText value={novoCliente.pjEstado} onChange={(e) => updateNovoCliente('pjEstado', e.target.value)} /></div>
               <div className="field">
                 <label>CEP</label>
                 <div className="p-inputgroup">
-                  <InputText
-                    value={novoCliente.pjCep}
-                    onChange={(e) => updateNovoCliente('pjCep', formatarCep(e.target.value))}
-                    onBlur={() => void handleBuscarCepEmpresaNovo()}
-                    placeholder="00000-000"
-                  />
-                  <Button
-                    type="button"
-                    icon="pi pi-search"
-                    onClick={() => void handleBuscarCepEmpresaNovo()}
-                  />
+                  <InputText value={novoCliente.pjCep} onChange={(e) => updateNovoCliente('pjCep', formatarCep(e.target.value))} onBlur={() => void handleBuscarCepEmpresaNovo()} placeholder="00000-000" />
+                  <Button type="button" icon="pi pi-search" onClick={() => void handleBuscarCepEmpresaNovo()} />
                 </div>
               </div>
-              <div className='form-grid'>
-                <div className="field">
-                  <label>CreateDate</label>
-                  <InputText
-                    value={formatarData(novoCliente.createDate)}
-                    disabled
-                  />
-                </div>
-                <div className="field">
-                  <label>UpdateDate</label>
-                  <InputText
-                    value={formatarData(novoCliente.updateDate)}
-                    disabled
-                  />
-                </div>
-                <div className='upload-row'>
-                  {renderUploadSimples(
-                    'novo-contrato-arquivo',
-                    'Contrato',
-                    novoCliente.contratoArquivo,
-                    novoCliente.caminhoContrato,
-                    (file) => handleNovoClienteArquivo('contratoArquivo', file)
-                  )}
-                  {renderUploadSimples(
-                    'novo-procuracao-arquivo',
-                    'Procuração',
-                    novoCliente.procuracaoArquivo,
-                    novoCliente.caminhoProcuracao,
-                    (file) => handleNovoClienteArquivo('procuracaoArquivo', file)
-                  )}
-                  {renderUploadSimples(
-                    'novo-arquivo-adicional-arquivo',
-                    'Cartão CNPJ',
-                    novoCliente.arquivoAdicionalArquivo,
-                    novoCliente.caminhoArquivoAdicional,
-                    (file) => handleNovoClienteArquivo('arquivoAdicionalArquivo', file)
-                  )}
-                </div>
+              <div className="field"><label>CreateDate</label><InputText value={formatarData(novoCliente.createDate)} disabled /></div>
+              <div className="field"><label>UpdateDate</label><InputText value={formatarData(novoCliente.updateDate)} disabled /></div>
+              <div className="upload-row">
+                {renderUploadSimples('novo-contrato-arquivo', 'Contrato', novoCliente.contratoArquivo, novoCliente.caminhoContrato, (file) => handleNovoClienteArquivo('contratoArquivo', file))}
+                {renderUploadSimples('novo-procuracao-arquivo', 'Procuração', novoCliente.procuracaoArquivo, novoCliente.caminhoProcuracao, (file) => handleNovoClienteArquivo('procuracaoArquivo', file))}
+                {renderUploadSimples('novo-arquivo-adicional-arquivo', 'Cartão CNPJ', novoCliente.arquivoAdicionalArquivo, novoCliente.caminhoArquivoAdicional, (file) => handleNovoClienteArquivo('arquivoAdicionalArquivo', file))}
               </div>
             </div>
           </TabPanel>
 
           <TabPanel header="Dados Pessoais">
             <div className="cliente-form-grid">
-              <div className="field field-span-2">
-                <label>Nome Completo</label>
-                <InputText
-                  value={novoCliente.nomeCompleto}
-                  onChange={(e) => updateNovoCliente('nomeCompleto', e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label>CPF</label>
-                <InputText
-                  value={novoCliente.cpf}
-                  onChange={(e) => updateNovoCliente('cpf', formatarCpf(e.target.value))}
-                />
-              </div>
-              <div className="field">
-                <label>RG</label>
-                <InputText
-                  value={novoCliente.rg}
-                  onChange={(e) => updateNovoCliente('rg', e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label>Estado Civil</label>
-                <Dropdown
-                  value={novoCliente.estadoCivil}
-                  options={estadoCivilOptions}
-                  onChange={(e) => updateNovoCliente('estadoCivil', e.value)}
-                />
-              </div>
-
-              <div className="field field-span-2">
-                <label>Rua</label>
-                <InputText
-                  value={novoCliente.rua}
-                  onChange={(e) => updateNovoCliente('rua', e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label>Número</label>
-                <InputText
-                  value={novoCliente.numero}
-                  onChange={(e) => updateNovoCliente('numero', e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label>Complemento</label>
-                <InputText
-                  value={novoCliente.complemento}
-                  onChange={(e) => updateNovoCliente('complemento', e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label>Bairro</label>
-                <InputText
-                  value={novoCliente.bairro}
-                  onChange={(e) => updateNovoCliente('bairro', e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label>Cidade</label>
-                <InputText
-                  value={novoCliente.cidade}
-                  onChange={(e) => updateNovoCliente('cidade', e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label>Estado</label>
-                <InputText
-                  value={novoCliente.estado}
-                  onChange={(e) => updateNovoCliente('estado', e.target.value)}
-                />
-              </div>
-
+              <div className="field field-span-2"><label>Nome Completo</label><InputText value={novoCliente.nomeCompleto} onChange={(e) => updateNovoCliente('nomeCompleto', e.target.value)} /></div>
+              <div className="field"><label>CPF</label><InputText value={novoCliente.cpf} onChange={(e) => updateNovoCliente('cpf', formatarCpf(e.target.value))} /></div>
+              <div className="field"><label>RG</label><InputText value={novoCliente.rg} onChange={(e) => updateNovoCliente('rg', e.target.value)} /></div>
+              <div className="field"><label>Estado Civil</label><Dropdown value={novoCliente.estadoCivil} options={estadoCivilOptions} onChange={(e) => updateNovoCliente('estadoCivil', e.value)} /></div>
+              <div className="field field-span-2"><label>Rua</label><InputText value={novoCliente.rua} onChange={(e) => updateNovoCliente('rua', e.target.value)} /></div>
+              <div className="field"><label>Número</label><InputText value={novoCliente.numero} onChange={(e) => updateNovoCliente('numero', e.target.value)} /></div>
+              <div className="field"><label>Complemento</label><InputText value={novoCliente.complemento} onChange={(e) => updateNovoCliente('complemento', e.target.value)} /></div>
+              <div className="field"><label>Bairro</label><InputText value={novoCliente.bairro} onChange={(e) => updateNovoCliente('bairro', e.target.value)} /></div>
+              <div className="field"><label>Cidade</label><InputText value={novoCliente.cidade} onChange={(e) => updateNovoCliente('cidade', e.target.value)} /></div>
+              <div className="field"><label>Estado</label><InputText value={novoCliente.estado} onChange={(e) => updateNovoCliente('estado', e.target.value)} /></div>
               <div className="field">
                 <label>CEP</label>
                 <div className="p-inputgroup">
-                  <InputText
-                    value={novoCliente.cep}
-                    onChange={(e) => updateNovoCliente('cep', formatarCep(e.target.value))}
-                    onBlur={() => void handleBuscarCepPessoalNovo()}
-                    placeholder="00000-000"
-                  />
-                  <Button
-                    type="button"
-                    icon="pi pi-search"
-                    onClick={() => void handleBuscarCepPessoalNovo()}
-                  />
+                  <InputText value={novoCliente.cep} onChange={(e) => updateNovoCliente('cep', formatarCep(e.target.value))} onBlur={() => void handleBuscarCepPessoalNovo()} placeholder="00000-000" />
+                  <Button type="button" icon="pi pi-search" onClick={() => void handleBuscarCepPessoalNovo()} />
                 </div>
               </div>
-              <div className="field">
-                <label>CreateDate</label>
-                <InputText
-                  value={formatarData(novoCliente.createDate)}
-                  disabled
-                />
-              </div>
-              <div className="field">
-                <label>UpdateDate</label>
-                <InputText
-                  value={formatarData(novoCliente.updateDate)}
-                  disabled
-                />
-              </div>
+              <div className="field"><label>CreateDate</label><InputText value={formatarData(novoCliente.createDate)} disabled /></div>
+              <div className="field"><label>UpdateDate</label><InputText value={formatarData(novoCliente.updateDate)} disabled /></div>
             </div>
           </TabPanel>
-
 
           <TabPanel header="Dados Bancários">
             <div className="cliente-form-grid">
-              <div className="field field-span-2">
-                <label>Nome Conta</label>
-                <InputText
-                  value={novoCliente.nomeConta}
-                  onChange={(e) => updateNovoCliente('nomeConta', e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label>Número Banco</label>
-                <InputText
-                  value={novoCliente.numeroBanco}
-                  onChange={(e) => updateNovoCliente('numeroBanco', e.target.value)} disabled
-                />
-              </div>
-
-              <div className="field">
-                <label>Nome Banco</label>
-                <Dropdown
-                  value={novoCliente.nomeBanco}
-                  options={bancoOptions}
-                  onChange={(e) => handleSelecionarBancoNovo(e.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label>Agência</label>
-                <InputText
-                  value={novoCliente.agencia}
-                  onChange={(e) => updateNovoCliente('agencia', formatarAgencia(e.target.value))}
-                />
-              </div>
-
-              <div className="field">
-                <label>Tipo da Conta</label>
-                <Dropdown
-                  value={novoCliente.tipoConta}
-                  options={tipoContaOptions}
-                  onChange={(e) => updateNovoCliente('tipoConta', e.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label>Número da Conta</label>
-                <InputText
-                  value={novoCliente.numeroConta}
-                  onChange={(e) => updateNovoCliente('numeroConta', formatarConta(e.target.value))}
-                />
-              </div>
-
-              <div className="field">
-                <label>Chave Pix</label>
-                <InputText
-                  value={novoCliente.chavePix}
-                  onChange={(e) => updateNovoCliente('chavePix', e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label>CreateDate</label>
-                <InputText
-                  value={formatarData(novoCliente.createDate)}
-                  disabled
-                />
-              </div>
-              <div className="field">
-                <label>UpdateDate</label>
-                <InputText
-                  value={formatarData(novoCliente.updateDate)}
-                  disabled
-                />
-              </div>
-
+              <div className="field field-span-2"><label>Nome Conta</label><InputText value={novoCliente.nomeConta} onChange={(e) => updateNovoCliente('nomeConta', e.target.value)} /></div>
+              <div className="field"><label>Número Banco</label><InputText value={novoCliente.numeroBanco} onChange={(e) => updateNovoCliente('numeroBanco', e.target.value)} disabled /></div>
+              <div className="field"><label>Nome Banco</label><Dropdown value={novoCliente.nomeBanco} options={bancoOptions} onChange={(e) => handleSelecionarBancoNovo(e.value)} /></div>
+              <div className="field"><label>Agência</label><InputText value={novoCliente.agencia} onChange={(e) => updateNovoCliente('agencia', formatarAgencia(e.target.value))} /></div>
+              <div className="field"><label>Tipo da Conta</label><Dropdown value={novoCliente.tipoConta} options={tipoContaOptions} onChange={(e) => updateNovoCliente('tipoConta', e.value)} /></div>
+              <div className="field"><label>Número da Conta</label><InputText value={novoCliente.numeroConta} onChange={(e) => updateNovoCliente('numeroConta', formatarConta(e.target.value))} /></div>
+              <div className="field"><label>Chave Pix</label><InputText value={novoCliente.chavePix} onChange={(e) => updateNovoCliente('chavePix', e.target.value)} /></div>
+              <div className="field"><label>CreateDate</label><InputText value={formatarData(novoCliente.createDate)} disabled /></div>
+              <div className="field"><label>UpdateDate</label><InputText value={formatarData(novoCliente.updateDate)} disabled /></div>
             </div>
           </TabPanel>
 
-
           <TabPanel header="Base Orçamento">
             <div className="cliente-form-grid">
-
-              {/* Upload da base */}
-              <div className="field field-span-4">
-                <label style={{ fontWeight: 600 }}>Folha Timbrada (PDF)</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginTop: '6px' }}>
+              <div className="field field-span-4 base-orcamento-section">
+                <label>Folha Timbrada (PDF)</label>
+                <div className="base-orcamento-row">
                   {baseOrcamento.linkBaseOrcamento && (
-                    <a href={baseOrcamento.linkBaseOrcamento} target="_blank" rel="noopener noreferrer"
-                      style={{ color: '#f97316', fontSize: '0.9rem' }}>
-                      <i className="pi pi-file-pdf" style={{ marginRight: '4px' }} />
+                    <a href={baseOrcamento.linkBaseOrcamento} target="_blank" rel="noopener noreferrer" className="base-orcamento-link">
+                      <i className="pi pi-file-pdf" />
                       Ver PDF atual
                     </a>
                   )}
-                  <input type="file" accept=".pdf"
-                    onChange={(e) => setBaseOrcamentoArquivo(e.target.files?.[0] ?? null)}
-                    style={{ flex: 1 }} />
+                  <input type="file" accept=".pdf" onChange={(e) => setBaseOrcamentoArquivo(e.target.files?.[0] ?? null)} className="base-orcamento-file" />
                 </div>
                 {baseOrcamentoArquivo && (
-                  <span style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '4px', display: 'block' }}>
-                    <i className="pi pi-file" style={{ marginRight: '4px' }} />
+                  <span className="base-orcamento-filename">
+                    <i className="pi pi-file" />
                     {baseOrcamentoArquivo.name}
                   </span>
                 )}
               </div>
 
-              {/* Assinatura */}
-              <div className="field field-span-4">
-                <label style={{ fontWeight: 600 }}>Assinatura</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '6px' }}>
+              <div className="field field-span-4 base-orcamento-section">
+                <label>Assinatura</label>
+                <div className="base-orcamento-row">
                   {baseOrcamento.linkAssinatura ? (
-                    <img src={baseOrcamento.linkAssinatura} alt="Assinatura"
-                      style={{ height: '60px', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '4px' }} />
+                    <img src={baseOrcamento.linkAssinatura} alt="Assinatura" className="assinatura-img" />
                   ) : (
-                    <span style={{ fontSize: '0.9rem', color: '#aaa' }}>Nenhuma assinatura cadastrada</span>
+                    <span className="assinatura-vazia">Nenhuma assinatura cadastrada</span>
                   )}
-                  <Button label="Criar Assinatura" icon="pi pi-pencil" outlined
-                    onClick={() => setAssinaturaDialogVisible(true)} />
+                  <Button label="Criar Assinatura" icon="pi pi-pencil" outlined onClick={() => setAssinaturaDialogVisible(true)} />
                 </div>
               </div>
 
-              {/* Divisor */}
-              <div className="field field-span-4" style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-
-                  {/* INCLUSOS */}
+              <div className="field field-span-4 base-orcamento-checks">
+                <div className="checks-grid">
                   <div>
-                    <p style={{ fontWeight: 700, color: '#ef4444', marginBottom: '12px' }}>
-                      INCLUSOS (marque o que está incluso)
-                    </p>
+                    <p className="checks-title">INCLUSOS (marque o que está incluso)</p>
                     {[
                       { key: 'honorariosEquipeMedica', label: 'Honorários da equipe médica' },
                       { key: 'taxasHospitalares', label: 'Taxas hospitalares' },
@@ -1906,105 +1503,45 @@ const handleSalvarEdicao = async () => {
                       { key: 'consultaPosOperatoria', label: '1 Consulta pós-operatória' },
                       { key: 'atendimentoEnfermagem', label: 'Atendimento de enfermagem 24h' },
                     ].map(({ key, label }) => (
-                      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                        <input type="checkbox"
-                          checked={baseOrcamento[key as keyof typeof baseOrcamento] as boolean}
-                          onChange={(e) => setBaseOrcamento(prev => ({ ...prev, [key]: e.target.checked }))}
-                          style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-                        <label style={{ fontSize: '0.9rem', color: '#374151', cursor: 'pointer' }}>{label}</label>
+                      <div key={key} className="check-item">
+                        <input type="checkbox" checked={baseOrcamento[key as keyof typeof baseOrcamento] as boolean} onChange={(e) => setBaseOrcamento(prev => ({ ...prev, [key]: e.target.checked }))} />
+                        <label>{label}</label>
                       </div>
                     ))}
                   </div>
-
-                  {/* NAO INCLUSOS */}
                   <div>
-                    <p style={{ fontWeight: 700, color: '#ef4444', marginBottom: '12px' }}>
-                                            NÃO INCLUSOS (marque o que NÃO está incluso)
-                    </p>
+                    <p className="checks-title">NÃO INCLUSOS (marque o que NÃO está incluso)</p>
                     {[
                       { key: 'acompanhanteTaxaAdicional', label: 'Acompanhante (taxa adicional)' },
                       { key: 'fisioterapiaPosOperatoria', label: 'Fisioterapia pós-operatória' },
                       { key: 'medicamentosPosAlta', label: 'Medicamentos pós-alta' },
-                      { key: 'ortesesImobilizadores', label: 'rteses e imobilizadores' },
+                      { key: 'ortesesImobilizadores', label: 'Órteses e imobilizadores' },
                       { key: 'examesComplementares', label: 'Exames complementares extras' },
                       { key: 'custoCtiBemodinamica', label: 'Custo com CTI e hemodinâmica' },
                     ].map(({ key, label }) => (
-                      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                        <input type="checkbox"
-                          checked={baseOrcamento[key as keyof typeof baseOrcamento] as boolean}
-                          onChange={(e) => setBaseOrcamento(prev => ({ ...prev, [key]: e.target.checked }))}
-                          style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-                        <label style={{ fontSize: '0.9rem', color: '#374151', cursor: 'pointer' }}>{label}</label>
+                      <div key={key} className="check-item">
+                        <input type="checkbox" checked={baseOrcamento[key as keyof typeof baseOrcamento] as boolean} onChange={(e) => setBaseOrcamento(prev => ({ ...prev, [key]: e.target.checked }))} />
+                        <label>{label}</label>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Botão salvar */}
-              <div className="field field-span-4" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Button label="Salvar Base de Orçamento" icon="pi pi-check"
-                  loading={savingBase} onClick={handleSalvarBaseOrcamento} />
+              <div className="field field-span-4 base-orcamento-actions">
+                <Button label="Salvar Base de Orçamento" icon="pi pi-check" loading={savingBase} onClick={handleSalvarBaseOrcamento} />
               </div>
-
             </div>
           </TabPanel>
-
-
-
-
         </TabView>
 
-
         <div className="dialog-footer-actions">
-          <Button
-            label="Cancelar"
-            outlined
-            onClick={() => setCreateDialogVisible(false)}
-          />
-          <Button
-            label="Salvar"
-            icon="pi pi-check"
-            onClick={handleSalvarCadastro}
-          />
+          <Button label="Cancelar" outlined onClick={() => setCreateDialogVisible(false)} />
+          <Button label="Salvar" icon="pi pi-check" onClick={handleSalvarCadastro} />
         </div>
       </Dialog>
-      {/* fim do modal de cadastrar cliente */}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      {/* Inicio Modal Editar Cliente */}
+      {/* Modal editar */}
       <Dialog
         header="Editar Cliente"
         visible={editDialogVisible}
@@ -2014,677 +1551,211 @@ const handleSalvarEdicao = async () => {
         className="cliente-edit-dialog"
       >
         {clienteEditando && (
-          <fieldset disabled={readOnly} style={{ border: 'none', padding: 0, margin: 0, minInlineSize: 0 }}>
-          <TabView>
-            <TabPanel header="Médico">
-              <div className="cliente-form-grid">
-                <div className="field field-span-2">
-                  <label>Nome Médico</label>
-                  <InputText
-                    value={clienteEditando.nomeMedico}
-                    onChange={(e) => updateClienteEditando('nomeMedico', e.target.value)}
-                  />
-                </div>
+          <fieldset disabled={readOnly} className="cliente-edit-fieldset">
+            <TabView>
+              <TabPanel header="Médico">
+                <div className="cliente-form-grid">
+                  <div className="field field-span-2"><label>Nome Médico</label><InputText value={clienteEditando.nomeMedico} onChange={(e) => updateClienteEditando('nomeMedico', e.target.value)} /></div>
+                  <div className="field field-span-2"><label>Nome Sistema</label><InputText value={clienteEditando.nomeSistema} onChange={(e) => updateClienteEditando('nomeSistema', e.target.value)} /></div>
+                  <div className="field"><label>Especialidade</label><Dropdown value={clienteEditando.especialidade} options={especialidadeOptions} onChange={(e) => updateClienteEditando('especialidade', e.value)} placeholder="Selecione" /></div>
+                  <div className="field"><label>Subespecialidade</label><Dropdown value={clienteEditando.subespecialidade} options={subespecialidadeOptions} onChange={(e) => updateClienteEditando('subespecialidade', e.value)} placeholder="Selecione" /></div>
+                  <div className="field field-span-2"><label>Keywords</label><InputText value={clienteEditando.keywords} onChange={(e) => updateClienteEditando('keywords', e.target.value)} /></div>
+                  <div className="field field-span-2"><label>Grupo WhatsApp</label><InputText value={clienteEditando.grupoWhatsapp} onChange={(e) => updateClienteEditando('grupoWhatsapp', e.target.value)} /></div>
+                  <div className="field"><label>Status</label><Dropdown value={clienteEditando.status} options={statusOptions} optionLabel="label" onChange={(e) => updateClienteEditando('status', e.value)} itemTemplate={statusTemplate} valueTemplate={statusTemplate} placeholder="Selecione" /></div>
 
-                <div className="field field-span-2">
-                  <label>Nome Sistema</label>
-                  <InputText
-                    value={clienteEditando.nomeSistema}
-                    onChange={(e) => updateClienteEditando('nomeSistema', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Especialidade</label>
-                  <Dropdown
-                    value={clienteEditando.especialidade}
-                    options={especialidadeOptions}
-                    onChange={(e) => updateClienteEditando('especialidade', e.value)}
-                    placeholder="Selecione"
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Subespecialidade</label>
-                  <Dropdown
-                    value={clienteEditando.subespecialidade}
-                    options={subespecialidadeOptions}
-                    onChange={(e) => updateClienteEditando('subespecialidade', e.value)}
-                    placeholder="Selecione"
-                  />
-                </div>
-
-                <div className="field field-span-2">
-                  <label>Keywords</label>
-                  <InputText
-                    value={clienteEditando.keywords}
-                    onChange={(e) => updateClienteEditando('keywords', e.target.value)}
-                  />
-                </div>
-
-                <div className="field field-span-2">
-                  <label>Grupo WhatsApp</label>
-                  <InputText
-                    value={clienteEditando.grupoWhatsapp}
-                    onChange={(e) => updateClienteEditando('grupoWhatsapp', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Status</label>
-                  <Dropdown
-                    value={clienteEditando.status}
-                    options={statusOptions}
-                    optionLabel="label"
-                    onChange={(e) => updateClienteEditando('status', e.value)}
-                    itemTemplate={statusTemplate}
-                    valueTemplate={statusTemplate}
-                    placeholder="Selecione"
-                  />
-                </div>
-
-
-                {/* Cadastrar Usuário */}
-                <div className="field field-span-4" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '8px' }}>
-                  <Button
-                    label="Cadastrar Usuário"
-                    icon="pi pi-user-plus"
-                    disabled={
-                      usuarioCadastrado ||
-                      !clienteEditando?.nomeMedico ||
-                      !clienteEditando?.nomeSistema ||
-                      !clienteEditando?.especialidade
-                    }
-                    loading={loadingUsuario}
-                    onClick={async () => {
-                      if (!clienteEditando) return;
-                      
-                      console.log('=== Cadastrar Usuário ===');
-                      console.log('medico_id:', clienteEditando.id);
-                      
-                      setLoadingUsuario(true);
-                      try {
-                        const response = await cadastrarUsuarioMedico(clienteEditando.id);
-                        console.log('Resposta:', response.data);
-                        setUsuarioCadastrado(true);
-                        alert('Usuário cadastrado com sucesso!');
-                      } catch (err: any) {
-                        console.log('Erro completo:', err);
-                        console.log('Erro response:', err?.response?.data);
-                                    alert(err?.response?.data?.error ?? 'Erro ao cadastrar usuário.');
-                      } finally {
-                        setLoadingUsuario(false);
+                  <div className="field field-span-4 cadastrar-usuario-row">
+                    <Button
+                      label="Cadastrar Usuário"
+                      icon="pi pi-user-plus"
+                      disabled={
+                        usuarioCadastrado ||
+                        !clienteEditando?.nomeMedico ||
+                        !clienteEditando?.nomeSistema ||
+                        !clienteEditando?.especialidade
                       }
-                    }}
-                  />
-
-                  <Tag
-                    value={usuarioCadastrado ? 'Cadastrado' : 'Não cadastrado'}
-                    severity={usuarioCadastrado ? 'success' : 'danger'}
-                  />
-                </div>
-
-
-
-
-
-                <div className="field">
-                  <label>CreateDate</label>
-                  <InputText
-                    value={formatarData(clienteEditando.createDate)}
-                    disabled
-                  />
-                </div>
-
-                <div className="field">
-                  <label>UpdateDate</label>
-                  <InputText
-                    value={formatarData(clienteEditando.updateDate)}
-                    disabled
-                  />
-                </div>
-              </div>
-            </TabPanel>
-
-            <TabPanel header="Dados Médico">
-              <div className="cliente-form-grid">
-                <div className="field field-span-2">
-                  <label>Nome Médico</label>
-                  <InputText
-                    value={clienteEditando.nomeMedico}
-                    onChange={(e) => updateClienteEditando('nomeMedico', e.target.value)}
-                  />
-                </div>
-
-                <div className="field field-span-2">
-                  <label>Nome Sistema</label>
-                  <InputText
-                    value={clienteEditando.nomeSistema}
-                    onChange={(e) => updateClienteEditando('nomeSistema', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>CRM</label>
-                  <InputText
-                    value={clienteEditando.crm}
-                    onChange={(e) => updateClienteEditando('crm', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>RQE</label>
-                  <InputText
-                    value={clienteEditando.rqe}
-                    onChange={(e) => updateClienteEditando('rqe', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Hospital</label>
-                  <Dropdown
-                    value={clienteEditando.hospital}
-                    options={hospitalOptions}
-                    onChange={(e) => updateClienteEditando('hospital', e.value)}
-                    placeholder="Selecione"
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Telefone</label>
-                  <InputText
-                    value={clienteEditando.telefone}
-                    onChange={(e) => updateClienteEditando('telefone', formatarTelefone(e.target.value))}
-                  />
-                </div>
-
-                <div className="field field-span-2">
-                  <label>Email</label>
-                  <InputText
-                    value={clienteEditando.email}
-                    onChange={(e) => updateClienteEditando('email', e.target.value)}
-                  />
-                </div>
-
-                <div className="field field-span-2">
-                  <label>Email de Acesso</label>
-                  <InputText
-                    value={clienteEditando.emailAcesso}
-                    onChange={(e) => updateClienteEditando('emailAcesso', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>CreateDate</label>
-                  <InputText
-                    value={formatarData(clienteEditando.createDate)}
-                    disabled
-                  />
-                </div>
-
-                <div className="field">
-                  <label>UpdateDate</label>
-                  <InputText
-                    value={formatarData(clienteEditando.updateDate)}
-                    disabled
-                  />
-                </div>
-              </div>
-            </TabPanel>
-
-            <TabPanel header="Dados Empresa">
-              <div className="cliente-form-grid">
-                <div className="field">
-                  <label>CNPJ</label>
-                  <InputText
-                    value={clienteEditando.cnpj}
-                    onChange={(e) => updateClienteEditando('cnpj', formatarCnpj(e.target.value))}
-                  />
-                </div>
-
-                <div className="field field-span-2">
-                  <label>Razão Social</label>
-                  <InputText
-                    value={clienteEditando.razaoSocial}
-                    onChange={(e) => updateClienteEditando('razaoSocial', e.target.value)}
-                  />
-                </div>
-
-                <div className="field field-span-2">
-                  <label>Fantasia</label>
-                  <InputText
-                    value={clienteEditando.fantasia}
-                    onChange={(e) => updateClienteEditando('fantasia', e.target.value)}
-                  />
-                </div>
-
-                <div className="field field-span-2">
-                  <label>Rua</label>
-                  <InputText
-                    value={clienteEditando.pjRua}
-                    onChange={(e) => updateClienteEditando('pjRua', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Número</label>
-                  <InputText
-                    value={clienteEditando.pjNumero}
-                    onChange={(e) => updateClienteEditando('pjNumero', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Complemento</label>
-                  <InputText
-                    value={clienteEditando.pjComplemento}
-                    onChange={(e) => updateClienteEditando('pjComplemento', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Bairro</label>
-                  <InputText
-                    value={clienteEditando.pjBairro}
-                    onChange={(e) => updateClienteEditando('pjBairro', e.target.value)}
-                  />
-                </div>
-
-                <div className="field field-span-2">
-                  <label>Cidade</label>
-                  <InputText
-                    value={clienteEditando.pjCidade}
-                    onChange={(e) => updateClienteEditando('pjCidade', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Estado</label>
-                  <InputText
-                    value={clienteEditando.pjEstado}
-                    onChange={(e) => updateClienteEditando('pjEstado', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>CEP</label>
-                  <div className="p-inputgroup">
-                    <InputText
-                      value={clienteEditando.pjCep}
-                      onChange={(e) => updateClienteEditando('pjCep', formatarCep(e.target.value))}
-                      onBlur={() => void handleBuscarCepEmpresaEdicao()}
-                      placeholder="00000-000"
+                      loading={loadingUsuario}
+                      onClick={async () => {
+                        if (!clienteEditando) return;
+                        setLoadingUsuario(true);
+                        try {
+                          await cadastrarUsuarioMedico(clienteEditando.id);
+                          setUsuarioCadastrado(true);
+                          alert('Usuário cadastrado com sucesso!');
+                        } catch (err: any) {
+                          alert(err?.response?.data?.error ?? 'Erro ao cadastrar usuário.');
+                        } finally {
+                          setLoadingUsuario(false);
+                        }
+                      }}
                     />
-                    <Button
-                      type="button"
-                      icon="pi pi-search"
-                      onClick={() => void handleBuscarCepEmpresaEdicao()}
-                    />
+                    <Tag value={usuarioCadastrado ? 'Cadastrado' : 'Não cadastrado'} severity={usuarioCadastrado ? 'success' : 'danger'} />
                   </div>
-                </div>
 
-                <div className="form-grid">
+                  <div className="field"><label>CreateDate</label><InputText value={formatarData(clienteEditando.createDate)} disabled /></div>
+                  <div className="field"><label>UpdateDate</label><InputText value={formatarData(clienteEditando.updateDate)} disabled /></div>
+                </div>
+              </TabPanel>
+
+              <TabPanel header="Dados Médico">
+                <div className="cliente-form-grid">
+                  <div className="field field-span-2"><label>Nome Médico</label><InputText value={clienteEditando.nomeMedico} onChange={(e) => updateClienteEditando('nomeMedico', e.target.value)} /></div>
+                  <div className="field field-span-2"><label>Nome Sistema</label><InputText value={clienteEditando.nomeSistema} onChange={(e) => updateClienteEditando('nomeSistema', e.target.value)} /></div>
+                  <div className="field"><label>CRM</label><InputText value={clienteEditando.crm} onChange={(e) => updateClienteEditando('crm', e.target.value)} /></div>
+                  <div className="field"><label>RQE</label><InputText value={clienteEditando.rqe} onChange={(e) => updateClienteEditando('rqe', e.target.value)} /></div>
+                  <div className="field"><label>Hospital</label><Dropdown value={clienteEditando.hospital} options={hospitalOptions} onChange={(e) => updateClienteEditando('hospital', e.value)} placeholder="Selecione" /></div>
+                  <div className="field"><label>Telefone</label><InputText value={clienteEditando.telefone} onChange={(e) => updateClienteEditando('telefone', formatarTelefone(e.target.value))} /></div>
+                  <div className="field field-span-2"><label>Email</label><InputText value={clienteEditando.email} onChange={(e) => updateClienteEditando('email', e.target.value)} /></div>
+                  <div className="field field-span-2"><label>Email de Acesso</label><InputText value={clienteEditando.emailAcesso} onChange={(e) => updateClienteEditando('emailAcesso', e.target.value)} /></div>
+                  <div className="field"><label>CreateDate</label><InputText value={formatarData(clienteEditando.createDate)} disabled /></div>
+                  <div className="field"><label>UpdateDate</label><InputText value={formatarData(clienteEditando.updateDate)} disabled /></div>
+                </div>
+              </TabPanel>
+
+              <TabPanel header="Dados Empresa">
+                <div className="cliente-form-grid">
+                  <div className="field"><label>CNPJ</label><InputText value={clienteEditando.cnpj} onChange={(e) => updateClienteEditando('cnpj', formatarCnpj(e.target.value))} /></div>
+                  <div className="field field-span-2"><label>Razão Social</label><InputText value={clienteEditando.razaoSocial} onChange={(e) => updateClienteEditando('razaoSocial', e.target.value)} /></div>
+                  <div className="field field-span-2"><label>Fantasia</label><InputText value={clienteEditando.fantasia} onChange={(e) => updateClienteEditando('fantasia', e.target.value)} /></div>
+                  <div className="field field-span-2"><label>Rua</label><InputText value={clienteEditando.pjRua} onChange={(e) => updateClienteEditando('pjRua', e.target.value)} /></div>
+                  <div className="field"><label>Número</label><InputText value={clienteEditando.pjNumero} onChange={(e) => updateClienteEditando('pjNumero', e.target.value)} /></div>
+                  <div className="field"><label>Complemento</label><InputText value={clienteEditando.pjComplemento} onChange={(e) => updateClienteEditando('pjComplemento', e.target.value)} /></div>
+                  <div className="field"><label>Bairro</label><InputText value={clienteEditando.pjBairro} onChange={(e) => updateClienteEditando('pjBairro', e.target.value)} /></div>
+                  <div className="field field-span-2"><label>Cidade</label><InputText value={clienteEditando.pjCidade} onChange={(e) => updateClienteEditando('pjCidade', e.target.value)} /></div>
+                  <div className="field"><label>Estado</label><InputText value={clienteEditando.pjEstado} onChange={(e) => updateClienteEditando('pjEstado', e.target.value)} /></div>
                   <div className="field">
-                    <label>CreateDate</label>
-                    <InputText
-                      value={formatarData(clienteEditando.createDate)}
-                      disabled
-                    />
+                    <label>CEP</label>
+                    <div className="p-inputgroup">
+                      <InputText value={clienteEditando.pjCep} onChange={(e) => updateClienteEditando('pjCep', formatarCep(e.target.value))} onBlur={() => void handleBuscarCepEmpresaEdicao()} placeholder="00000-000" />
+                      <Button type="button" icon="pi pi-search" onClick={() => void handleBuscarCepEmpresaEdicao()} />
+                    </div>
                   </div>
-
-                  <div className="field">
-                    <label>UpdateDate</label>
-                    <InputText
-                      value={formatarData(clienteEditando.updateDate)}
-                      disabled
-                    />
-                  </div>
-
+                  <div className="field"><label>CreateDate</label><InputText value={formatarData(clienteEditando.createDate)} disabled /></div>
+                  <div className="field"><label>UpdateDate</label><InputText value={formatarData(clienteEditando.updateDate)} disabled /></div>
                   <div className="upload-row">
-                    {renderUploadSimples(
-                      'editar-contrato-arquivo',
-                      'Contrato',
-                      clienteEditando.contratoArquivo,
-                      clienteEditando.caminhoContrato,
-                      (file) => handleClienteEditandoArquivo('contratoArquivo', file)
-                    )}
-
-                    {renderUploadSimples(
-                      'editar-procuracao-arquivo',
-                      'Procuração',
-                      clienteEditando.procuracaoArquivo,
-                      clienteEditando.caminhoProcuracao,
-                      (file) => handleClienteEditandoArquivo('procuracaoArquivo', file)
-                    )}
-
-                    {renderUploadSimples(
-                      'editar-arquivo-adicional-arquivo',
-                      'Cartão CNPJ',
-                      clienteEditando.arquivoAdicionalArquivo,
-                      clienteEditando.caminhoArquivoAdicional,
-                      (file) => handleClienteEditandoArquivo('arquivoAdicionalArquivo', file)
-                    )}
+                    {renderUploadSimples('editar-contrato-arquivo', 'Contrato', clienteEditando.contratoArquivo, clienteEditando.caminhoContrato, (file) => handleClienteEditandoArquivo('contratoArquivo', file))}
+                    {renderUploadSimples('editar-procuracao-arquivo', 'Procuração', clienteEditando.procuracaoArquivo, clienteEditando.caminhoProcuracao, (file) => handleClienteEditandoArquivo('procuracaoArquivo', file))}
+                    {renderUploadSimples('editar-arquivo-adicional-arquivo', 'Cartão CNPJ', clienteEditando.arquivoAdicionalArquivo, clienteEditando.caminhoArquivoAdicional, (file) => handleClienteEditandoArquivo('arquivoAdicionalArquivo', file))}
                   </div>
                 </div>
-              </div>
-            </TabPanel>
+              </TabPanel>
 
-            <TabPanel header="Dados Pessoais">
-              <div className="cliente-form-grid">
-                <div className="field field-span-2">
-                  <label>Nome Completo</label>
-                  <InputText
-                    value={clienteEditando.nomeCompleto}
-                    onChange={(e) => updateClienteEditando('nomeCompleto', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>CPF</label>
-                  <InputText
-                    value={clienteEditando.cpf}
-                    onChange={(e) => updateClienteEditando('cpf', formatarCpf(e.target.value))}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>RG</label>
-                  <InputText
-                    value={clienteEditando.rg}
-                    onChange={(e) => updateClienteEditando('rg', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Estado Civil</label>
-                  <Dropdown
-                    value={clienteEditando.estadoCivil}
-                    options={estadoCivilOptions}
-                    onChange={(e) => updateClienteEditando('estadoCivil', e.value)}
-                  />
-                </div>
-
-                <div className="field field-span-2">
-                  <label>Rua</label>
-                  <InputText
-                    value={clienteEditando.rua}
-                    onChange={(e) => updateClienteEditando('rua', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Número</label>
-                  <InputText
-                    value={clienteEditando.numero}
-                    onChange={(e) => updateClienteEditando('numero', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Complemento</label>
-                  <InputText
-                    value={clienteEditando.complemento}
-                    onChange={(e) => updateClienteEditando('complemento', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Bairro</label>
-                  <InputText
-                    value={clienteEditando.bairro}
-                    onChange={(e) => updateClienteEditando('bairro', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Cidade</label>
-                  <InputText
-                    value={clienteEditando.cidade}
-                    onChange={(e) => updateClienteEditando('cidade', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Estado</label>
-                  <InputText
-                    value={clienteEditando.estado}
-                    onChange={(e) => updateClienteEditando('estado', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>CEP</label>
-                  <div className="p-inputgroup">
-                    <InputText
-                      value={clienteEditando.cep}
-                      onChange={(e) => updateClienteEditando('cep', formatarCep(e.target.value))}
-                      onBlur={() => void handleBuscarCepPessoalEdicao()}
-                      placeholder="00000-000"
-                    />
-                    <Button
-                      type="button"
-                      icon="pi pi-search"
-                      onClick={() => void handleBuscarCepPessoalEdicao()}
-                    />
-                  </div>
-                </div>
-
-                <div className="field">
-                  <label>CreateDate</label>
-                  <InputText
-                    value={formatarData(clienteEditando.createDate)}
-                    disabled
-                  />
-                </div>
-
-                <div className="field">
-                  <label>UpdateDate</label>
-                  <InputText
-                    value={formatarData(clienteEditando.updateDate)}
-                    disabled
-                  />
-                </div>
-              </div>
-            </TabPanel>
-
-            <TabPanel header="Dados Bancários">
-              <div className="cliente-form-grid">
-                <div className="field field-span-2">
-                  <label>Nome Conta</label>
-                  <InputText
-                    value={clienteEditando.nomeConta}
-                    onChange={(e) => updateClienteEditando('nomeConta', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Número Banco</label>
-                  <InputText
-                    value={clienteEditando.numeroBanco}
-                    onChange={(e) => updateClienteEditando('numeroBanco', e.target.value)}
-                    disabled
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Nome Banco</label>
-                  <Dropdown
-                    value={clienteEditando.nomeBanco}
-                    options={bancoOptions}
-                    onChange={(e) => handleSelecionarBancoEdicao(e.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Agência</label>
-                  <InputText
-                    value={clienteEditando.agencia}
-                    onChange={(e) => updateClienteEditando('agencia', formatarAgencia(e.target.value))}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Tipo da Conta</label>
-                  <Dropdown
-                    value={clienteEditando.tipoConta}
-                    options={tipoContaOptions}
-                    onChange={(e) => updateClienteEditando('tipoConta', e.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Número da Conta</label>
-                  <InputText
-                    value={clienteEditando.numeroConta}
-                    onChange={(e) => updateClienteEditando('numeroConta', formatarConta(e.target.value))}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Chave Pix</label>
-                  <InputText
-                    value={clienteEditando.chavePix}
-                    onChange={(e) => updateClienteEditando('chavePix', e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>CreateDate</label>
-                  <InputText
-                    value={formatarData(clienteEditando.createDate)}
-                    disabled
-                  />
-                </div>
-
-                <div className="field">
-                  <label>UpdateDate</label>
-                  <InputText
-                    value={formatarData(clienteEditando.updateDate)}
-                    disabled
-                  />
-                </div>
-              </div>
-            </TabPanel>
-
-            <TabPanel header="Base Orçamento">
-              <div className="cliente-form-grid">
-                <div className="field field-span-4">
-                  <label style={{ fontWeight: 600 }}>Folha Timbrada (PDF)</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginTop: '6px' }}>
-                    {baseOrcamento.linkBaseOrcamento && (
-                      <a
-                        href={baseOrcamento.linkBaseOrcamento}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#f97316', fontSize: '0.9rem' }}
-                      >
-                        <i className="pi pi-file-pdf" style={{ marginRight: '4px' }} />
-                        Ver PDF atual
-                      </a>
-                    )}
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={(e) => setBaseOrcamentoArquivo(e.target.files?.[0] ?? null)}
-                      style={{ flex: 1 }}
-                    />
-                  </div>
-                  {baseOrcamentoArquivo && (
-                    <span style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '4px', display: 'block' }}>
-                      <i className="pi pi-file" style={{ marginRight: '4px' }} />
-                      {baseOrcamentoArquivo.name}
-                    </span>
-                  )}
-                </div>
-
-                <div className="field field-span-4">
-                  <label style={{ fontWeight: 600 }}>Assinatura</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '6px' }}>
-                    {baseOrcamento.linkAssinatura ? (
-                      <img
-                        src={baseOrcamento.linkAssinatura}
-                        alt="Assinatura"
-                        style={{ height: '60px', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '4px' }}
-                      />
-                    ) : (
-                      <span style={{ fontSize: '0.9rem', color: '#aaa' }}>Nenhuma assinatura cadastrada</span>
-                    )}
-                    <Button
-                      label="Criar Assinatura"
-                      icon="pi pi-pencil"
-                      outlined
-                      onClick={() => setAssinaturaDialogVisible(true)}
-                    />
-                  </div>
-                </div>
-
-                <div className="field field-span-4" style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                    <div>
-                      <p style={{ fontWeight: 700, color: '#ef4444', marginBottom: '12px' }}>
-                        INCLUSOS (marque o que está incluso)
-                      </p>
-                      {[
-                        { key: 'honorariosEquipeMedica', label: 'Honorários da equipe médica' },
-                        { key: 'taxasHospitalares', label: 'Taxas hospitalares' },
-                        { key: 'materiaisOpme', label: 'Materiais e OPME' },
-                        { key: 'medicamentosDiaria', label: 'Medicamentos durante a diária do pós-operatório' },
-                        { key: 'examesPreOperatorios', label: 'Exames pré-operatórios básicos' },
-                        { key: 'consultaPosOperatoria', label: '1 Consulta pós-operatória' },
-                        { key: 'atendimentoEnfermagem', label: 'Atendimento de enfermagem 24h' },
-                      ].map(({ key, label }) => (
-                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                          <input
-                            type="checkbox"
-                            checked={baseOrcamento[key as keyof typeof baseOrcamento] as boolean}
-                            onChange={(e) => setBaseOrcamento((prev) => ({ ...prev, [key]: e.target.checked }))}
-                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                          />
-                          <label style={{ fontSize: '0.9rem', color: '#374151', cursor: 'pointer' }}>{label}</label>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div>
-                      <p style={{ fontWeight: 700, color: '#ef4444', marginBottom: '12px' }}>
-                                            NÃO INCLUSOS (marque o que NÃO está incluso)
-                      </p>
-                      {[
-                        { key: 'acompanhanteTaxaAdicional', label: 'Acompanhante (taxa adicional)' },
-                        { key: 'fisioterapiaPosOperatoria', label: 'Fisioterapia pós-operatória' },
-                        { key: 'medicamentosPosAlta', label: 'Medicamentos pós-alta' },
-                        { key: 'ortesesImobilizadores', label: 'rteses e imobilizadores' },
-                        { key: 'examesComplementares', label: 'Exames complementares extras' },
-                        { key: 'custoCtiBemodinamica', label: 'Custo com CTI e hemodinâmica' },
-                      ].map(({ key, label }) => (
-                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                          <input
-                            type="checkbox"
-                            checked={baseOrcamento[key as keyof typeof baseOrcamento] as boolean}
-                            onChange={(e) => setBaseOrcamento((prev) => ({ ...prev, [key]: e.target.checked }))}
-                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                          />
-                          <label style={{ fontSize: '0.9rem', color: '#374151', cursor: 'pointer' }}>{label}</label>
-                        </div>
-                      ))}
+              <TabPanel header="Dados Pessoais">
+                <div className="cliente-form-grid">
+                  <div className="field field-span-2"><label>Nome Completo</label><InputText value={clienteEditando.nomeCompleto} onChange={(e) => updateClienteEditando('nomeCompleto', e.target.value)} /></div>
+                  <div className="field"><label>CPF</label><InputText value={clienteEditando.cpf} onChange={(e) => updateClienteEditando('cpf', formatarCpf(e.target.value))} /></div>
+                  <div className="field"><label>RG</label><InputText value={clienteEditando.rg} onChange={(e) => updateClienteEditando('rg', e.target.value)} /></div>
+                  <div className="field"><label>Estado Civil</label><Dropdown value={clienteEditando.estadoCivil} options={estadoCivilOptions} onChange={(e) => updateClienteEditando('estadoCivil', e.value)} /></div>
+                  <div className="field field-span-2"><label>Rua</label><InputText value={clienteEditando.rua} onChange={(e) => updateClienteEditando('rua', e.target.value)} /></div>
+                  <div className="field"><label>Número</label><InputText value={clienteEditando.numero} onChange={(e) => updateClienteEditando('numero', e.target.value)} /></div>
+                  <div className="field"><label>Complemento</label><InputText value={clienteEditando.complemento} onChange={(e) => updateClienteEditando('complemento', e.target.value)} /></div>
+                  <div className="field"><label>Bairro</label><InputText value={clienteEditando.bairro} onChange={(e) => updateClienteEditando('bairro', e.target.value)} /></div>
+                  <div className="field"><label>Cidade</label><InputText value={clienteEditando.cidade} onChange={(e) => updateClienteEditando('cidade', e.target.value)} /></div>
+                  <div className="field"><label>Estado</label><InputText value={clienteEditando.estado} onChange={(e) => updateClienteEditando('estado', e.target.value)} /></div>
+                  <div className="field">
+                    <label>CEP</label>
+                    <div className="p-inputgroup">
+                      <InputText value={clienteEditando.cep} onChange={(e) => updateClienteEditando('cep', formatarCep(e.target.value))} onBlur={() => void handleBuscarCepPessoalEdicao()} placeholder="00000-000" />
+                      <Button type="button" icon="pi pi-search" onClick={() => void handleBuscarCepPessoalEdicao()} />
                     </div>
                   </div>
+                  <div className="field"><label>CreateDate</label><InputText value={formatarData(clienteEditando.createDate)} disabled /></div>
+                  <div className="field"><label>UpdateDate</label><InputText value={formatarData(clienteEditando.updateDate)} disabled /></div>
                 </div>
+              </TabPanel>
 
-                <div className="field field-span-4" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button
-                    label="Salvar Base de Orçamento"
-                    icon="pi pi-check"
-                    loading={savingBase}
-                    onClick={handleSalvarBaseOrcamento}
-                  />
+              <TabPanel header="Dados Bancários">
+                <div className="cliente-form-grid">
+                  <div className="field field-span-2"><label>Nome Conta</label><InputText value={clienteEditando.nomeConta} onChange={(e) => updateClienteEditando('nomeConta', e.target.value)} /></div>
+                  <div className="field"><label>Número Banco</label><InputText value={clienteEditando.numeroBanco} onChange={(e) => updateClienteEditando('numeroBanco', e.target.value)} disabled /></div>
+                  <div className="field"><label>Nome Banco</label><Dropdown value={clienteEditando.nomeBanco} options={bancoOptions} onChange={(e) => handleSelecionarBancoEdicao(e.value)} /></div>
+                  <div className="field"><label>Agência</label><InputText value={clienteEditando.agencia} onChange={(e) => updateClienteEditando('agencia', formatarAgencia(e.target.value))} /></div>
+                  <div className="field"><label>Tipo da Conta</label><Dropdown value={clienteEditando.tipoConta} options={tipoContaOptions} onChange={(e) => updateClienteEditando('tipoConta', e.value)} /></div>
+                  <div className="field"><label>Número da Conta</label><InputText value={clienteEditando.numeroConta} onChange={(e) => updateClienteEditando('numeroConta', formatarConta(e.target.value))} /></div>
+                  <div className="field"><label>Chave Pix</label><InputText value={clienteEditando.chavePix} onChange={(e) => updateClienteEditando('chavePix', e.target.value)} /></div>
+                  <div className="field"><label>CreateDate</label><InputText value={formatarData(clienteEditando.createDate)} disabled /></div>
+                  <div className="field"><label>UpdateDate</label><InputText value={formatarData(clienteEditando.updateDate)} disabled /></div>
                 </div>
-              </div>
-            </TabPanel>
-          </TabView>
+              </TabPanel>
+
+              <TabPanel header="Base Orçamento">
+                <div className="cliente-form-grid">
+                  <div className="field field-span-4 base-orcamento-section">
+                    <label>Folha Timbrada (PDF)</label>
+                    <div className="base-orcamento-row">
+                      {baseOrcamento.linkBaseOrcamento && (
+                        <a href={baseOrcamento.linkBaseOrcamento} target="_blank" rel="noopener noreferrer" className="base-orcamento-link">
+                          <i className="pi pi-file-pdf" />
+                          Ver PDF atual
+                        </a>
+                      )}
+                      <input type="file" accept=".pdf" onChange={(e) => setBaseOrcamentoArquivo(e.target.files?.[0] ?? null)} className="base-orcamento-file" />
+                    </div>
+                    {baseOrcamentoArquivo && (
+                      <span className="base-orcamento-filename">
+                        <i className="pi pi-file" />
+                        {baseOrcamentoArquivo.name}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="field field-span-4 base-orcamento-section">
+                    <label>Assinatura</label>
+                    <div className="base-orcamento-row">
+                      {baseOrcamento.linkAssinatura ? (
+                        <img src={baseOrcamento.linkAssinatura} alt="Assinatura" className="assinatura-img" />
+                      ) : (
+                        <span className="assinatura-vazia">Nenhuma assinatura cadastrada</span>
+                      )}
+                      <Button label="Criar Assinatura" icon="pi pi-pencil" outlined onClick={() => setAssinaturaDialogVisible(true)} />
+                    </div>
+                  </div>
+
+                  <div className="field field-span-4 base-orcamento-checks">
+                    <div className="checks-grid">
+                      <div>
+                        <p className="checks-title">INCLUSOS (marque o que está incluso)</p>
+                        {[
+                          { key: 'honorariosEquipeMedica', label: 'Honorários da equipe médica' },
+                          { key: 'taxasHospitalares', label: 'Taxas hospitalares' },
+                          { key: 'materiaisOpme', label: 'Materiais e OPME' },
+                          { key: 'medicamentosDiaria', label: 'Medicamentos durante a diária do pós-operatório' },
+                          { key: 'examesPreOperatorios', label: 'Exames pré-operatórios básicos' },
+                          { key: 'consultaPosOperatoria', label: '1 Consulta pós-operatória' },
+                          { key: 'atendimentoEnfermagem', label: 'Atendimento de enfermagem 24h' },
+                        ].map(({ key, label }) => (
+                          <div key={key} className="check-item">
+                            <input type="checkbox" checked={baseOrcamento[key as keyof typeof baseOrcamento] as boolean} onChange={(e) => setBaseOrcamento((prev) => ({ ...prev, [key]: e.target.checked }))} />
+                            <label>{label}</label>
+                          </div>
+                        ))}
+                      </div>
+                      <div>
+                        <p className="checks-title">NÃO INCLUSOS (marque o que NÃO está incluso)</p>
+                        {[
+                          { key: 'acompanhanteTaxaAdicional', label: 'Acompanhante (taxa adicional)' },
+                          { key: 'fisioterapiaPosOperatoria', label: 'Fisioterapia pós-operatória' },
+                          { key: 'medicamentosPosAlta', label: 'Medicamentos pós-alta' },
+                          { key: 'ortesesImobilizadores', label: 'Órteses e imobilizadores' },
+                          { key: 'examesComplementares', label: 'Exames complementares extras' },
+                          { key: 'custoCtiBemodinamica', label: 'Custo com CTI e hemodinâmica' },
+                        ].map(({ key, label }) => (
+                          <div key={key} className="check-item">
+                            <input type="checkbox" checked={baseOrcamento[key as keyof typeof baseOrcamento] as boolean} onChange={(e) => setBaseOrcamento((prev) => ({ ...prev, [key]: e.target.checked }))} />
+                            <label>{label}</label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="field field-span-4 base-orcamento-actions">
+                    <Button label="Salvar Base de Orçamento" icon="pi pi-check" loading={savingBase} onClick={handleSalvarBaseOrcamento} />
+                  </div>
+                </div>
+              </TabPanel>
+            </TabView>
           </fieldset>
         )}
-
 
         {/* Dialog Assinatura */}
         <Dialog
@@ -2694,31 +1765,21 @@ const handleSalvarEdicao = async () => {
           modal
           onHide={() => setAssinaturaDialogVisible(false)}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem' }}>
-              Assine no campo abaixo usando o mouse ou touchscreen.
-            </p>
+          <div className="assinatura-dialog-body">
+            <p>Assine no campo abaixo usando o mouse ou touchscreen.</p>
             <canvas
               ref={canvasRef}
               width={460}
               height={200}
-              style={{
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                cursor: 'crosshair',
-                background: '#fff',
-                touchAction: 'none',
-              }}
+              className="assinatura-canvas"
               onMouseDown={iniciarDesenho}
               onMouseMove={desenhar}
               onMouseUp={pararDesenho}
               onMouseLeave={pararDesenho}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Button label="Limpar" icon="pi pi-trash" outlined severity="danger"
-                onClick={limparAssinatura} />
-              <Button label="Salvar Assinatura" icon="pi pi-check"
-                onClick={salvarAssinatura} />
+            <div className="assinatura-dialog-actions">
+              <Button label="Limpar" icon="pi pi-trash" outlined severity="danger" onClick={limparAssinatura} />
+              <Button label="Salvar Assinatura" icon="pi pi-check" onClick={salvarAssinatura} />
             </div>
           </div>
         </Dialog>
@@ -2731,58 +1792,25 @@ const handleSalvarEdicao = async () => {
           onHide={() => setPreviewVisible(false)}
         >
           {previewTipo === 'pdf' && (
-            <iframe
-              src={previewUrl}
-              title={previewNome}
-              style={{ width: '100%', height: '700px', border: 'none', borderRadius: '8px' }}
-            />
+            <iframe src={previewUrl} title={previewNome} className="preview-iframe" />
           )}
 
           {previewTipo === 'image' && (
-            <img
-              src={previewUrl}
-              alt={previewNome}
-              style={{ maxWidth: '100%', maxHeight: '70vh', display: 'block', margin: '0 auto' }}
-            />
+            <img src={previewUrl} alt={previewNome} className="preview-image" />
           )}
 
           {previewTipo === 'other' && (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
-              <Button
-                type="button"
-                label="Abrir arquivo"
-                icon="pi pi-external-link"
-                onClick={() => window.open(previewUrl, '_blank', 'noopener,noreferrer')}
-              />
+            <div className="preview-other">
+              <Button type="button" label="Abrir arquivo" icon="pi pi-external-link" onClick={() => window.open(previewUrl, '_blank', 'noopener,noreferrer')} />
             </div>
           )}
         </Dialog>
 
-
-
-
         <div className="dialog-footer-actions">
-          <Button
-            label="Cancelar"
-            outlined
-            onClick={() => setEditDialogVisible(false)}
-          />
-          {!readOnly && <Button
-            label="Salvar"
-            icon="pi pi-check"
-            onClick={handleSalvarEdicao}
-          />}
+          <Button label="Cancelar" outlined onClick={() => setEditDialogVisible(false)} />
+          {!readOnly && <Button label="Salvar" icon="pi pi-check" onClick={handleSalvarEdicao} />}
         </div>
       </Dialog>
-      {/* Fim Modal Editar Cliente */}
-
-
     </div>
   );
 }
-
-
-
-
-
-

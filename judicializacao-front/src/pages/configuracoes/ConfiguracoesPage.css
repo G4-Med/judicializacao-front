@@ -1,71 +1,248 @@
-﻿.configuracoes-page {
+﻿/* ============================================================
+   MEDCHECK — ConfiguracoesPage
+   Estilo aplicado às classes JÁ EXISTENTES no TSX.
+   ============================================================ */
+
+.configuracoes-page {
   display: flex;
   flex-direction: column;
-  gap: 25px;
+  gap: 22px;
+  width: 100%;
+  font-family: var(--mc-font-body, "Inter", sans-serif);
+  color: var(--mc-ink, #0f2236);
 }
 
+/* ---------- Page header ---------- */
+.configuracoes-page .page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
 .configuracoes-page .page-header h1 {
-  font-size: 26px;
-  font-weight: 700;
+  margin: 0;
+  font-family: var(--mc-font-heading, "Poppins", sans-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--mc-navy-900, #062a45);
+  letter-spacing: -0.01em;
 }
-
 .configuracoes-page .page-header p {
   margin: 6px 0 0;
-  color: #64748b;
+  color: var(--mc-muted, #5b6b7a);
+  font-size: 0.92rem;
 }
 
+/* ---------- Card / Tabela ---------- */
 .configuracoes-page .card {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border, #e3eaef);
+  border-radius: var(--mc-radius-lg, 16px);
   padding: 0;
+  overflow: hidden;
+  box-shadow: var(--mc-shadow-sm, 0 1px 2px rgba(10, 61, 98, 0.05));
 }
 
+/* header da tabela */
 .configuracoes-page .table-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
+  padding: 16px 20px;
+  background: var(--mc-surface-2, #f9fbfc);
+  border-bottom: 1px solid var(--mc-border);
 }
-
+.configuracoes-page .table-header h3 {
+  margin: 0;
+  font-family: var(--mc-font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--mc-navy-900);
+  letter-spacing: -0.01em;
+}
 .configuracoes-page .table-header-actions {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.configuracoes-page .table-header h3 {
-  margin: 0;
-  font-size: 16px;
+/* botões header */
+.configuracoes-page .table-header-actions .p-button {
+  border-radius: 10px;
+  font-weight: 600;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+}
+.configuracoes-page .table-header-actions .p-button:not(.p-button-outlined) {
+  background: var(--mc-green-500, #00a651);
+  border-color: var(--mc-green-500, #00a651);
+  color: #fff;
+}
+.configuracoes-page .table-header-actions .p-button:not(.p-button-outlined):hover {
+  background: var(--mc-green-600, #008f46);
+  border-color: var(--mc-green-600, #008f46);
+}
+.configuracoes-page .table-header-actions .p-button.p-button-outlined {
+  background: transparent;
+  color: var(--mc-navy-700, #0a3d62);
+  border: 1px solid var(--mc-border-2, #d6e0e6);
+}
+.configuracoes-page .table-header-actions .p-button.p-button-outlined:hover {
+  background: var(--mc-navy-50, #e8f0f5);
+  border-color: var(--mc-navy-700);
+  color: var(--mc-navy-900);
+}
+
+/* tabela */
+.configuracoes-page .p-datatable-thead > tr > th {
+  background: var(--mc-surface, #fff);
+  color: var(--mc-ink-2, #2b4158);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-color: var(--mc-border);
+  padding: 12px 14px;
+  white-space: nowrap;
+}
+.configuracoes-page .p-datatable-tbody > tr {
+  background: #fff;
+  transition: background .12s ease;
+}
+.configuracoes-page .p-datatable-tbody > tr:hover { background: var(--mc-surface-2); }
+.configuracoes-page .p-datatable-tbody > tr > td {
+  border-color: var(--mc-border);
+  color: var(--mc-ink-2);
+  padding: 13px 14px;
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
+.configuracoes-page .p-datatable-tbody > tr > td:first-child {
+  color: var(--mc-muted);
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
 
+/* ---------- Dialog cadastrar ---------- */
 .configuracoes-page .form-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
-
 .configuracoes-page .form-field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--mc-muted-2, #4a5b6a);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.configuracoes-page .form-field .p-inputtext {
+  width: 100%;
+  height: 42px;
+  border-color: var(--mc-border-2);
+  border-radius: 10px;
+  font-size: 0.92rem;
+  background: #fff;
+  color: var(--mc-ink);
+  padding: 10px 12px;
+}
+.configuracoes-page .form-field .p-inputtext:hover {
+  border-color: var(--mc-green-500);
+}
+.configuracoes-page .form-field .p-inputtext:focus {
+  border-color: var(--mc-green-500);
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.12);
 }
 
-.configuracoes-page .dialog-footer {
+
+/* footer dialog */
+.configuracoes-page .dialog-footer,
+.p-dialog .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--mc-border);
+}
+.p-dialog .dialog-footer .p-button {
+  min-width: 120px;
+  border-radius: 10px;
+  font-weight: 600;
+  padding: 10px 18px;
+}
+.p-dialog .dialog-footer .p-button:not(.p-button-outlined) {
+  background: var(--mc-green-500);
+  border-color: var(--mc-green-500);
+  color: #fff;
+}
+.p-dialog .dialog-footer .p-button:not(.p-button-outlined):not(:disabled):hover {
+  background: var(--mc-green-600);
+  border-color: var(--mc-green-600);
+}
+.p-dialog .dialog-footer .p-button.p-button-outlined {
+  background: transparent;
+  color: var(--mc-ink-2);
+  border: 1px solid var(--mc-border-2);
+}
+.p-dialog .dialog-footer .p-button.p-button-outlined:not(:disabled):hover {
+  background: var(--mc-surface-2);
+  color: var(--mc-navy-900);
 }
 
-@media (max-width: 640px) {
+/* ============================================================
+   Responsivo
+   ============================================================ */
+@media (max-width: 700px) {
   .configuracoes-page .table-header {
     flex-direction: column;
     align-items: flex-start;
   }
-
   .configuracoes-page .table-header-actions {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
   }
 }
+
+/* ============================================================
+   Dark theme
+   ============================================================ */
+body.dark-theme .configuracoes-page { color: #e6eef6; }
+body.dark-theme .configuracoes-page .page-header h1 { color: #e6eef6; }
+body.dark-theme .configuracoes-page .page-header p { color: #94a3b8; }
+
+body.dark-theme .configuracoes-page .card {
+  background: #0f1f33;
+  border-color: #1e2d42;
+}
+body.dark-theme .configuracoes-page .table-header {
+  background: #0d1b2a;
+  border-color: #1e2d42;
+}
+body.dark-theme .configuracoes-page .table-header h3 { color: #e6eef6; }
+
+body.dark-theme .configuracoes-page .p-datatable-thead > tr > th {
+  background: #0f1f33;
+  color: #e6eef6;
+  border-color: #1e2d42;
+}
+body.dark-theme .configuracoes-page .p-datatable-tbody > tr {
+  background: #0f1f33;
+  color: #e6eef6;
+}
+body.dark-theme .configuracoes-page .p-datatable-tbody > tr:hover { background: #142841; }
+body.dark-theme .configuracoes-page .p-datatable-tbody > tr > td {
+  border-color: #1e2d42;
+  color: #c6d2df;
+}
+body.dark-theme .configuracoes-page .p-datatable-tbody > tr > td:first-child { color: #94a3b8; }
+
+body.dark-theme .configuracoes-page .form-field label { color: #94a3b8; }
+body.dark-theme .configuracoes-page .form-field .p-inputtext {
+  background: #0d1b2a;
+  border-color: #1e2d42;
+  color: #e6eef6;
+}
+body.dark-theme .p-dialog .dialog-footer { border-top-color: #1e2d42; }

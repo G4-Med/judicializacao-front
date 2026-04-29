@@ -164,21 +164,28 @@ export function UsuariosPage() {
 
   const mapUsuario = (u: ApiUsuario, index: number): UsuarioRow => {
     const firstGroup = Array.isArray(u.groups) ? u.groups[0] : null;
-    const groupId =
-      (typeof u.group === 'object' && u.group ? u.group.id : null) ??
-      (typeof firstGroup === 'object' && firstGroup ? firstGroup.id ?? null : null) ??
-      u.group_id ??
-      null;
-    const groupName =
-      (typeof u.group === 'string' ? u.group : null) ??
-      (typeof u.group === 'object' && u.group ? u.group.name ?? null : null) ??
-      (typeof firstGroup === 'string'
-        ? firstGroup
-        : typeof firstGroup === 'object' && firstGroup
-          ? firstGroup.name ?? null
-          : null) ??
-      u.group_name ??
-      '--';
+    let groupId: number | null = null;
+    if (typeof u.group === 'object' && u.group) {
+      groupId = u.group.id;
+    } else if (typeof firstGroup === 'object' && firstGroup) {
+      groupId = firstGroup.id ?? null;
+    } else {
+      groupId = u.group_id ?? null;
+    }
+
+    let groupName = '--';
+    if (typeof u.group === 'string' && u.group) {
+      groupName = u.group;
+    } else if (typeof u.group === 'object' && u.group?.name) {
+      groupName = u.group.name;
+    } else if (typeof firstGroup === 'string' && firstGroup) {
+      groupName = firstGroup;
+    } else if (typeof firstGroup === 'object' && firstGroup?.name) {
+      groupName = firstGroup.name;
+    } else if (u.group_name) {
+      groupName = u.group_name;
+    }
+
     const medicoId = u.medico?.id ?? u.medico_id ?? null;
     const medicoNomeVal = u.medico?.nome ?? u.medico_nome ?? '';
     const first = u.first_name ?? '';

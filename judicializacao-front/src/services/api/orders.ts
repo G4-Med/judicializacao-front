@@ -91,3 +91,22 @@ export const uploadArquivoIntegracao = (file: File) => {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
 };
+
+// ============================================================
+// IA — sugestão de médico
+// ============================================================
+export interface SugestaoIAResposta {
+  sugestaoId: number;
+  orderId: number;
+  idMedico: number | null;
+  nomeMedico: string | null;
+  justificativa: string;
+  confianca: 'alta' | 'media' | 'baixa';
+  isFallback: boolean;
+}
+
+export const sugerirMedicoIA = (orderId: number) =>
+  api.post(`/ia/sugerir-medico/${orderId}/`);
+
+export const aplicarSugestaoIA = (sugestaoId: number, idMedico: number) =>
+  api.post(`/ia/sugestoes/${sugestaoId}/aplicar/`, { idMedico });

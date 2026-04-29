@@ -429,9 +429,7 @@ const handleConfirmarProtocolacao = async () => {
           <p>GestÃ£o dos processos prontos para protocolaÃ§Ã£o</p>
         </div>
 
-        <div className="page-actions">
-          {!readOnly && <Button label="Novo" icon="pi pi-plus" />}
-        </div>
+
       </div>
 
       {readOnly && <ReadOnlyBanner />}

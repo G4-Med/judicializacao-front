@@ -45,50 +45,53 @@ interface MedicoLookup {
   nome: string;
 }
 
+/* ============================================================
+   MEDCHECK — paleta dos charts
+   ============================================================ */
+const MC = {
+  green:    '#00a651',
+  greenDk:  '#008f46',
+  greenLt:  '#4fc588',
+  navy:     '#0a3d62',
+  navyMid:  '#1d5a8a',
+  navyLt:   '#3a7aa8',
+  rose:     '#c8394d',
+  amber:    '#d08a1c',
+  muted:    '#5b6b7a',
+  border:   '#e3eaef',
+};
+
+/* paleta categórica para gráficos com várias categorias */
+const MC_CATEGORICAL = [MC.navy, MC.amber, MC.green, MC.navyMid, MC.greenLt, MC.rose, MC.navyLt];
+
 function parseApiDate(value?: string | null): Date | null {
   if (!value) return null;
-
   const normalized = value.includes('T') ? value : value.replace(' ', 'T');
   const parsed = new Date(normalized);
   if (!Number.isNaN(parsed.getTime())) return parsed;
-
   const [datePart, timePart] = value.split(' ');
   const bits = datePart?.split(/[/-]/) ?? [];
   if (bits.length !== 3) return null;
-
   const [first, second, third] = bits.map(Number);
   const hasTime = timePart ? `T${timePart}` : 'T00:00:00';
-
   if (String(bits[0]).length === 4) {
-    const iso = `${first.toString().padStart(4, '0')}-${second.toString().padStart(2, '0')}-${third
-      .toString()
-      .padStart(2, '0')}${hasTime}`;
+    const iso = `${first.toString().padStart(4, '0')}-${second.toString().padStart(2, '0')}-${third.toString().padStart(2, '0')}${hasTime}`;
     const result = new Date(iso);
     return Number.isNaN(result.getTime()) ? null : result;
   }
-
-  const br = `${third.toString().padStart(4, '0')}-${second.toString().padStart(2, '0')}-${first
-    .toString()
-    .padStart(2, '0')}${hasTime}`;
+  const br = `${third.toString().padStart(4, '0')}-${second.toString().padStart(2, '0')}-${first.toString().padStart(2, '0')}${hasTime}`;
   const result = new Date(br);
   return Number.isNaN(result.getTime()) ? null : result;
 }
 
-function startOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function endOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-}
+function startOfDay(date: Date) { return new Date(date.getFullYear(), date.getMonth(), date.getDate()); }
+function endOfDay(date: Date) { return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999); }
 
 function withinPeriodo(value: string | null | undefined, periodo: PeriodoSelecionado): boolean {
   const parsed = parseApiDate(value);
   if (!parsed) return false;
-
   const inicio = periodo.dataInicio ? startOfDay(periodo.dataInicio) : null;
   const fim = periodo.dataFim ? endOfDay(periodo.dataFim) : null;
-
   if (!inicio || !fim) return true;
   return parsed >= inicio && parsed <= fim;
 }
@@ -98,62 +101,84 @@ function toNumber(value?: number | null): number {
 }
 
 function formatCurrency(value: number): string {
-  return value.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  });
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function formatCurrencyShort(value: number): string {
+  if (Math.abs(value) >= 1_000_000) return `R$ ${(value / 1_000_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}M`;
+  if (Math.abs(value) >= 1_000) return `R$ ${(value / 1_000).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}k`;
+  return formatCurrency(value);
 }
 
 function formatPercent(value: number): string {
-  return `${value.toLocaleString('pt-BR', {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1
-  })}%`;
+  return `${value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 }
 
-function createBarOptions(indexAxis: 'x' | 'y' = 'y') {
+/* ============================================================
+   Chart options — barras VERTICAIS coloridas (status pedido / perda)
+   ============================================================ */
+function createVerticalBarOptions() {
   return {
     responsive: true,
     maintainAspectRatio: false,
-    indexAxis,
     plugins: {
-      legend: {
-        labels: {
-          color: '#64748b'
-        }
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: MC.navy, titleColor: '#fff', bodyColor: '#fff',
+        borderColor: MC.green, borderWidth: 1, padding: 10, cornerRadius: 8,
       }
     },
     scales: {
       x: {
-        ticks: {
-          color: '#64748b'
-        },
-        grid: {
-          color: '#e5e7eb'
-        }
+        ticks: { color: MC.muted, font: { family: 'Inter, sans-serif', size: 12 }, maxRotation: 90, autoSkip: false },
+        grid: { display: false }
       },
       y: {
-        ticks: {
-          color: '#64748b'
-        },
-        grid: {
-          color: '#e5e7eb'
-        }
+        beginAtZero: true,
+        ticks: { color: MC.muted, font: { family: 'Inter, sans-serif', size: 11 }, precision: 0 },
+        grid: { color: MC.border, drawBorder: false }
       }
     }
   };
 }
 
-function createPieOptions() {
+/* coluna por dia */
+function createColumnOptions() {
   return {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        position: 'bottom' as const,
-        labels: {
-          color: '#64748b'
-        }
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: MC.navy, titleColor: '#fff', bodyColor: '#fff',
+        borderColor: MC.green, borderWidth: 1, padding: 10, cornerRadius: 8,
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: MC.muted, font: { family: 'Inter, sans-serif', size: 11 } },
+        grid: { display: false }
+      },
+      y: {
+        beginAtZero: true,
+        ticks: { color: MC.muted, font: { family: 'Inter, sans-serif', size: 11 }, precision: 0 },
+        grid: { color: MC.border, drawBorder: false }
+      }
+    }
+  };
+}
+
+/* doughnut da % de perda */
+function createDoughnutOptions() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '70%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: MC.navy, titleColor: '#fff', bodyColor: '#fff',
+        padding: 10, cornerRadius: 8,
       }
     }
   };
@@ -213,98 +238,68 @@ export function DashboardPage() {
     }, {});
   }, [orders]);
 
-  const resolveMedicoId = (id: number, idMedico?: number | null) => {
-    return idMedico ?? ordersLookup[id]?.idMedico ?? null;
-  };
-
+  const resolveMedicoId = (id: number, idMedico?: number | null) => idMedico ?? ordersLookup[id]?.idMedico ?? null;
   const resolveMedicoNome = (id: number, idMedico?: number | null) => {
     const resolvedId = resolveMedicoId(id, idMedico);
     return resolvedId ? medicosLookup[resolvedId] || `Médico ${resolvedId}` : 'Sem médico';
   };
 
-  const periodOrders = useMemo(() => {
-    return baseOrders.filter((item) => withinPeriodo(item.dataPedido, periodoSelecionado));
-  }, [baseOrders, periodoSelecionado]);
+  const periodOrders = useMemo(() => baseOrders.filter((item) => withinPeriodo(item.dataPedido, periodoSelecionado)), [baseOrders, periodoSelecionado]);
 
   const baseResultados = useMemo(() => {
     if (medicoSelecionado === null) return resultados;
     return resultados.filter((item) => resolveMedicoId(item.id, item.idMedico) === medicoSelecionado);
   }, [resultados, medicoSelecionado, ordersLookup]);
 
-  const periodResultados = useMemo(() => {
-    return baseResultados.filter((item) => withinPeriodo(item.dataPedido, periodoSelecionado));
-  }, [baseResultados, periodoSelecionado]);
+  const periodResultados = useMemo(() => baseResultados.filter((item) => withinPeriodo(item.dataPedido, periodoSelecionado)), [baseResultados, periodoSelecionado]);
 
   const basePerdas = useMemo(() => {
     if (medicoSelecionado === null) return perdas;
     return perdas.filter((item) => resolveMedicoId(item.id, item.idMedico) === medicoSelecionado);
   }, [perdas, medicoSelecionado, ordersLookup]);
 
-  const periodPerdas = useMemo(() => {
-    return basePerdas.filter((item) => withinPeriodo(item.dataPedido, periodoSelecionado));
-  }, [basePerdas, periodoSelecionado]);
+  const periodPerdas = useMemo(() => basePerdas.filter((item) => withinPeriodo(item.dataPedido, periodoSelecionado)), [basePerdas, periodoSelecionado]);
 
   const kpis = useMemo(() => {
     const totalOrders = baseOrders.length;
     const totalOrdersPeriodo = periodOrders.length;
-
     const totalOrcamentoEnviado = baseOrders.filter((item) => item.statusOrcamento === 'Orçamento Enviado').length;
     const totalOrcamentoEnviadoPeriodo = periodOrders.filter((item) => item.statusOrcamento === 'Orçamento Enviado').length;
-
     const totalPerdas = basePerdas.length;
     const totalPerdasPeriodo = periodPerdas.length;
 
-    const clientesAtivosTotal = new Set(
-      baseOrders
-        .filter((item) => item.statusProcesso !== 'Perda' && item.statusProcesso !== 'Ganho')
-        .map((item) => item.idMedico)
-        .filter(Boolean)
-    ).size;
-    const clientesAtivosPeriodo = new Set(
-      periodOrders
-        .filter((item) => item.statusProcesso !== 'Perda' && item.statusProcesso !== 'Ganho')
-        .map((item) => item.idMedico)
-        .filter(Boolean)
-    ).size;
+    const clientesAtivosTotal = new Set(baseOrders.filter((i) => i.statusProcesso !== 'Perda' && i.statusProcesso !== 'Ganho').map((i) => i.idMedico).filter(Boolean)).size;
+    const clientesAtivosPeriodo = new Set(periodOrders.filter((i) => i.statusProcesso !== 'Perda' && i.statusProcesso !== 'Ganho').map((i) => i.idMedico).filter(Boolean)).size;
 
-    const emAbertoTotal = baseOrders.filter(
-      (item) => item.statusProcesso !== 'Perda' && item.statusProcesso !== 'Ganho' && toNumber(item.valorOrcamento) > 0
-    );
-    const emAbertoPeriodo = periodOrders.filter(
-      (item) => item.statusProcesso !== 'Perda' && item.statusProcesso !== 'Ganho' && toNumber(item.valorOrcamento) > 0
-    );
+    const emAbertoTotal = baseOrders.filter((i) => i.statusProcesso !== 'Perda' && i.statusProcesso !== 'Ganho' && toNumber(i.valorOrcamento) > 0);
+    const emAbertoPeriodo = periodOrders.filter((i) => i.statusProcesso !== 'Perda' && i.statusProcesso !== 'Ganho' && toNumber(i.valorOrcamento) > 0);
 
-    const ganhosTotal = baseResultados.filter((item) => item.statusProcesso === 'Ganho');
-    const ganhosPeriodo = periodResultados.filter((item) => item.statusProcesso === 'Ganho');
-    const perdasTotal = basePerdas;
-    const perdasPeriodo = periodPerdas;
+    const ganhosTotal = baseResultados.filter((i) => i.statusProcesso === 'Ganho');
+    const ganhosPeriodo = periodResultados.filter((i) => i.statusProcesso === 'Ganho');
 
-    const valorEmAbertoTotal = emAbertoTotal.reduce((acc, item) => acc + toNumber(item.valorOrcamento), 0);
-    const valorEmAbertoPeriodo = emAbertoPeriodo.reduce((acc, item) => acc + toNumber(item.valorOrcamento), 0);
-    const valorGanhoTotal = ganhosTotal.reduce((acc, item) => acc + toNumber(item.valorGanho), 0);
-    const valorGanhoPeriodo = ganhosPeriodo.reduce((acc, item) => acc + toNumber(item.valorGanho), 0);
-    const valorPerdaTotal = perdasTotal.reduce((acc, item) => acc + (toNumber(item.valorOrcamento) || toNumber(item.refPreco)), 0);
-    const valorPerdaPeriodo = perdasPeriodo.reduce(
-      (acc, item) => acc + (toNumber(item.valorOrcamento) || toNumber(item.refPreco)),
-      0
-    );
+    const valorEmAbertoTotal = emAbertoTotal.reduce((acc, i) => acc + toNumber(i.valorOrcamento), 0);
+    const valorEmAbertoPeriodo = emAbertoPeriodo.reduce((acc, i) => acc + toNumber(i.valorOrcamento), 0);
+    const valorGanhoTotal = ganhosTotal.reduce((acc, i) => acc + toNumber(i.valorGanho), 0);
+    const valorGanhoPeriodo = ganhosPeriodo.reduce((acc, i) => acc + toNumber(i.valorGanho), 0);
+    const valorPerdaTotal = basePerdas.reduce((acc, i) => acc + (toNumber(i.valorOrcamento) || toNumber(i.refPreco)), 0);
+    const valorPerdaPeriodo = periodPerdas.reduce((acc, i) => acc + (toNumber(i.valorOrcamento) || toNumber(i.refPreco)), 0);
 
-    const conversaoValorTotalBase = valorGanhoTotal + valorPerdaTotal;
-    const conversaoValorPeriodoBase = valorGanhoPeriodo + valorPerdaPeriodo;
-    const conversaoValorTotal = conversaoValorTotalBase > 0 ? (valorGanhoTotal / conversaoValorTotalBase) * 100 : 0;
-    const conversaoValorPeriodo = conversaoValorPeriodoBase > 0 ? (valorGanhoPeriodo / conversaoValorPeriodoBase) * 100 : 0;
+    const cvtBase = valorGanhoTotal + valorPerdaTotal;
+    const cvpBase = valorGanhoPeriodo + valorPerdaPeriodo;
+    const conversaoValorTotal = cvtBase > 0 ? (valorGanhoTotal / cvtBase) * 100 : 0;
+    const conversaoValorPeriodo = cvpBase > 0 ? (valorGanhoPeriodo / cvpBase) * 100 : 0;
 
     const qtdeEmAbertoTotal = emAbertoTotal.length;
     const qtdeEmAbertoPeriodo = emAbertoPeriodo.length;
     const qtdeGanhoTotal = ganhosTotal.length;
     const qtdeGanhoPeriodo = ganhosPeriodo.length;
-    const qtdePerdaTotal = perdasTotal.length;
-    const qtdePerdaPeriodo = perdasPeriodo.length;
+    const qtdePerdaTotal = basePerdas.length;
+    const qtdePerdaPeriodo = periodPerdas.length;
 
-    const conversaoQtdeTotalBase = qtdeGanhoTotal + qtdePerdaTotal;
-    const conversaoQtdePeriodoBase = qtdeGanhoPeriodo + qtdePerdaPeriodo;
-    const conversaoQtdeTotal = conversaoQtdeTotalBase > 0 ? (qtdeGanhoTotal / conversaoQtdeTotalBase) * 100 : 0;
-    const conversaoQtdePeriodo = conversaoQtdePeriodoBase > 0 ? (qtdeGanhoPeriodo / conversaoQtdePeriodoBase) * 100 : 0;
+    const cqtBase = qtdeGanhoTotal + qtdePerdaTotal;
+    const cqpBase = qtdeGanhoPeriodo + qtdePerdaPeriodo;
+    const conversaoQtdeTotal = cqtBase > 0 ? (qtdeGanhoTotal / cqtBase) * 100 : 0;
+    const conversaoQtdePeriodo = cqpBase > 0 ? (qtdeGanhoPeriodo / cqpBase) * 100 : 0;
 
     return {
       quantidadeProcessos: { periodo: totalOrdersPeriodo, total: totalOrders },
@@ -345,9 +340,7 @@ export function DashboardPage() {
     const pedidosPorDiaMap = periodOrders.reduce<Record<string, number>>((acc, item) => {
       const data = parseApiDate(item.dataPedido);
       if (!data) return acc;
-      const chave = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(
-        data.getDate()
-      ).padStart(2, '0')}`;
+      const chave = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
       acc[chave] = (acc[chave] ?? 0) + 1;
       return acc;
     }, {});
@@ -376,49 +369,88 @@ export function DashboardPage() {
         const total = item.ganho + item.perda;
         const percentualGanho = total > 0 ? Number(((item.ganho / total) * 100).toFixed(1)) : 0;
         const percentualPerda = total > 0 ? Number((100 - percentualGanho).toFixed(1)) : 0;
-
-        return {
-          nome,
-          ganho: item.ganho,
-          perda: item.perda,
-          percentualGanho,
-          percentualPerda,
-        };
+        return { nome, ganho: item.ganho, perda: item.perda, percentualGanho, percentualPerda };
       })
       .sort((a, b) => (b.ganho + b.perda) - (a.ganho + a.perda));
 
+    /* ===== Médicos x qtde — TOP 6 ordenado, formato lista ===== */
+    const medicoQtdList = Object.entries(medicoQtdMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([nome, value]) => ({ nome, value }));
+    const medicoQtdMax = Math.max(1, ...medicoQtdList.map((i) => i.value));
+
+    /* ===== Médicos x valor orçamento — TOP 6 ordenado, formato lista ===== */
+    const medicoOrcamentoList = Object.entries(medicoOrcamentoMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([nome, value]) => ({ nome, value }));
+    const medicoOrcamentoMax = Math.max(1, ...medicoOrcamentoList.map((i) => i.value));
+
+    /* ===== Status perda donut: total + percentuais ===== */
+    const statusPerdaLabels = Object.keys(statusPerdaMap);
+    const statusPerdaValues = Object.values(statusPerdaMap);
+    const statusPerdaTotal = statusPerdaValues.reduce((a, b) => a + b, 0);
+    const statusPerdaItems = statusPerdaLabels.map((label, idx) => ({
+      label,
+      value: statusPerdaValues[idx],
+      pct: statusPerdaTotal > 0 ? (statusPerdaValues[idx] / statusPerdaTotal) * 100 : 0,
+      color: MC_CATEGORICAL[idx % MC_CATEGORICAL.length],
+    }));
+
     return {
+      /* Status pedido — barras VERTICAIS coloridas (cada barra cor diferente) */
       statusPedido: {
         labels: Object.keys(statusPedidoMap),
-        datasets: [{ label: 'Quantidade', data: Object.values(statusPedidoMap), backgroundColor: '#3b82f6', borderRadius: 8 }]
-      },
-      medicoQtd: {
-        labels: Object.keys(medicoQtdMap),
-        datasets: [{ label: 'Pedidos', data: Object.values(medicoQtdMap), backgroundColor: '#f97316', borderRadius: 8 }]
-      },
-      medicoValorOrcamento: {
-        labels: Object.keys(medicoOrcamentoMap),
-        datasets: [{ label: 'Valor Orçamento Enviado', data: Object.values(medicoOrcamentoMap), backgroundColor: '#10b981', borderRadius: 8 }]
-      },
-      pedidosDia: {
-        labels: pedidosPorDiaEntries.map(([label]) => {
-          const [ano, mes, dia] = label.split('-');
-          return `${dia}/${mes}/${ano}`;
-        }),
-        datasets: [{ label: 'Pedidos', data: pedidosPorDiaEntries.map(([, value]) => value), backgroundColor: '#6366f1', borderRadius: 8 }]
-      },
-      statusPerda: {
-        labels: Object.keys(statusPerdaMap),
-        datasets: [{ label: 'Quantidade', data: Object.values(statusPerdaMap), backgroundColor: '#ef4444', borderRadius: 8 }]
-      },
-      statusPerdaPizza: {
-        labels: Object.keys(statusPerdaMap),
         datasets: [{
-          data: Object.values(statusPerdaMap),
-          backgroundColor: ['#ef4444', '#f97316', '#8b5cf6', '#64748b', '#0ea5e9'],
-          hoverBackgroundColor: ['#dc2626', '#ea580c', '#7c3aed', '#475569', '#0284c7']
+          label: 'Quantidade',
+          data: Object.values(statusPedidoMap),
+          backgroundColor: Object.keys(statusPedidoMap).map((_, i) => MC_CATEGORICAL[i % MC_CATEGORICAL.length]),
+          borderRadius: 8,
+          maxBarThickness: 56,
         }]
       },
+      /* Médicos qtde — formato LISTA */
+      medicoQtdList, medicoQtdMax,
+      /* Médicos valor — formato LISTA */
+      medicoOrcamentoList, medicoOrcamentoMax,
+      /* Pedidos por dia — barras verdes verticais */
+      pedidosDia: {
+        labels: pedidosPorDiaEntries.map(([label]) => {
+          const [, mes, dia] = label.split('-');
+          return `${dia}/${mes}`;
+        }),
+        datasets: [{
+          label: 'Pedidos',
+          data: pedidosPorDiaEntries.map(([, value]) => value),
+          backgroundColor: MC.green,
+          borderRadius: 6,
+          maxBarThickness: 32,
+        }]
+      },
+      /* Status perda — barras VERTICAIS rosa (todas mesma cor) */
+      statusPerda: {
+        labels: Object.keys(statusPerdaMap),
+        datasets: [{
+          label: 'Quantidade',
+          data: Object.values(statusPerdaMap),
+          backgroundColor: MC.rose,
+          borderRadius: 8,
+          maxBarThickness: 60,
+        }]
+      },
+      /* Donut perda */
+      statusPerdaDonut: {
+        labels: statusPerdaLabels,
+        datasets: [{
+          data: statusPerdaValues,
+          backgroundColor: statusPerdaItems.map((i) => i.color),
+          borderColor: '#fff',
+          borderWidth: 3,
+        }]
+      },
+      statusPerdaItems,
+      statusPerdaTotal,
       medicoPerdaGanho: medicoResultadoEntries
     };
   }, [periodOrders, periodPerdas, baseResultados, medicosLookup, ordersLookup]);
@@ -438,9 +470,9 @@ export function DashboardPage() {
     { titulo: 'Conversão qtde', valor: formatPercent(kpis.conversaoQtde.periodo), total: formatPercent(kpis.conversaoQtde.total), icone: 'pi pi-chart-line' },
   ];
 
-  const barOptions = useMemo(() => createBarOptions('y'), []);
-  const columnOptions = useMemo(() => createBarOptions('x'), []);
-  const pieOptions = useMemo(() => createPieOptions(), []);
+  const verticalBarOptions = useMemo(() => createVerticalBarOptions(), []);
+  const columnOptions = useMemo(() => createColumnOptions(), []);
+  const doughnutOptions = useMemo(() => createDoughnutOptions(), []);
 
   return (
     <div className="dashboard-page">
@@ -480,33 +512,64 @@ export function DashboardPage() {
       </div>
 
       <div className="dashboard-section-title">Análises operacionais</div>
+      <div className="dashboard-section-subtitle">Status, distribuição por médico e ticket médio do período.</div>
       <div className="dashboard-chart-grid dashboard-chart-grid--3">
         <div className="card chart-card">
-          <div className="chart-title">Status pedido x quantidade</div>
+          <div className="chart-title">Status pedido × quantidade</div>
+          <div className="chart-subtitle">Volume por etapa do processo.</div>
           <div className="chart-wrapper">
-            <Chart type="bar" data={charts.statusPedido} options={barOptions} />
+            <Chart type="bar" data={charts.statusPedido} options={verticalBarOptions} />
           </div>
         </div>
 
         <div className="card chart-card">
-          <div className="chart-title">Médicos x qtde pedidos</div>
-          <div className="chart-wrapper">
-            <Chart type="bar" data={charts.medicoQtd} options={barOptions} />
+          <div className="chart-title">Médicos × qtde pedidos</div>
+          <div className="chart-subtitle">Top {charts.medicoQtdList.length} médicos do período.</div>
+          <div className="medico-list">
+            {charts.medicoQtdList.length === 0 ? (
+              <div className="dashboard-empty-state">Nenhum dado para o período.</div>
+            ) : charts.medicoQtdList.map((item) => (
+              <div className="medico-list__row" key={item.nome}>
+                <div className="medico-list__name" title={item.nome}>{item.nome}</div>
+                <div className="medico-list__bar">
+                  <div
+                    className="medico-list__bar-fill medico-list__bar-fill--navy"
+                    style={{ width: `${(item.value / charts.medicoQtdMax) * 100}%` }}
+                  />
+                </div>
+                <div className="medico-list__value">{item.value}</div>
+              </div>
+            ))}
           </div>
         </div>
 
         <div className="card chart-card">
-          <div className="chart-title">Médicos x valor orçamento enviado</div>
-          <div className="chart-wrapper">
-            <Chart type="bar" data={charts.medicoValorOrcamento} options={barOptions} />
+          <div className="chart-title">Médicos × valor orçamento enviado</div>
+          <div className="chart-subtitle">Volume financeiro por médico.</div>
+          <div className="medico-list">
+            {charts.medicoOrcamentoList.length === 0 ? (
+              <div className="dashboard-empty-state">Nenhum dado para o período.</div>
+            ) : charts.medicoOrcamentoList.map((item) => (
+              <div className="medico-list__row" key={item.nome}>
+                <div className="medico-list__name" title={item.nome}>{item.nome}</div>
+                <div className="medico-list__bar">
+                  <div
+                    className="medico-list__bar-fill medico-list__bar-fill--green"
+                    style={{ width: `${(item.value / charts.medicoOrcamentoMax) * 100}%` }}
+                  />
+                </div>
+                <div className="medico-list__value medico-list__value--money">{formatCurrencyShort(item.value)}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       <div className="dashboard-section-title">Evolução diária</div>
+      <div className="dashboard-section-subtitle">Volume de pedidos por dia.</div>
       <div className="dashboard-chart-grid">
         <div className="card chart-card chart-card-full">
-          <div className="chart-title">Dia x qtde de pedidos</div>
+          <div className="chart-title">Dia × qtde de pedidos</div>
           <div className="chart-wrapper">
             <Chart type="bar" data={charts.pedidosDia} options={columnOptions} />
           </div>
@@ -514,42 +577,60 @@ export function DashboardPage() {
       </div>
 
       <div className="dashboard-section-title">Análise de perdas</div>
+      <div className="dashboard-section-subtitle">Status da perda e composição percentual.</div>
       <div className="dashboard-chart-grid">
         <div className="card chart-card">
-          <div className="chart-title">Status de perda x quantidade de pedidos</div>
+          <div className="chart-title">Status de perda × quantidade</div>
           <div className="chart-wrapper">
-            <Chart type="bar" data={charts.statusPerda} options={barOptions} />
+            <Chart type="bar" data={charts.statusPerda} options={verticalBarOptions} />
           </div>
         </div>
 
         <div className="card chart-card">
-          <div className="chart-title">% de perda x status de perda</div>
-          <div className="chart-wrapper">
-            <Chart type="pie" data={charts.statusPerdaPizza} options={pieOptions} />
+          <div className="chart-title">% de perda × status</div>
+          <div className="chart-subtitle">Distribuição percentual.</div>
+          <div className="donut-block">
+            <div className="donut-block__chart">
+              <Chart type="doughnut" data={charts.statusPerdaDonut} options={doughnutOptions} />
+              <div className="donut-block__center">
+                <div className="donut-block__center-value">{charts.statusPerdaTotal}</div>
+                <div className="donut-block__center-label">perdas totais</div>
+              </div>
+            </div>
+            <div className="donut-block__legend">
+              {charts.statusPerdaItems.map((item) => (
+                <div className="donut-block__row" key={item.label}>
+                  <span className="donut-block__dot" style={{ background: item.color }} />
+                  <span className="donut-block__label" title={item.label}>{item.label}</span>
+                  <span className="donut-block__pct">{Math.round(item.pct)}%</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
       <div className="dashboard-section-title">Performance por médico</div>
+      <div className="dashboard-section-subtitle">Comparativo ganho × perda por profissional.</div>
       <div className="dashboard-chart-grid">
         <div className="card chart-card chart-card-full">
-          <div className="chart-title">Médico x perda x ganho</div>
+          <div className="chart-title">Médico × perda × ganho</div>
           <div className="dashboard-medico-performance">
             {charts.medicoPerdaGanho.length === 0 ? (
               <div className="dashboard-empty-state">Nenhum resultado disponível para o período selecionado.</div>
             ) : (
               <>
                 <div className="dashboard-medico-performance__header-row">
-                  <div></div>
-                  <div className="dashboard-medico-performance__header-cell">ganho</div>
-                  <div className="dashboard-medico-performance__header-cell">medico</div>
-                  <div className="dashboard-medico-performance__header-cell">perda</div>
-                  <div></div>
+                  <div className="dashboard-medico-performance__header-cell dashboard-medico-performance__header-cell--right">qt.</div>
+                  <div className="dashboard-medico-performance__header-cell dashboard-medico-performance__header-cell--right" style={{ color: 'var(--mc-green-600)' }}>ganho</div>
+                  <div className="dashboard-medico-performance__header-cell">médico</div>
+                  <div className="dashboard-medico-performance__header-cell" style={{ color: 'var(--mc-rose)' }}>perda</div>
+                  <div className="dashboard-medico-performance__header-cell">qt.</div>
                 </div>
 
                 {charts.medicoPerdaGanho.map((item) => (
                   <div key={item.nome} className="dashboard-medico-performance__row">
-                    <div className="dashboard-medico-performance__count">{item.ganho}</div>
+                    <div className="dashboard-medico-performance__count dashboard-medico-performance__count--right">{item.ganho}</div>
 
                     <div className="dashboard-medico-performance__mini-bar dashboard-medico-performance__mini-bar--ganho">
                       <div
@@ -573,9 +654,7 @@ export function DashboardPage() {
                       </div>
                     </div>
 
-                    <div className="dashboard-medico-performance__count dashboard-medico-performance__count--right">
-                      {item.perda}
-                    </div>
+                    <div className="dashboard-medico-performance__count">{item.perda}</div>
                   </div>
                 ))}
               </>

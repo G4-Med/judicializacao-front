@@ -158,6 +158,7 @@
 }
 .login-page__panel--login  { left: 0; }
 .login-page__panel--recover { right: 0; }
+.login-page__panel--static { left: auto; right: 0; }
 
 .login-page__form {
   margin-top: 60px;
@@ -175,6 +176,25 @@
   opacity: 1;
   transform: translateX(0);
   transition: 0.5s 1s;
+}
+.login-page__form--static {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+.login-page__card--single .login-page__card-bg--left {
+  opacity: 1;
+  transform: rotate(-45deg);
+}
+
+.login-page__card--single .login-page__card-bg--right {
+  display: none;
+}
+
+.login-page__card--single .login-page__logo--left {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 /* ---------- Conteúdo do formulário ---------- */
@@ -400,4 +420,8 @@
   .login-page__panel--recover { display: none; }
   .login-page__panel--recover.is-active { display: grid; }
   .login-page__panel--recover.is-active ~ .login-page__panel--login { display: none; }
+  .login-page__panel--static {
+    display: grid;
+    right: auto;
+  }
 }

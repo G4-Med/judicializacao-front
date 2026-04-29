@@ -22,6 +22,8 @@ import { InputNumber } from 'primereact/inputnumber';
 import { getStatusTagStyle } from '../../utils/statusTag';
 import { EnviarOrcamentoDialog } from '../orcamentoMedico/EnviarOrcamentoDialog';
 import { useAccess } from '../../access/AccessContext';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import './ProcessosPage.css';
 
 const STATUS_PROCESSO_FALLBACK = [
@@ -171,11 +173,26 @@ const createManualProcessForm = (): ManualProcessForm => ({
   emailCorpo: '',
 });
 
+const formatarMoedaExport = (valor?: number | null) =>
+  Number(valor ?? 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
+
+const escapeHtml = (value: string | number | null | undefined) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
 export function ProcessosPage() {
   const { isReadOnly } = useAccess();
   const readOnly = isReadOnly('processos');
   const [loading, setLoading] = useState(false);
   const [processos, setProcessos] = useState<Processo[]>([]);
+  const [visibleProcessos, setVisibleProcessos] = useState<ProcessoTableRow[]>([]);
   const [selectedProcessos, setSelectedProcessos] = useState<ProcessoTableRow[]>([]);
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
@@ -204,6 +221,8 @@ export function ProcessosPage() {
   const [novoProcessoJsonLoteVisible, setNovoProcessoJsonLoteVisible] = useState(false);
   const [novoProcessoJsonLoteAnexosVisible, setNovoProcessoJsonLoteAnexosVisible] = useState(false);
   const [enviandoNovoProcesso, setEnviandoNovoProcesso] = useState(false);
+  const [exportandoPdf, setExportandoPdf] = useState(false);
+  const [exportandoExcel, setExportandoExcel] = useState(false);
   const [buscandoPedidos, setBuscandoPedidos] = useState(false);
   const [executandoAcaoMassa, setExecutandoAcaoMassa] = useState(false);
   const [enviarOrcamentoVisible, setEnviarOrcamentoVisible] = useState(false);
@@ -655,6 +674,47 @@ ${linhasAnexos}
       };
     });
   }, [processos]);
+
+  useEffect(() => {
+    setVisibleProcessos(dataComCamposCalculados);
+  }, [dataComCamposCalculados]);
+
+  const calcularKpis = (items: ProcessoTableRow[]) => {
+    const totalProcessos = items.length;
+    const processosAtivos = items.filter((item) =>
+      STATUS_PROCESSOS_ATIVOS.includes(item.status)
+    ).length;
+    const processosBaixados = items.filter((item) =>
+      STATUS_PROCESSOS_BAIXADOS.includes(item.status)
+    ).length;
+    const qtdeOrcamentoEnviado = items.filter(
+      (item) => item.statusOrcamento === 'Orçamento Enviado'
+    ).length;
+    const percentualRespostas = totalProcessos > 0
+      ? (qtdeOrcamentoEnviado / totalProcessos) * 100
+      : 0;
+
+    return {
+      totalProcessos,
+      processosAtivos,
+      processosBaixados,
+      percentualRespostas,
+      aguardandoJuridico: items.filter(
+        (item) => item.status === 'Aguardando Juridico'
+      ).length,
+      aguardandoOrcamento: items.filter(
+        (item) => item.status === 'Aguardando Orçamento'
+      ).length,
+      aguardandoProtocolar: items.filter(
+        (item) => item.status === 'Aguardando Protocolar'
+      ).length,
+      aguardandoRespostas: items.filter(
+        (item) =>
+          item.status === 'Aguardando Resposta' ||
+          item.status === 'Aguardando Resposta - Segredo de Justiça'
+      ).length,
+    };
+  };
 
   const onPage = (event: DataTablePageEvent) => {
     setFirst(event.first);
@@ -1188,42 +1248,8 @@ ${linhasAnexos}
 
 
 
-  const kpis = useMemo(() => {
-    const totalProcessos = dataComCamposCalculados.length;
-    const processosAtivos = dataComCamposCalculados.filter((item) =>
-      STATUS_PROCESSOS_ATIVOS.includes(item.status)
-    ).length;
-    const processosBaixados = dataComCamposCalculados.filter((item) =>
-      STATUS_PROCESSOS_BAIXADOS.includes(item.status)
-    ).length;
-    const qtdeOrcamentoEnviado = dataComCamposCalculados.filter(
-      (item) => item.statusOrcamento === 'Orçamento Enviado'
-    ).length;
-    const percentualRespostas = totalProcessos > 0
-      ? (qtdeOrcamentoEnviado / totalProcessos) * 100
-      : 0;
-
-    return {
-      totalProcessos,
-      processosAtivos,
-      processosBaixados,
-      percentualRespostas,
-      aguardandoJuridico: dataComCamposCalculados.filter(
-        (item) => item.status === 'Aguardando Juridico'
-      ).length,
-      aguardandoOrcamento: dataComCamposCalculados.filter(
-        (item) => item.status === 'Aguardando Orçamento'
-      ).length,
-      aguardandoProtocolar: dataComCamposCalculados.filter(
-        (item) => item.status === 'Aguardando Protocolar'
-      ).length,
-      aguardandoRespostas: dataComCamposCalculados.filter(
-        (item) =>
-          item.status === 'Aguardando Resposta' ||
-          item.status === 'Aguardando Resposta - Segredo de Justiça'
-      ).length,
-    };
-  }, [dataComCamposCalculados]);
+  const kpis = useMemo(() => calcularKpis(dataComCamposCalculados), [dataComCamposCalculados]);
+  const kpisExportacao = useMemo(() => calcularKpis(visibleProcessos), [visibleProcessos]);
 
 
 
@@ -1394,6 +1420,165 @@ ${linhasAnexos}
       />
     </div>
   )
+
+  const exportRows = visibleProcessos.length ? visibleProcessos : dataComCamposCalculados;
+
+  const baixarArquivo = (blob: Blob, nomeArquivo: string) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nomeArquivo;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportarExcel = async () => {
+    setExportandoExcel(true);
+    try {
+      const linhasHtml = exportRows.map((row) => `
+        <tr>
+          <td>${row.sequencial}</td>
+          <td>${escapeHtml(row.paciente)}</td>
+          <td>${escapeHtml(row.procedimento)}</td>
+          <td>${formatarMoedaExport(row.refPreco)}</td>
+          <td>${escapeHtml(row.medico)}</td>
+          <td>${escapeHtml(row.area)}</td>
+          <td>${row.dias}</td>
+          <td>${escapeHtml(row.status)}</td>
+          <td>${escapeHtml(row.statusJuridico)}</td>
+          <td>${escapeHtml(row.statusMedico)}</td>
+        </tr>
+      `).join('');
+
+      const html = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+          <head>
+            <meta charset="UTF-8" />
+            <style>
+              table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; }
+              th, td { border: 1px solid #d9e1e7; padding: 8px 10px; font-size: 12px; text-align: left; }
+              th { background: #f3f6f8; font-weight: 700; }
+            </style>
+          </head>
+          <body>
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Paciente</th>
+                  <th>Procedimento</th>
+                  <th>Ref. Preço</th>
+                  <th>Médico</th>
+                  <th>Área</th>
+                  <th>Dias</th>
+                  <th>Status</th>
+                  <th>Status Jurídico</th>
+                  <th>Status Médico</th>
+                </tr>
+              </thead>
+              <tbody>${linhasHtml}</tbody>
+            </table>
+          </body>
+        </html>
+      `;
+
+      baixarArquivo(
+        new Blob(['\ufeff', html], { type: 'application/vnd.ms-excel;charset=utf-8;' }),
+        'processos-filtrados.xls'
+      );
+    } finally {
+      setExportandoExcel(false);
+    }
+  };
+
+  const handleExportarPdf = async () => {
+    setExportandoPdf(true);
+    const exportNode = document.createElement('div');
+    exportNode.className = 'processos-export-sheet';
+
+    exportNode.innerHTML = `
+      <div class="processos-export-sheet__header">
+        <h1>Relatório de Processos</h1>
+        <p>Exportação com os dados atualmente filtrados na tela.</p>
+      </div>
+      <div class="processos-export-kpis">
+        <div class="processos-export-kpi"><span>Total de Processos</span><strong>${kpisExportacao.totalProcessos}</strong></div>
+        <div class="processos-export-kpi"><span>Processos Ativos</span><strong>${kpisExportacao.processosAtivos}</strong></div>
+        <div class="processos-export-kpi"><span>Processos Baixados</span><strong>${kpisExportacao.processosBaixados}</strong></div>
+        <div class="processos-export-kpi"><span>% de Respostas</span><strong>${kpisExportacao.percentualRespostas.toFixed(1)}%</strong></div>
+        <div class="processos-export-kpi"><span>Aguardando Jurídico</span><strong>${kpisExportacao.aguardandoJuridico}</strong></div>
+        <div class="processos-export-kpi"><span>Aguardando Orçamento</span><strong>${kpisExportacao.aguardandoOrcamento}</strong></div>
+        <div class="processos-export-kpi"><span>Aguardando Protocolar</span><strong>${kpisExportacao.aguardandoProtocolar}</strong></div>
+        <div class="processos-export-kpi"><span>Aguardando Respostas</span><strong>${kpisExportacao.aguardandoRespostas}</strong></div>
+      </div>
+      <table class="processos-export-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Paciente</th>
+            <th>Procedimento</th>
+            <th>Ref. Preço</th>
+            <th>Médico</th>
+            <th>Área</th>
+            <th>Dias</th>
+            <th>Status</th>
+            <th>Status Jurídico</th>
+            <th>Status Médico</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${exportRows.map((row) => `
+            <tr>
+              <td>${row.sequencial}</td>
+              <td>${escapeHtml(row.paciente)}</td>
+              <td>${escapeHtml(row.procedimento)}</td>
+              <td>${formatarMoedaExport(row.refPreco)}</td>
+              <td>${escapeHtml(row.medico)}</td>
+              <td>${escapeHtml(row.area)}</td>
+              <td>${row.dias}</td>
+              <td>${escapeHtml(row.status)}</td>
+              <td>${escapeHtml(row.statusJuridico)}</td>
+              <td>${escapeHtml(row.statusMedico)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    document.body.appendChild(exportNode);
+
+    try {
+      const canvas = await html2canvas(exportNode, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+      });
+
+      const imageData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imageWidth = pdfWidth - 16;
+      const imageHeight = (canvas.height * imageWidth) / canvas.width;
+      let heightLeft = imageHeight;
+      let position = 8;
+
+      pdf.addImage(imageData, 'PNG', 8, position, imageWidth, imageHeight);
+      heightLeft -= (pdfHeight - 16);
+
+      while (heightLeft > 0) {
+        position = heightLeft - imageHeight + 8;
+        pdf.addPage();
+        pdf.addImage(imageData, 'PNG', 8, position, imageWidth, imageHeight);
+        heightLeft -= (pdfHeight - 16);
+      }
+
+      pdf.save('processos-filtrados.pdf');
+    } finally {
+      document.body.removeChild(exportNode);
+      setExportandoPdf(false);
+    }
+  };
   
 
 
@@ -1407,34 +1592,67 @@ ${linhasAnexos}
           <p>Gestão dos processos de judicialização</p>
         </div>
 
-      {!readOnly && <div className="page-actions">
-        <TieredMenu model={massActionItems} popup ref={massActionMenuRef} id="mass_action_menu" />
+        <div className="page-actions">
+          {!readOnly && (
+            <>
+              <TieredMenu model={massActionItems} popup ref={massActionMenuRef} id="mass_action_menu" />
 
-      <Button
-        label={executandoAcaoMassa ? 'Processando...' : 'Ações em massa'}
-        icon="pi pi-bars"
-        outlined
-        onClick={(event) => massActionMenuRef.current?.toggle(event)}
-        aria-controls="mass_action_menu"
-        aria-haspopup
-        loading={executandoAcaoMassa}
-        disabled={executandoAcaoMassa}
-      />
+              <Button
+                label={executandoAcaoMassa ? 'Processando...' : ''}
+                tooltip='Ações em massa'
+                tooltipOptions={{ position: 'bottom', showDelay: 150 }}                
+                icon="pi pi-bars"
+                outlined
+                onClick={(event) => massActionMenuRef.current?.toggle(event)}
+                aria-controls="mass_action_menu"
+                aria-haspopup
+                loading={executandoAcaoMassa}
+                disabled={executandoAcaoMassa}
+              />
 
-        <Button
-          label={buscandoPedidos ? 'Buscando...' : 'Buscar pedidos'}
-          icon="pi pi-download"
-          outlined
-          onClick={handleBuscarPedidos}
-          loading={buscandoPedidos}
-        />
+              <Button
+                label={buscandoPedidos ? 'Buscando...' : ''}
+                tooltip='Buscar pedidos'
+                tooltipOptions={{ position: 'bottom', showDelay: 150 }}
+                icon="pi pi-download"
+                outlined
+                onClick={handleBuscarPedidos}
+                loading={buscandoPedidos}
+              />
 
-        <Button
-          label="Novo processo"
-          icon="pi pi-plus"
-          onClick={() => setNovoProcessoTipoVisible(true)}
-        />
-      </div>}
+              <Button
+                label={exportandoPdf ? 'Exportando PDF...' : ''}
+                icon="pi pi-file-pdf"
+                tooltip='Exportar PDF'
+                tooltipOptions={{ position: 'bottom', showDelay: 150 }}
+                outlined
+                onClick={handleExportarPdf}
+                loading={exportandoPdf}
+              />
+
+              <Button
+                label={exportandoExcel ? 'Exportando Excel...' : ''}
+                icon="pi pi-file-excel"
+                tooltip='Exportar Excel'
+                tooltipOptions={{ position: 'bottom', showDelay: 150 }}
+                outlined
+                onClick={handleExportarExcel}
+                loading={exportandoExcel}
+              />
+
+              <Button
+                label=""
+                icon="pi pi-plus"
+                className="btn-adicionar-processo"
+                tooltip='Adicionar Processo'
+                tooltipOptions={{ position: 'bottom', showDelay: 150 }}
+                onClick={() => setNovoProcessoTipoVisible(true)}
+              />
+            </>
+          )}
+
+
+        </div>
       </div>
 
       <div className="kpi-grid">
@@ -1473,7 +1691,7 @@ ${linhasAnexos}
         <div className="kpi-card">
           <div className="kpi-header">
             <span>Qtde Aguardando Jurídico</span>
-            <i className="pi pi-briefcase"></i>
+            <i className="pi pi-hammer"></i>
           </div>
           <div className="kpi-value">{kpis.aguardandoJuridico}</div>
         </div>
@@ -1539,6 +1757,7 @@ ${linhasAnexos}
           onSort={onSort}
           filters={filters}
           onFilter={(e) => setFilters(e.filters)}
+          onValueChange={(value) => setVisibleProcessos(value as ProcessoTableRow[])}
           filterDisplay="row"
           loading={loading}
           selectionMode="multiple"
@@ -1670,7 +1889,6 @@ ${linhasAnexos}
             body={(rowData: ProcessoTableRow) => statusBodyTemplate(rowData, 'statusMedico')}
             style={{ minWidth: '14rem' }}
           />
-
 
 
           <Column
@@ -1834,6 +2052,7 @@ ${linhasAnexos}
             <Button
               label={enviandoNovoProcesso ? 'Enviando...' : 'Enviar'}
               icon="pi pi-check"
+              className="btn-salvar"
               onClick={handleEnviarNovoProcessoManual}
               loading={enviandoNovoProcesso}
             />
@@ -1875,6 +2094,7 @@ ${linhasAnexos}
             <Button
               label={enviandoNovoProcesso ? 'Enviando...' : 'Enviar'}
               icon="pi pi-check"
+              className="btn-salvar"
               onClick={handleEnviarNovoProcessoJson}
               loading={enviandoNovoProcesso}
             />
@@ -1911,6 +2131,7 @@ ${linhasAnexos}
             <Button
               label="Avançar"
               icon="pi pi-arrow-right"
+              className="btn-salvar"
               onClick={handleAvancarNovoProcessoJsonLote}
             />
           </div>
@@ -1987,6 +2208,7 @@ ${linhasAnexos}
             <Button
               label={enviandoNovoProcesso ? 'Enviando...' : 'Enviar'}
               icon="pi pi-check"
+              className="btn-salvar"
               onClick={handleEnviarNovoProcessoJsonLote}
               loading={enviandoNovoProcesso}
             />
@@ -2351,6 +2573,7 @@ ${linhasAnexos}
             {!readOnly && <Button
               label="Salvar"
               icon="pi pi-check"
+              className="btn-salvar"
               onClick={handleSalvarEdicao}
             />}
           </div>
@@ -2367,9 +2590,3 @@ ${linhasAnexos}
 
   );
 }
-
-
-
-
-
-

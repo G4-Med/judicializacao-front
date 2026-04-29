@@ -1,165 +1,350 @@
+/* ============================================================
+   MEDCHECK — SelecionarMedicoPage
+   ============================================================ */
+
 .selecionar-medico-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 22px;
   width: 100%;
+  font-family: var(--mc-font-body, "Inter", sans-serif);
+  color: var(--mc-ink, #0f2236);
 }
 
-.selecionar-medico-page .page-header h1 {
-  margin: 0;
-  font-size: 1.8rem;
-  color: #1f2937;
-}
-
-.selecionar-medico-page .page-header p {
-  margin: 6px 0 0;
-  color: #6b7280;
-}
-
+/* ---------- Page header ---------- */
 .selecionar-medico-page .page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
 }
-
+.selecionar-medico-page .page-header h1 {
+  margin: 0;
+  font-family: var(--mc-font-heading, "Poppins", sans-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--mc-navy-900, #062a45);
+  letter-spacing: -0.01em;
+}
+.selecionar-medico-page .page-header p {
+  margin: 6px 0 0;
+  color: var(--mc-muted, #5b6b7a);
+  font-size: 0.92rem;
+}
 .selecionar-medico-page .page-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
+/* ---------- KPIs (3) ---------- */
 .selecionar-medico-page .kpi-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 14px;
 }
-
 .selecionar-medico-page .kpi-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 18px 18px 14px;
-  min-height: 110px;
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border, #e3eaef);
+  border-radius: var(--mc-radius-lg, 16px);
+  padding: 18px 20px;
+  min-height: 112px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--mc-shadow-sm, 0 1px 2px rgba(10, 61, 98, 0.05));
+  transition: transform .15s ease, box-shadow .15s ease;
 }
+.selecionar-medico-page .kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px; height: 100%;
+  background: var(--mc-green-500, #00a651);
+  border-radius: 4px 0 0 4px;
+}
+.selecionar-medico-page .kpi-card:nth-child(2)::before { background: var(--mc-navy-700, #0a3d62); }
+.selecionar-medico-page .kpi-card:nth-child(3)::before { background: var(--mc-amber, #d08a1c); }
 
+.selecionar-medico-page .kpi-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--mc-shadow, 0 4px 14px rgba(10, 61, 98, 0.07));
+}
 .selecionar-medico-page .kpi-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: #4b5563;
-  font-size: 0.9rem;
-  font-weight: 600;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px;
+  color: var(--mc-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.08em;
 }
-
 .selecionar-medico-page .kpi-header i {
-  color: #fb923c;
-  font-size: 1.1rem;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  background: var(--mc-green-50, #e6f7ef);
+  color: var(--mc-green-600, #008f46);
+  font-size: 14px;
 }
-
+.selecionar-medico-page .kpi-card:nth-child(2) .kpi-header i {
+  background: var(--mc-navy-50, #e8f0f5);
+  color: var(--mc-navy-700, #0a3d62);
+}
+.selecionar-medico-page .kpi-card:nth-child(3) .kpi-header i {
+  background: var(--mc-amber-50, #fdf3e2);
+  color: var(--mc-amber, #d08a1c);
+}
 .selecionar-medico-page .kpi-value {
-  font-size: 2rem;
-  font-weight: 500;
-  color: #f97316;
+  font-family: var(--mc-font-heading);
+  font-size: 1.85rem;
+  font-weight: 600;
+  color: var(--mc-navy-900);
   line-height: 1;
 }
 
+/* ---------- Card / Tabela ---------- */
 .selecionar-medico-page .card {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--mc-shadow-sm);
+}
+
+.selecionar-medico-table { width: 100%; }
+.selecionar-medico-table .p-datatable-thead > tr > th {
+  background: var(--mc-surface-2, #f9fbfc);
+  color: var(--mc-ink-2, #2b4158);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-color: var(--mc-border);
+  padding: 12px 14px;
+  white-space: nowrap;
+}
+.selecionar-medico-table .p-datatable-tbody > tr {
+  background: #fff;
+  transition: background .12s ease;
+}
+.selecionar-medico-table .p-datatable-tbody > tr:hover { background: var(--mc-surface-2); }
+.selecionar-medico-table .p-datatable-tbody > tr.p-highlight { background: var(--mc-green-50, #e6f7ef); }
+.selecionar-medico-table .p-datatable-tbody > tr > td {
+  border-color: var(--mc-border);
+  color: var(--mc-ink-2);
+  padding: 14px;
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
+
+.selecionar-medico-table .p-checkbox .p-checkbox-box {
+  border-color: var(--mc-border-2, #d6e0e6);
+  border-radius: 4px;
+}
+.selecionar-medico-table .p-checkbox .p-checkbox-box.p-highlight {
+  background: var(--mc-green-500);
+  border-color: var(--mc-green-500);
+}
+
+.selecionar-medico-table .p-column-filter {
   width: 100%;
+  border-color: var(--mc-border-2);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.selecionar-medico-table .p-column-filter:focus {
+  border-color: var(--mc-green-500);
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.12);
+}
+
+.selecionar-medico-table .p-paginator {
+  background: var(--mc-surface-2);
+  border-color: var(--mc-border);
+  color: var(--mc-muted);
+  padding: 10px 14px;
+}
+.selecionar-medico-table .p-paginator .p-paginator-page.p-highlight {
+  background: var(--mc-green-500);
+  color: #fff; font-weight: 600; border-radius: 6px;
+}
+
+/* ============================================================
+   Dialog (individual + massa)
+   ============================================================ */
+.selecionar-medico-dialog .p-dialog-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--mc-border);
+  background: var(--mc-surface-2);
+}
+.selecionar-medico-dialog .p-dialog-title {
+  font-family: var(--mc-font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--mc-navy-900);
+}
+.selecionar-medico-dialog .p-dialog-content {
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.selecionar-medico-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .selecionar-medico-resumo {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin-bottom: 18px;
+  gap: 14px 18px;
+  padding: 14px 16px;
+  background: var(--mc-surface-2);
+  border: 1px solid var(--mc-border);
+  border-radius: 12px;
 }
-
 .selecionar-medico-resumo > div {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: #f8fafc;
+  gap: 4px;
+}
+.selecionar-medico-resumo .resumo-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mc-muted);
+}
+.selecionar-medico-resumo strong {
+  font-size: 0.92rem;
+  color: var(--mc-navy-900);
+  font-weight: 600;
 }
 
 .selecionar-medico-dialog-content .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+}
+.selecionar-medico-dialog-content .field label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mc-muted);
+}
+.selecionar-medico-dialog-content .p-dropdown {
+  width: 100%;
+  height: 42px;
+  border-color: var(--mc-border-2);
+  border-radius: 8px;
+  background: #fff;
+}
+.selecionar-medico-dialog-content .p-dropdown:not(.p-disabled).p-focus {
+  border-color: var(--mc-green-500);
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.12);
 }
 
-.selecionar-medico-dialog-content .field label,
-.resumo-label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #64748b;
-}
-
-.dialog-footer-actions {
-  margin-top: 20px;
+.selecionar-medico-dialog-content .dialog-footer-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--mc-border);
+}
+.selecionar-medico-dialog-content .dialog-footer-actions .p-button {
+  min-width: 110px; height: 42px;
 }
 
-body.dark-theme .selecionar-medico-page {
-  color: #f8fafc;
+/* ============================================================
+   Botões PrimeReact
+   ============================================================ */
+.selecionar-medico-page .p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-rounded):not(.p-button-danger),
+.selecionar-medico-dialog .p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-rounded):not(.p-button-danger) {
+  background: var(--mc-green-500);
+  border-color: var(--mc-green-500);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 10px;
+}
+.selecionar-medico-page .p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-rounded):not(.p-button-danger):hover,
+.selecionar-medico-dialog .p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-rounded):not(.p-button-danger):hover {
+  background: var(--mc-green-600);
+  border-color: var(--mc-green-600);
 }
 
-body.dark-theme .selecionar-medico-page .page-header h1 {
-  color: #f8fafc;
+.selecionar-medico-page .p-button.p-button-outlined,
+.selecionar-medico-dialog .p-button.p-button-outlined {
+  border-color: var(--mc-border-2);
+  color: var(--mc-ink-2);
+  background: #fff;
+  border-radius: 10px;
+}
+.selecionar-medico-page .p-button.p-button-outlined:hover,
+.selecionar-medico-dialog .p-button.p-button-outlined:hover {
+  background: var(--mc-green-50);
+  border-color: var(--mc-green-300, #6dcf9b);
+  color: var(--mc-green-700, #007a3a);
 }
 
-body.dark-theme .selecionar-medico-page .page-header p {
-  color: #94a3b8;
+.selecionar-medico-page .p-button.p-button-danger.p-button-outlined,
+.selecionar-medico-dialog .p-button.p-button-danger.p-button-outlined {
+  border-color: rgba(200, 57, 77, 0.4);
+  color: var(--mc-rose, #c8394d);
+  background: #fff;
 }
+.selecionar-medico-page .p-button.p-button-danger.p-button-outlined:hover,
+.selecionar-medico-dialog .p-button.p-button-danger.p-button-outlined:hover {
+  background: var(--mc-rose-50, #fde8ea);
+  border-color: var(--mc-rose, #c8394d);
+  color: var(--mc-rose, #c8394d);
+}
+
+/* ============================================================
+   Responsivo
+   ============================================================ */
+@media (max-width: 900px) {
+  .selecionar-medico-page .kpi-grid { grid-template-columns: 1fr; }
+  .selecionar-medico-page .page-header { flex-direction: column; }
+  .selecionar-medico-page .page-actions { width: 100%; }
+}
+@media (max-width: 640px) {
+  .selecionar-medico-resumo { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   Dark theme
+   ============================================================ */
+body.dark-theme .selecionar-medico-page { color: #e6eef6; }
+body.dark-theme .selecionar-medico-page .page-header h1 { color: #e6eef6; }
+body.dark-theme .selecionar-medico-page .page-header p { color: #94a3b8; }
 
 body.dark-theme .selecionar-medico-page .kpi-card,
 body.dark-theme .selecionar-medico-page .card {
-  background: #1e293b;
-  border-color: #334155;
+  background: #0f1f33;
+  border-color: #1e2d42;
+}
+body.dark-theme .selecionar-medico-page .kpi-header { color: #cbd5e1; }
+body.dark-theme .selecionar-medico-page .kpi-value { color: #e6eef6; }
+
+body.dark-theme .selecionar-medico-table .p-datatable-thead > tr > th,
+body.dark-theme .selecionar-medico-table .p-paginator {
+  background: #0d1b2a;
+  color: #e6eef6;
+  border-color: #1e2d42;
+}
+body.dark-theme .selecionar-medico-table .p-datatable-tbody > tr {
+  background: #0f1f33;
+  color: #e6eef6;
+}
+body.dark-theme .selecionar-medico-table .p-datatable-tbody > tr:hover { background: #142841; }
+body.dark-theme .selecionar-medico-table .p-datatable-tbody > tr > td {
+  border-color: #1e2d42;
+  color: #c6d2df;
 }
 
-body.dark-theme .selecionar-medico-page .kpi-header {
-  color: #cbd5e1;
+body.dark-theme .selecionar-medico-resumo {
+  background: #0d1b2a;
+  border-color: #1e2d42;
 }
-
-body.dark-theme .selecionar-medico-page .kpi-value {
-  color: #fb923c;
-}
-
-body.dark-theme .selecionar-medico-resumo > div {
-  background: #0f172a;
-  border-color: #334155;
-}
-
-body.dark-theme .selecionar-medico-dialog-content .field label,
-body.dark-theme .resumo-label {
-  color: #cbd5e1;
-}
-
-@media (max-width: 900px) {
-  .selecionar-medico-page .page-header {
-    flex-direction: column;
-  }
-
-  .selecionar-medico-page .page-actions {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-
-  .selecionar-medico-page .kpi-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .selecionar-medico-resumo {
-    grid-template-columns: 1fr;
-  }
-}
+body.dark-theme .selecionar-medico-resumo strong { color: #e6eef6; }

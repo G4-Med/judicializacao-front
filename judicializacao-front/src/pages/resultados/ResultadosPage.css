@@ -1,54 +1,267 @@
+/* ============================================================
+   MEDCHECK — ResultadosPage
+   Estilo aplicado às classes JÁ EXISTENTES no TSX.
+   Mesma identidade das demais páginas.
+   ============================================================ */
+
 .resultados-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 22px;
+  width: 100%;
+  font-family: var(--mc-font-body, "Inter", sans-serif);
+  color: var(--mc-ink, #0f2236);
 }
 
-.kpi-grid-5 {
+/* ---------- Page header ---------- */
+.resultados-page .page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.resultados-page .page-header h1 {
+  margin: 0;
+  font-family: var(--mc-font-heading, "Poppins", sans-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--mc-navy-900, #062a45);
+  letter-spacing: -0.01em;
+}
+.resultados-page .page-header p {
+  margin: 6px 0 0;
+  color: var(--mc-muted, #5b6b7a);
+  font-size: 0.92rem;
+}
+
+/* ---------- KPIs ---------- */
+.resultados-page .kpi-grid {
+  display: grid;
+  gap: 14px;
+}
+.resultados-page .kpi-grid-5 {
   grid-template-columns: repeat(5, 1fr);
 }
 
-.kpi-subvalue {
-  margin-top: 6px;
-  font-size: 0.95rem;
+.resultados-page .kpi-card {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border, #e3eaef);
+  border-radius: var(--mc-radius-lg, 16px);
+  padding: 18px 20px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--mc-shadow-sm, 0 1px 2px rgba(10, 61, 98, 0.05));
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.resultados-page .kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px; height: 100%;
+  background: var(--mc-green-500, #00a651);
+}
+.resultados-page .kpi-card:nth-child(2)::before { background: var(--mc-navy-700, #0a3d62); }
+.resultados-page .kpi-card:nth-child(3)::before { background: var(--mc-amber, #d08a1c); }
+.resultados-page .kpi-card:nth-child(4)::before { background: var(--mc-green-500, #00a651); }
+.resultados-page .kpi-card:nth-child(5)::before { background: var(--mc-rose, #c8394d); }
+.resultados-page .kpi-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--mc-shadow, 0 4px 14px rgba(10, 61, 98, 0.07));
+}
+
+.resultados-page .kpi-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px;
+  color: var(--mc-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.resultados-page .kpi-header i {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  background: var(--mc-green-50, #e6f7ef);
+  color: var(--mc-green-600, #008f46);
+  font-size: 14px;
+}
+.resultados-page .kpi-card:nth-child(2) .kpi-header i {
+  background: var(--mc-navy-50, #e8f0f5);
+  color: var(--mc-navy-700, #0a3d62);
+}
+.resultados-page .kpi-card:nth-child(3) .kpi-header i {
+  background: var(--mc-amber-50, #fdf3e2);
+  color: var(--mc-amber, #d08a1c);
+}
+.resultados-page .kpi-card:nth-child(4) .kpi-header i {
+  background: var(--mc-green-50, #e6f7ef);
+  color: var(--mc-green-600, #008f46);
+}
+.resultados-page .kpi-card:nth-child(5) .kpi-header i {
+  background: var(--mc-rose-50, #fde8ea);
+  color: var(--mc-rose, #c8394d);
+}
+
+.resultados-page .kpi-value {
+  font-family: var(--mc-font-heading);
+  font-size: 1.65rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--mc-navy-900);
+  line-height: 1.1;
+}
+.resultados-page .kpi-value-success { color: var(--mc-green-600, #008f46); }
+.resultados-page .kpi-value-danger { color: var(--mc-rose, #c8394d); }
+.resultados-page .kpi-subvalue {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--mc-muted);
+  letter-spacing: 0.02em;
 }
 
-.kpi-value-success {
-  color: #22c55e;
+/* ---------- Card / Tabela ---------- */
+.resultados-page .card {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--mc-shadow-sm);
 }
 
-.kpi-value-danger {
-  color: #ef4444;
-}
-
+.resultados-table { width: 100%; }
 .resultados-table .p-datatable-thead > tr > th {
+  background: var(--mc-surface-2, #f9fbfc);
+  color: var(--mc-ink-2, #2b4158);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-color: var(--mc-border);
+  padding: 12px 14px;
   white-space: nowrap;
 }
+.resultados-table .p-datatable-tbody > tr {
+  background: #fff;
+  transition: background .12s ease;
+}
+.resultados-table .p-datatable-tbody > tr:hover { background: var(--mc-surface-2); }
+.resultados-table .p-datatable-tbody > tr > td {
+  border-color: var(--mc-border);
+  color: var(--mc-ink-2);
+  padding: 14px;
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
 
-.resultados-table .p-tag {
-  font-size: 0.78rem;
+.resultados-table .p-column-filter,
+.resultados-table .p-inputtext {
+  width: 100%;
+  border-color: var(--mc-border-2, #d6e0e6);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.resultados-table .p-column-filter:focus,
+.resultados-table .p-inputtext:focus {
+  border-color: var(--mc-green-500);
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.12);
+}
+
+.resultados-table .dias-cell {
   font-weight: 700;
+  color: var(--mc-navy-900);
+  font-variant-numeric: tabular-nums;
 }
 
+.resultados-table .status-tag-custom {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.resultados-table .p-paginator {
+  background: var(--mc-surface-2);
+  border-color: var(--mc-border);
+  color: var(--mc-muted);
+  padding: 10px 14px;
+}
+.resultados-table .p-paginator .p-paginator-page,
+.resultados-table .p-paginator .p-paginator-prev,
+.resultados-table .p-paginator .p-paginator-next,
+.resultados-table .p-paginator .p-paginator-first,
+.resultados-table .p-paginator .p-paginator-last {
+  color: var(--mc-muted);
+  border-radius: 6px;
+  min-width: 32px;
+  height: 32px;
+}
+.resultados-table .p-paginator .p-paginator-page.p-highlight {
+  background: var(--mc-green-500);
+  color: #fff;
+  font-weight: 600;
+}
+
+.resultados-table .p-checkbox .p-checkbox-box {
+  border-color: var(--mc-border-2);
+  border-radius: 4px;
+}
+.resultados-table .p-checkbox .p-checkbox-box.p-highlight {
+  background: var(--mc-green-500);
+  border-color: var(--mc-green-500);
+}
+
+/* ============================================================
+   Responsivo
+   ============================================================ */
 @media (max-width: 1500px) {
-  .kpi-grid-5 {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  .resultados-page .kpi-grid-5 { grid-template-columns: repeat(3, 1fr); }
 }
-
+@media (max-width: 1100px) {
+  .resultados-page .kpi-grid-5 { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 900px) {
-  .kpi-grid-5 {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .resultados-page .page-header { flex-direction: column; }
 }
-
 @media (max-width: 700px) {
-  .kpi-grid-5 {
-    grid-template-columns: 1fr;
-  }
+  .resultados-page .kpi-grid-5 { grid-template-columns: 1fr; }
 }
 
+/* ============================================================
+   Dark theme
+   ============================================================ */
+body.dark-theme .resultados-page { color: #e6eef6; }
+body.dark-theme .resultados-page .page-header h1 { color: #e6eef6; }
+body.dark-theme .resultados-page .page-header p { color: #94a3b8; }
 
+body.dark-theme .resultados-page .kpi-card,
+body.dark-theme .resultados-page .card {
+  background: #0f1f33;
+  border-color: #1e2d42;
+}
+body.dark-theme .resultados-page .kpi-header { color: #cbd5e1; }
+body.dark-theme .resultados-page .kpi-value { color: #e6eef6; }
+body.dark-theme .resultados-page .kpi-subvalue { color: #94a3b8; }
+body.dark-theme .resultados-table .dias-cell { color: #e6eef6; }
 
+body.dark-theme .resultados-table .p-datatable-thead > tr > th,
+body.dark-theme .resultados-table .p-paginator {
+  background: #0d1b2a;
+  color: #e6eef6;
+  border-color: #1e2d42;
+}
+body.dark-theme .resultados-table .p-datatable-tbody > tr {
+  background: #0f1f33;
+  color: #e6eef6;
+}
+body.dark-theme .resultados-table .p-datatable-tbody > tr:hover { background: #142841; }
+body.dark-theme .resultados-table .p-datatable-tbody > tr > td {
+  border-color: #1e2d42;
+  color: #c6d2df;
+}

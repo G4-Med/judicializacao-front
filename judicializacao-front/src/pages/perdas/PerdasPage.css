@@ -1,42 +1,257 @@
+/* ============================================================
+   MEDCHECK — PerdasPage
+   Estilo aplicado às classes JÁ EXISTENTES no TSX.
+   Mesma identidade das demais páginas.
+   ============================================================ */
+
 .perdas-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 22px;
+  width: 100%;
+  font-family: var(--mc-font-body, "Inter", sans-serif);
+  color: var(--mc-ink, #0f2236);
 }
 
-.kpi-grid-5 {
+/* ---------- Page header ---------- */
+.perdas-page .page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.perdas-page .page-header h1 {
+  margin: 0;
+  font-family: var(--mc-font-heading, "Poppins", sans-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--mc-navy-900, #062a45);
+  letter-spacing: -0.01em;
+}
+.perdas-page .page-header p {
+  margin: 6px 0 0;
+  color: var(--mc-muted, #5b6b7a);
+  font-size: 0.92rem;
+}
+
+/* ---------- KPIs ---------- */
+.perdas-page .kpi-grid {
+  display: grid;
+  gap: 14px;
+}
+.perdas-page .kpi-grid-5 {
   grid-template-columns: repeat(5, 1fr);
 }
 
+.perdas-page .kpi-card {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border, #e3eaef);
+  border-radius: var(--mc-radius-lg, 16px);
+  padding: 18px 20px;
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--mc-shadow-sm, 0 1px 2px rgba(10, 61, 98, 0.05));
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.perdas-page .kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px; height: 100%;
+  background: var(--mc-navy-700, #0a3d62);
+}
+.perdas-page .kpi-card:nth-child(2)::before { background: var(--mc-rose, #c8394d); }
+.perdas-page .kpi-card:nth-child(3)::before { background: var(--mc-amber, #d08a1c); }
+.perdas-page .kpi-card:nth-child(4)::before { background: var(--mc-rose, #c8394d); }
+.perdas-page .kpi-card:nth-child(5)::before { background: var(--mc-green-500, #00a651); }
+.perdas-page .kpi-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--mc-shadow, 0 4px 14px rgba(10, 61, 98, 0.07));
+}
+
+.perdas-page .kpi-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px;
+  color: var(--mc-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.perdas-page .kpi-header i {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  background: var(--mc-navy-50, #e8f0f5);
+  color: var(--mc-navy-700, #0a3d62);
+  font-size: 14px;
+}
+.perdas-page .kpi-card:nth-child(2) .kpi-header i {
+  background: var(--mc-rose-50, #fde8ea);
+  color: var(--mc-rose, #c8394d);
+}
+.perdas-page .kpi-card:nth-child(3) .kpi-header i {
+  background: var(--mc-amber-50, #fdf3e2);
+  color: var(--mc-amber, #d08a1c);
+}
+.perdas-page .kpi-card:nth-child(4) .kpi-header i {
+  background: var(--mc-rose-50, #fde8ea);
+  color: var(--mc-rose, #c8394d);
+}
+.perdas-page .kpi-card:nth-child(5) .kpi-header i {
+  background: var(--mc-green-50, #e6f7ef);
+  color: var(--mc-green-600, #008f46);
+}
+
+.perdas-page .kpi-value {
+  font-family: var(--mc-font-heading);
+  font-size: 1.65rem;
+  font-weight: 600;
+  color: var(--mc-navy-900);
+  line-height: 1.1;
+}
+
+/* ---------- Card / Tabela ---------- */
+.perdas-page .card {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--mc-shadow-sm);
+}
+
+.perdas-table { width: 100%; }
 .perdas-table .p-datatable-thead > tr > th {
+  background: var(--mc-surface-2, #f9fbfc);
+  color: var(--mc-ink-2, #2b4158);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-color: var(--mc-border);
+  padding: 12px 14px;
   white-space: nowrap;
 }
-
-.perdas-table .p-tag {
-  font-size: 0.78rem;
-  font-weight: 700;
+.perdas-table .p-datatable-tbody > tr {
+  background: #fff;
+  transition: background .12s ease;
+}
+.perdas-table .p-datatable-tbody > tr:hover { background: var(--mc-surface-2); }
+.perdas-table .p-datatable-tbody > tr > td {
+  border-color: var(--mc-border);
+  color: var(--mc-ink-2);
+  padding: 14px;
+  font-size: 0.88rem;
+  vertical-align: middle;
 }
 
-.status-tag-custom {
+.perdas-table .p-column-filter,
+.perdas-table .p-inputtext {
+  width: 100%;
+  border-color: var(--mc-border-2, #d6e0e6);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.perdas-table .p-column-filter:focus,
+.perdas-table .p-inputtext:focus {
+  border-color: var(--mc-green-500);
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.12);
+}
+
+.perdas-table .dias-cell {
   font-weight: 700;
+  color: var(--mc-navy-900);
+  font-variant-numeric: tabular-nums;
+}
+
+.perdas-table .status-tag-custom {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   border-width: 1px;
   border-style: solid;
+  border-radius: 999px;
+  padding: 4px 10px;
 }
 
+.perdas-table .p-paginator {
+  background: var(--mc-surface-2);
+  border-color: var(--mc-border);
+  color: var(--mc-muted);
+  padding: 10px 14px;
+}
+.perdas-table .p-paginator .p-paginator-page,
+.perdas-table .p-paginator .p-paginator-prev,
+.perdas-table .p-paginator .p-paginator-next,
+.perdas-table .p-paginator .p-paginator-first,
+.perdas-table .p-paginator .p-paginator-last {
+  color: var(--mc-muted);
+  border-radius: 6px;
+  min-width: 32px;
+  height: 32px;
+}
+.perdas-table .p-paginator .p-paginator-page.p-highlight {
+  background: var(--mc-green-500);
+  color: #fff;
+  font-weight: 600;
+}
+
+.perdas-table .p-checkbox .p-checkbox-box {
+  border-color: var(--mc-border-2);
+  border-radius: 4px;
+}
+.perdas-table .p-checkbox .p-checkbox-box.p-highlight {
+  background: var(--mc-green-500);
+  border-color: var(--mc-green-500);
+}
+
+/* ============================================================
+   Responsivo
+   ============================================================ */
 @media (max-width: 1500px) {
-  .kpi-grid-5 {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  .perdas-page .kpi-grid-5 { grid-template-columns: repeat(3, 1fr); }
 }
-
+@media (max-width: 1100px) {
+  .perdas-page .kpi-grid-5 { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 900px) {
-  .kpi-grid-5 {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .perdas-page .page-header { flex-direction: column; }
+}
+@media (max-width: 700px) {
+  .perdas-page .kpi-grid-5 { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 700px) {
-  .kpi-grid-5 {
-    grid-template-columns: 1fr;
-  }
+/* ============================================================
+   Dark theme
+   ============================================================ */
+body.dark-theme .perdas-page { color: #e6eef6; }
+body.dark-theme .perdas-page .page-header h1 { color: #e6eef6; }
+body.dark-theme .perdas-page .page-header p { color: #94a3b8; }
+
+body.dark-theme .perdas-page .kpi-card,
+body.dark-theme .perdas-page .card {
+  background: #0f1f33;
+  border-color: #1e2d42;
+}
+body.dark-theme .perdas-page .kpi-header { color: #cbd5e1; }
+body.dark-theme .perdas-page .kpi-value { color: #e6eef6; }
+body.dark-theme .perdas-table .dias-cell { color: #e6eef6; }
+
+body.dark-theme .perdas-table .p-datatable-thead > tr > th,
+body.dark-theme .perdas-table .p-paginator {
+  background: #0d1b2a;
+  color: #e6eef6;
+  border-color: #1e2d42;
+}
+body.dark-theme .perdas-table .p-datatable-tbody > tr {
+  background: #0f1f33;
+  color: #e6eef6;
+}
+body.dark-theme .perdas-table .p-datatable-tbody > tr:hover { background: #142841; }
+body.dark-theme .perdas-table .p-datatable-tbody > tr > td {
+  border-color: #1e2d42;
+  color: #c6d2df;
 }

@@ -274,8 +274,10 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             filterElement={(o) => filterElement(o, 'Buscar')}
             style={{ minWidth: '10rem' }}
           />
-          <Column header="Editar" body={editarBodyTemplate}
-            style={{ minWidth: '7rem' }} bodyStyle={{ textAlign: 'center' }} />
+          <Column header="Editar" 
+            body={editarBodyTemplate}
+            style={{ minWidth: '7rem' }} 
+            bodyStyle={{ textAlign: 'center' }} />
         </DataTable>
       </div>
 
@@ -290,33 +292,33 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
         {processoEditando && (
           <div className="juridico-form-grid">
 
-            {/* Campos somente leitura */}
+            {/* Campos somente leitura (readOnly permite selecionar/copiar) */}
             <div className="field field-span-3">
               <label>Paciente</label>
-              <InputText value={processoEditando.paciente} disabled />
+              <InputText value={processoEditando.paciente} readOnly />
             </div>
             <div className="field field-span-1">
               <label>Idade</label>
-              <InputText value={String(processoEditando.idade)} disabled />
+              <InputText value={String(processoEditando.idade)} readOnly />
             </div>
             <div className="field field-span-4">
               <label>Procedimento</label>
-              <InputText value={processoEditando.procedimento} disabled />
+              <InputText value={processoEditando.procedimento} readOnly />
             </div>
             <div className="field field-span-2">
               <label>Data da Solicitação</label>
-              <InputText value={formatarData(processoEditando.dataPedido)} disabled />
+              <InputText value={formatarData(processoEditando.dataPedido)} readOnly />
             </div>
             <div className="field field-span-2">
               <label>Dias da Solicitação</label>
-              <InputText value={String(processoEditando.dias)} disabled />
+              <InputText value={String(processoEditando.dias)} readOnly />
             </div>
 
             {/* Anexos */}
             {processoEditando.solicitacao && (
               <div className="field field-span-4">
                 <label>Solicitação (corpo do e-mail)</label>
-                <InputTextarea value={processoEditando.solicitacao} rows={5} disabled autoResize />
+                <InputTextarea value={processoEditando.solicitacao} rows={5} readOnly autoResize />
               </div>
             )}
 

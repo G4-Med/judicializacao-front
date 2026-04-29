@@ -158,7 +158,7 @@ const LoginForms = ({ view, toggleView }: LoginFormsProps) => {
 
           <p className="login-page__text">
             Esqueceu sua senha?
-            <button type="button" className="login-page__link-button" onClick={toggleView}>
+            <button type="button" className="login-page__link-button" onClick={() => navigate('/recuperar-senha')}>
               Recuperar aqui
             </button>
           </p>
