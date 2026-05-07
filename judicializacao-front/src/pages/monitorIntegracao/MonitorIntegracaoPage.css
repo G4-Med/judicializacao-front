@@ -1,0 +1,176 @@
+.monitor-integracao-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px;
+}
+
+.monitor-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.monitor-header__title h1 {
+  margin: 0 0 4px 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--mc-ink-1, #0f2431);
+}
+
+.monitor-header__title p {
+  margin: 0;
+  color: var(--mc-ink-3, #5b6b7a);
+}
+
+.monitor-header__actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* KPIs */
+.monitor-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.monitor-kpi-card {
+  position: relative;
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 2px rgba(15, 36, 49, 0.06);
+  border-left: 4px solid #94a3b8;
+}
+
+.monitor-kpi-card__label {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.monitor-kpi-card__value {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: #0f2431;
+}
+
+.monitor-kpi-card__icon {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  font-size: 1.1rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.monitor-kpi-card--total      { border-left-color: #1d5a8a; }
+.monitor-kpi-card--total      .monitor-kpi-card__icon { background: #dbeafe; color: #1d5a8a; }
+
+.monitor-kpi-card--aguardando { border-left-color: #f59e0b; }
+.monitor-kpi-card--aguardando .monitor-kpi-card__icon { background: #fef3c7; color: #92400e; }
+
+.monitor-kpi-card--executando { border-left-color: #3b82f6; }
+.monitor-kpi-card--executando .monitor-kpi-card__icon { background: #dbeafe; color: #1e40af; }
+
+.monitor-kpi-card--erros      { border-left-color: #ef4444; }
+.monitor-kpi-card--erros      .monitor-kpi-card__icon { background: #fee2e2; color: #991b1b; }
+
+/* Card da tabela */
+.monitor-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px 18px 8px 18px;
+  box-shadow: 0 1px 2px rgba(15, 36, 49, 0.06);
+}
+
+.monitor-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.monitor-card__header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f2431;
+}
+
+.monitor-search input {
+  min-width: 240px;
+}
+
+.monitor-tabela .p-datatable-tbody > tr {
+  cursor: pointer;
+}
+
+.monitor-acoes {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+/* Dialog config */
+.monitor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 4px;
+}
+
+.monitor-form__row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.monitor-form__row label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.monitor-form__row--switch {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.monitor-form__hint {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.monitor-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.monitor-loading {
+  padding: 24px 0;
+  text-align: center;
+  color: #64748b;
+}
+
+@media (max-width: 1100px) {
+  .monitor-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .monitor-kpi-grid { grid-template-columns: 1fr; }
+}

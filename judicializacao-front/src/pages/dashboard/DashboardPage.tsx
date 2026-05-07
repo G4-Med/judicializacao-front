@@ -345,6 +345,35 @@ export function DashboardPage() {
       return acc;
     }, {});
 
+    /* ===== Evolução mensal — últimos 12 meses (janela deslizante) =====
+       Usa baseOrders (ignora filtro de período); janela = mês atual e os 11
+       anteriores. Em maio/2026 → jun/2025 a mai/2026. */
+    const MESES_ABREV = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    const hoje = new Date();
+    const inicioJanela = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
+    const ultimos12Meses: { ano: number; mes: number; chave: string; rotulo: string; quantidade: number }[] = [];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(inicioJanela.getFullYear(), inicioJanela.getMonth() + i, 1);
+      const ano = d.getFullYear();
+      const mes = d.getMonth();
+      ultimos12Meses.push({
+        ano,
+        mes,
+        chave: `${ano}-${String(mes + 1).padStart(2, '0')}`,
+        rotulo: `${MESES_ABREV[mes]}/${String(ano).slice(2)}`,
+        quantidade: 0,
+      });
+    }
+    const indicePorChave = new Map(ultimos12Meses.map((m, idx) => [m.chave, idx]));
+    for (const item of baseOrders) {
+      const data = parseApiDate(item.dataPedido);
+      if (!data) continue;
+      if (data < inicioJanela) continue;
+      const chave = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`;
+      const idx = indicePorChave.get(chave);
+      if (idx !== undefined) ultimos12Meses[idx].quantidade += 1;
+    }
+
     const statusPerdaMap = periodPerdas.reduce<Record<string, number>>((acc, item) => {
       const chave = item.statusPerda || 'Sem status de perda';
       acc[chave] = (acc[chave] ?? 0) + 1;
@@ -428,6 +457,18 @@ export function DashboardPage() {
           maxBarThickness: 32,
         }]
       },
+      /* Pedidos por mês — últimos 12 meses (janela deslizante) */
+      pedidosMes: {
+        labels: ultimos12Meses.map((m) => m.rotulo),
+        datasets: [{
+          label: 'Pedidos',
+          data: ultimos12Meses.map((m) => m.quantidade),
+          backgroundColor: MC.navy,
+          borderRadius: 6,
+          maxBarThickness: 44,
+        }]
+      },
+      pedidosMesPeriodoLabel: `${ultimos12Meses[0].rotulo} a ${ultimos12Meses[11].rotulo}`,
       /* Status perda — barras VERTICAIS rosa (todas mesma cor) */
       statusPerda: {
         labels: Object.keys(statusPerdaMap),
@@ -453,7 +494,7 @@ export function DashboardPage() {
       statusPerdaTotal,
       medicoPerdaGanho: medicoResultadoEntries
     };
-  }, [periodOrders, periodPerdas, baseResultados, medicosLookup, ordersLookup]);
+  }, [periodOrders, periodPerdas, baseResultados, baseOrders, medicosLookup, ordersLookup]);
 
   const cards = [
     { titulo: 'Qtde processos', valor: kpis.quantidadeProcessos.periodo, total: kpis.quantidadeProcessos.total, icone: 'pi pi-briefcase' },
@@ -572,6 +613,17 @@ export function DashboardPage() {
           <div className="chart-title">Dia × qtde de pedidos</div>
           <div className="chart-wrapper">
             <Chart type="bar" data={charts.pedidosDia} options={columnOptions} />
+          </div>
+        </div>
+      </div>
+
+      <div className="dashboard-section-title">Evolução mensal</div>
+      <div className="dashboard-section-subtitle">Volume de pedidos dos últimos 12 meses ({charts.pedidosMesPeriodoLabel}).</div>
+      <div className="dashboard-chart-grid">
+        <div className="card chart-card chart-card-full">
+          <div className="chart-title">Mês × qtde de pedidos</div>
+          <div className="chart-wrapper">
+            <Chart type="bar" data={charts.pedidosMes} options={columnOptions} />
           </div>
         </div>
       </div>

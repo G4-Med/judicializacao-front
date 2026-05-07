@@ -110,3 +110,40 @@ export const sugerirMedicoIA = (orderId: number) =>
 
 export const aplicarSugestaoIA = (sugestaoId: number, idMedico: number) =>
   api.post(`/ia/sugestoes/${sugestaoId}/aplicar/`, { idMedico });
+
+export interface AnalisarEmpenhoResposta {
+  encontrado: boolean;
+  mensagem?: string;
+  dados?: {
+    compatibilidade_legacy?: {
+      valor_medio?: number;
+      total_encontrados?: number;
+    };
+    [key: string]: any;
+  };
+}
+
+export const analisarEmpenho = (procedimento: string) =>
+  api.post<AnalisarEmpenhoResposta>('/analisar-empenho/', { procedimento });
+
+export interface ExtrairEmailResposta {
+  paciente?: string;
+  dataNascimento?: string;
+  procedimento?: string;
+  refPreco?: number | string | null;
+  area?: string;
+  subarea?: string;
+  dataPedido?: string;
+  email?: {
+    assunto?: string;
+    observacoes?: string;
+    remetente?: string;
+    origem?: string;
+    corpo?: string;
+  };
+  anexos?: any[];
+  [key: string]: any;
+}
+
+export const extrairEmail = (corpoEmail: string) =>
+  api.post<ExtrairEmailResposta>('/ia/extrair-email/', { corpo_email: corpoEmail });

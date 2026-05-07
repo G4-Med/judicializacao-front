@@ -1,0 +1,302 @@
+/* ============================================================
+   MEDCHECK — ResultadosFinanceirosPage
+   Mesmo padrão de ParaProtocolarPage / ResultadosPage.
+   2 linhas de KPIs (qtde em cima, valor embaixo).
+   ============================================================ */
+
+.resultados-financeiros-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+  font-family: var(--mc-font-body, "Inter", sans-serif);
+  color: var(--mc-ink, #0f2236);
+}
+
+/* ---------- Header ---------- */
+.resultados-financeiros-page .page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.resultados-financeiros-page .page-header h1 {
+  margin: 0;
+  font-family: var(--mc-font-heading, "Poppins", sans-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--mc-navy-900, #062a45);
+  letter-spacing: -0.01em;
+}
+.resultados-financeiros-page .page-header p {
+  margin: 6px 0 0;
+  color: var(--mc-muted, #5b6b7a);
+  font-size: 0.92rem;
+}
+
+/* ---------- KPIs (2 linhas: qtde + valor) ---------- */
+.resultados-financeiros-page .kpi-grid {
+  display: grid;
+  gap: 14px;
+}
+.resultados-financeiros-page .kpi-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.resultados-financeiros-page .kpi-grid + .kpi-grid {
+  /* segunda linha de KPIs cola um pouco mais perto */
+  margin-top: -8px;
+}
+.resultados-financeiros-page .kpi-card {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border, #e3eaef);
+  border-radius: var(--mc-radius-lg, 16px);
+  padding: 18px 20px;
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--mc-shadow-sm, 0 1px 2px rgba(10, 61, 98, 0.05));
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.resultados-financeiros-page .kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--mc-green-500, #00a651);
+}
+.resultados-financeiros-page .kpi-card--ok::before       { background: var(--mc-green-500, #00a651); }
+.resultados-financeiros-page .kpi-card--pendente::before { background: var(--mc-amber, #d08a1c); }
+.resultados-financeiros-page .kpi-card--perda::before    { background: #c8394d; }
+.resultados-financeiros-page .kpi-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--mc-shadow, 0 4px 14px rgba(10, 61, 98, 0.07));
+}
+.resultados-financeiros-page .kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--mc-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.resultados-financeiros-page .kpi-header i {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  background: var(--mc-green-50, #e6f7ef);
+  color: var(--mc-green-600, #008f46);
+}
+.resultados-financeiros-page .kpi-card--ok       .kpi-header i { background: var(--mc-green-50, #e6f7ef); color: var(--mc-green-600, #008f46); }
+.resultados-financeiros-page .kpi-card--pendente .kpi-header i { background: var(--mc-amber-50, #fdf3e2); color: var(--mc-amber, #d08a1c); }
+.resultados-financeiros-page .kpi-card--perda    .kpi-header i { background: #fee2e2; color: #c8394d; }
+.resultados-financeiros-page .kpi-value {
+  font-family: var(--mc-font-heading);
+  font-size: 1.85rem;
+  font-weight: 600;
+  color: var(--mc-navy-900);
+  line-height: 1;
+}
+
+/* ---------- Card / tabela ---------- */
+.resultados-financeiros-page .card {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border, #e3eaef);
+  border-radius: var(--mc-radius-lg, 16px);
+  overflow: hidden;
+  box-shadow: var(--mc-shadow-sm, 0 1px 2px rgba(10, 61, 98, 0.05));
+}
+.rf-table { width: 100%; }
+
+.rf-table .p-datatable-thead > tr > th {
+  background: var(--mc-surface-2, #f9fbfc);
+  color: var(--mc-ink-2, #2b4158);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-color: var(--mc-border, #e3eaef);
+  padding: 12px 14px;
+  white-space: nowrap;
+}
+.rf-table .p-datatable-tbody > tr {
+  background: #fff;
+  transition: background .12s ease;
+}
+.rf-table .p-datatable-tbody > tr:hover { background: var(--mc-surface-2, #f9fbfc); }
+.rf-table .p-datatable-tbody > tr > td {
+  border-color: var(--mc-border, #e3eaef);
+  color: var(--mc-ink-2, #2b4158);
+  padding: 14px;
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
+.rf-table .p-paginator {
+  background: var(--mc-surface-2, #f9fbfc);
+  border-color: var(--mc-border, #e3eaef);
+  color: var(--mc-muted, #5b6b7a);
+  padding: 10px 14px;
+}
+.rf-table .p-paginator .p-paginator-page.p-highlight {
+  background: var(--mc-green-500, #00a651);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 6px;
+}
+.rf-table .p-column-filter,
+.rf-table .p-inputtext {
+  width: 100%;
+  border-color: var(--mc-border-2, #d6e0e6);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.rf-table .p-column-filter:focus,
+.rf-table .p-inputtext:focus {
+  border-color: var(--mc-green-500, #00a651);
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.12);
+}
+.rf-table .p-sortable-column.p-highlight,
+.rf-table .p-sortable-column.p-highlight .p-sortable-column-icon {
+  color: var(--mc-green-700, #067b3d);
+}
+.rf-table .p-button.p-button-info.p-button-outlined {
+  border-color: var(--mc-border-2, #d6e0e6);
+  color: var(--mc-navy-700, #0a3d62);
+  background: #fff;
+  border-radius: 8px;
+  font-weight: 600;
+  height: 36px;
+}
+.rf-table .p-button.p-button-info.p-button-outlined:hover {
+  background: var(--mc-green-50, #e6f7ef);
+  border-color: var(--mc-green-300, #86d6ad);
+  color: var(--mc-green-700, #067b3d);
+}
+
+/* ---------- Dialog form ---------- */
+.rf-loading {
+  padding: 24px 0;
+  text-align: center;
+  color: var(--mc-muted, #5b6b7a);
+}
+.rf-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.rf-form__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+.rf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rf-field label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mc-muted, #5b6b7a);
+}
+.rf-field--span-1 { grid-column: span 1; }
+.rf-field--span-2 { grid-column: span 2; }
+.rf-field--span-3 { grid-column: span 3; }
+.rf-field--span-4 { grid-column: span 4; }
+.rf-field__tag {
+  height: 38px;
+  display: flex;
+  align-items: center;
+}
+
+/* ---------- Anexos ---------- */
+.rf-anexos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.rf-anexos__bloco {
+  background: var(--mc-surface-2, #f9fbfc);
+  border: 1px solid var(--mc-border, #e3eaef);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.rf-anexos__bloco h3 {
+  margin: 0 0 8px 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mc-muted, #5b6b7a);
+}
+.rf-anexos__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rf-anexos__empty {
+  font-size: 0.85rem;
+  color: #aaa;
+  font-style: italic;
+  padding: 4px 0;
+}
+.rf-anexo-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  font-size: 0.85rem;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  transition: background .12s ease, border-color .12s ease;
+}
+.rf-anexo-item:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+.rf-anexo-item__icon {
+  font-size: 1.1rem;
+  color: #f97316;
+  flex-shrink: 0;
+}
+.rf-anexo-item__nome {
+  flex: 1;
+  word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rf-anexo-item__action {
+  color: #9ca3af;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.rf-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 1100px) {
+  .resultados-financeiros-page .kpi-grid-3 { grid-template-columns: 1fr; }
+  .rf-anexos { grid-template-columns: 1fr; }
+  .rf-form__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rf-field--span-3, .rf-field--span-4 { grid-column: span 2; }
+}

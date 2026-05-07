@@ -1,0 +1,310 @@
+/* ============================================================
+   MEDCHECK — AguardandoCirurgiaPage
+   Mesmo padrão de ParaProtocolarPage / ResultadosPage.
+   ============================================================ */
+
+.aguardando-cirurgia-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+  font-family: var(--mc-font-body, "Inter", sans-serif);
+  color: var(--mc-ink, #0f2236);
+}
+
+/* ---------- Header ---------- */
+.aguardando-cirurgia-page .page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.aguardando-cirurgia-page .page-header h1 {
+  margin: 0;
+  font-family: var(--mc-font-heading, "Poppins", sans-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--mc-navy-900, #062a45);
+  letter-spacing: -0.01em;
+}
+.aguardando-cirurgia-page .page-header p {
+  margin: 6px 0 0;
+  color: var(--mc-muted, #5b6b7a);
+  font-size: 0.92rem;
+}
+
+/* ---------- KPIs ---------- */
+.aguardando-cirurgia-page .kpi-grid {
+  display: grid;
+  gap: 14px;
+}
+.aguardando-cirurgia-page .kpi-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.aguardando-cirurgia-page .kpi-card {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border, #e3eaef);
+  border-radius: var(--mc-radius-lg, 16px);
+  padding: 18px 20px;
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--mc-shadow-sm, 0 1px 2px rgba(10, 61, 98, 0.05));
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.aguardando-cirurgia-page .kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--mc-green-500, #00a651);
+}
+.aguardando-cirurgia-page .kpi-card:nth-child(2)::before { background: var(--mc-navy-700, #0a3d62); }
+.aguardando-cirurgia-page .kpi-card:nth-child(3)::before { background: var(--mc-amber, #d08a1c); }
+.aguardando-cirurgia-page .kpi-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--mc-shadow, 0 4px 14px rgba(10, 61, 98, 0.07));
+}
+.aguardando-cirurgia-page .kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--mc-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.aguardando-cirurgia-page .kpi-header i {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--mc-green-50, #e6f7ef);
+  color: var(--mc-green-600, #008f46);
+  font-size: 14px;
+}
+.aguardando-cirurgia-page .kpi-card:nth-child(2) .kpi-header i {
+  background: var(--mc-navy-50, #e8f0f5);
+  color: var(--mc-navy-700, #0a3d62);
+}
+.aguardando-cirurgia-page .kpi-card:nth-child(3) .kpi-header i {
+  background: var(--mc-amber-50, #fdf3e2);
+  color: var(--mc-amber, #d08a1c);
+}
+.aguardando-cirurgia-page .kpi-value {
+  font-family: var(--mc-font-heading);
+  font-size: 1.85rem;
+  font-weight: 600;
+  color: var(--mc-navy-900);
+  line-height: 1;
+}
+
+/* ---------- Card / tabela ---------- */
+.aguardando-cirurgia-page .card {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border, #e3eaef);
+  border-radius: var(--mc-radius-lg, 16px);
+  overflow: hidden;
+  box-shadow: var(--mc-shadow-sm, 0 1px 2px rgba(10, 61, 98, 0.05));
+}
+.ag-cir-table { width: 100%; }
+
+.ag-cir-table .p-datatable-thead > tr > th {
+  background: var(--mc-surface-2, #f9fbfc);
+  color: var(--mc-ink-2, #2b4158);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-color: var(--mc-border, #e3eaef);
+  padding: 12px 14px;
+  white-space: nowrap;
+}
+.ag-cir-table .p-datatable-tbody > tr {
+  background: #fff;
+  transition: background .12s ease;
+}
+.ag-cir-table .p-datatable-tbody > tr:hover { background: var(--mc-surface-2, #f9fbfc); }
+.ag-cir-table .p-datatable-tbody > tr > td {
+  border-color: var(--mc-border, #e3eaef);
+  color: var(--mc-ink-2, #2b4158);
+  padding: 14px;
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
+.ag-cir-table .p-paginator {
+  background: var(--mc-surface-2, #f9fbfc);
+  border-color: var(--mc-border, #e3eaef);
+  color: var(--mc-muted, #5b6b7a);
+  padding: 10px 14px;
+}
+.ag-cir-table .p-paginator .p-paginator-page.p-highlight {
+  background: var(--mc-green-500, #00a651);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 6px;
+}
+.ag-cir-table .p-column-filter,
+.ag-cir-table .p-inputtext {
+  width: 100%;
+  border-color: var(--mc-border-2, #d6e0e6);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.ag-cir-table .p-column-filter:focus,
+.ag-cir-table .p-inputtext:focus {
+  border-color: var(--mc-green-500, #00a651);
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.12);
+}
+.ag-cir-table .p-sortable-column.p-highlight,
+.ag-cir-table .p-sortable-column.p-highlight .p-sortable-column-icon {
+  color: var(--mc-green-700, #067b3d);
+}
+.ag-cir-table .p-button.p-button-success {
+  background: var(--mc-green-500, #00a651);
+  border-color: var(--mc-green-500, #00a651);
+  color: #fff;
+  font-weight: 600;
+  height: 36px;
+  border-radius: 8px;
+}
+.ag-cir-table .p-button.p-button-success:hover {
+  background: var(--mc-green-600, #008f46);
+  border-color: var(--mc-green-600, #008f46);
+}
+
+/* ---------- Dialog form ---------- */
+.ag-cir-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.ag-cir-form__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+.ag-cir-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ag-cir-field label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mc-muted, #5b6b7a);
+}
+.ag-cir-field--span-1 { grid-column: span 1; }
+.ag-cir-field--span-2 { grid-column: span 2; }
+.ag-cir-field--span-3 { grid-column: span 3; }
+.ag-cir-field--span-4 { grid-column: span 4; }
+
+/* ---------- Anexos ---------- */
+.ag-cir-anexos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.ag-cir-anexos__bloco {
+  background: var(--mc-surface-2, #f9fbfc);
+  border: 1px solid var(--mc-border, #e3eaef);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.ag-cir-anexos__bloco h3 {
+  margin: 0 0 8px 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mc-muted, #5b6b7a);
+}
+.ag-cir-anexos__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ag-cir-anexos__empty {
+  font-size: 0.85rem;
+  color: #aaa;
+  font-style: italic;
+  padding: 4px 0;
+}
+.ag-cir-anexo-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  font-size: 0.85rem;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  transition: background .12s ease, border-color .12s ease;
+}
+.ag-cir-anexo-item:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+.ag-cir-anexo-item__icon {
+  font-size: 1.1rem;
+  color: #f97316;
+  flex-shrink: 0;
+}
+.ag-cir-anexo-item__nome {
+  flex: 1;
+  word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ag-cir-anexo-item__action {
+  color: #9ca3af;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+/* ---------- Bloco perda ---------- */
+.ag-cir-perda-bloco {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ag-cir-perda-bloco label {
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9a3412;
+}
+
+/* ---------- Actions ---------- */
+.ag-cir-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+@media (max-width: 1100px) {
+  .aguardando-cirurgia-page .kpi-grid-3 { grid-template-columns: 1fr; }
+  .ag-cir-anexos { grid-template-columns: 1fr; }
+  .ag-cir-form__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ag-cir-field--span-3, .ag-cir-field--span-4 { grid-column: span 2; }
+}

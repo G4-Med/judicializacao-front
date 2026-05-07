@@ -86,10 +86,11 @@ function calcularTotal(
   equipe: ItemOrcamento[],
   taxas: ItemOrcamento[],
   opme: ItemOrcamento[],
+  anatomia: ItemOrcamento[],
   medic: ItemOrcamento[]
 ): number {
   const soma = (arr: ItemOrcamento[]) => arr.reduce((s, i) => s + (i.valor || 0), 0);
-  return soma(equipe) + soma(taxas) + soma(opme) + soma(medic);
+  return soma(equipe) + soma(taxas) + soma(opme) + soma(anatomia) + soma(medic);
 }
 
 function filtrarItensPreenchidos(arr: ItemOrcamento[]): ItemOrcamento[] {
@@ -153,6 +154,7 @@ export function EnviarOrcamentoDialog({
   const [equipeMedica, setEquipeMedica] = useState<ItemOrcamento[]>([itemVazio()]);
   const [taxasHospitalar, setTaxasHospitalar] = useState<ItemOrcamento[]>([itemVazio()]);
   const [opmeMateriais, setOpmeMateriais] = useState<ItemOrcamento[]>([itemVazio()]);
+  const [anatomiaPatologica, setAnatomiaPatologica] = useState<ItemOrcamento[]>([itemVazio()]);
   const [medicamentos, setMedicamentos] = useState<ItemOrcamento[]>([itemVazio()]);
   const [baseOrcamento, setBaseOrcamento] = useState<BaseOrcamento>(baseOrcamentoInicial);
   const [loadingBaseOrcamento, setLoadingBaseOrcamento] = useState(false);
@@ -170,6 +172,7 @@ export function EnviarOrcamentoDialog({
     setEquipeMedica([itemVazio()]);
     setTaxasHospitalar([itemVazio()]);
     setOpmeMateriais([itemVazio()]);
+    setAnatomiaPatologica([itemVazio()]);
     setMedicamentos([itemVazio()]);
     setBaseOrcamento(baseOrcamentoInicial);
     setBasePdfCaptureReady(false);
@@ -234,16 +237,18 @@ export function EnviarOrcamentoDialog({
   }, [baseOrcamento.linkBaseOrcamento]);
 
   const valorTotal = useMemo(
-    () => calcularTotal(equipeMedica, taxasHospitalar, opmeMateriais, medicamentos),
-    [equipeMedica, taxasHospitalar, opmeMateriais, medicamentos]
+    () => calcularTotal(equipeMedica, taxasHospitalar, opmeMateriais, anatomiaPatologica, medicamentos),
+    [equipeMedica, taxasHospitalar, opmeMateriais, anatomiaPatologica, medicamentos]
   );
   const equipePreview = useMemo(() => filtrarItensPreenchidos(equipeMedica), [equipeMedica]);
   const taxasPreview = useMemo(() => filtrarItensPreenchidos(taxasHospitalar), [taxasHospitalar]);
   const opmePreview = useMemo(() => filtrarItensPreenchidos(opmeMateriais), [opmeMateriais]);
+  const anatomiaPreview = useMemo(() => filtrarItensPreenchidos(anatomiaPatologica), [anatomiaPatologica]);
   const medicamentosPreview = useMemo(() => filtrarItensPreenchidos(medicamentos), [medicamentos]);
   const totalEquipe = useMemo(() => equipePreview.reduce((acc, item) => acc + item.valor, 0), [equipePreview]);
   const totalTaxas = useMemo(() => taxasPreview.reduce((acc, item) => acc + item.valor, 0), [taxasPreview]);
   const totalOpme = useMemo(() => opmePreview.reduce((acc, item) => acc + item.valor, 0), [opmePreview]);
+  const totalAnatomia = useMemo(() => anatomiaPreview.reduce((acc, item) => acc + item.valor, 0), [anatomiaPreview]);
   const totalMedicamentos = useMemo(() => medicamentosPreview.reduce((acc, item) => acc + item.valor, 0), [medicamentosPreview]);
   const dataHoje = useMemo(
     () =>
@@ -293,6 +298,7 @@ export function EnviarOrcamentoDialog({
     setEquipeMedica([itemVazio()]);
     setTaxasHospitalar([itemVazio()]);
     setOpmeMateriais([itemVazio()]);
+    setAnatomiaPatologica([itemVazio()]);
     setMedicamentos([itemVazio()]);
     setBaseOrcamento(baseOrcamentoInicial);
 
@@ -349,6 +355,7 @@ export function EnviarOrcamentoDialog({
         equipeMedica: [],
         taxasHospitalar: [],
         opmeMateriais: [],
+        anatomiaPatologica: [],
         medicamentos: [],
         valorTotal: valorArquivo,
       });
@@ -383,6 +390,7 @@ export function EnviarOrcamentoDialog({
         equipeMedica,
         taxasHospitalar,
         opmeMateriais,
+        anatomiaPatologica,
         medicamentos,
         valorTotal,
       });
@@ -665,7 +673,8 @@ export function EnviarOrcamentoDialog({
             {renderSecaoOrcamento('1. Equipe Médica', equipeMedica, setEquipeMedica)}
             {renderSecaoOrcamento('2. Taxas Hospitalares', taxasHospitalar, setTaxasHospitalar)}
             {renderSecaoOrcamento('3. OPME / Materiais', opmeMateriais, setOpmeMateriais)}
-            {renderSecaoOrcamento('4. Medicamentos', medicamentos, setMedicamentos)}
+            {renderSecaoOrcamento('4. Anatomia Patológica', anatomiaPatologica, setAnatomiaPatologica)}
+            {renderSecaoOrcamento('5. Medicamentos', medicamentos, setMedicamentos)}
 
             <div className="valor-total">
               <strong>VALOR TOTAL: {valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
@@ -745,7 +754,20 @@ export function EnviarOrcamentoDialog({
                     </div>
 
                     <div className="orcamento-documento__bloco">
-                      <div className="orcamento-documento__titulo-bloco">4. MEDICAMENTOS</div>
+                      <div className="orcamento-documento__titulo-bloco">4. ANATOMIA PATOLÓGICA</div>
+                      {anatomiaPreview.map((item, index) => (
+                        <div key={`doc-anat-${index}`} className="orcamento-documento__linha-item">
+                          <span>{item.descricao || 'Item sem descrição'}</span>
+                          <strong>{item.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                        </div>
+                      ))}
+                      <div className="orcamento-documento__subtotal">
+                        Subtotal: <strong>{totalAnatomia.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                      </div>
+                    </div>
+
+                    <div className="orcamento-documento__bloco">
+                      <div className="orcamento-documento__titulo-bloco">5. MEDICAMENTOS</div>
                       {medicamentosPreview.map((item, index) => (
                         <div key={`doc-med-${index}`} className="orcamento-documento__linha-item">
                           <span>{item.descricao || 'Item sem descrição'}</span>

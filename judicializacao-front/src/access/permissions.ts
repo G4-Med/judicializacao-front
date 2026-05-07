@@ -18,6 +18,8 @@ export type ScreenKey =
   | 'protocolados'
   | 'segredoJustica'
   | 'resultados'
+  | 'aguardandoCirurgia'
+  | 'resultadosFinanceiros'
   | 'perdas'
   | 'emails'
   | 'relatorioResumido'
@@ -25,6 +27,7 @@ export type ScreenKey =
   | 'usuarios'
   | 'configuracoes'
   | 'configuracoesEmails'
+  | 'monitorIntegracao'
   | 'logs';
 
 export type ReportKey = 'relatorioResumido' | 'relatorioConsolidado';
@@ -50,6 +53,8 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'protocolados',
       'segredoJustica',
       'resultados',
+      'aguardandoCirurgia',
+      'resultadosFinanceiros',
       'perdas',
       'emails',
       'relatorioResumido',
@@ -57,6 +62,7 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'usuarios',
       'configuracoes',
       'configuracoesEmails',
+      'monitorIntegracao',
       'logs',
     ],
     edit: [
@@ -71,6 +77,8 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'protocolados',
       'segredoJustica',
       'resultados',
+      'aguardandoCirurgia',
+      'resultadosFinanceiros',
       'perdas',
       'emails',
       'relatorioResumido',
@@ -78,6 +86,7 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'usuarios',
       'configuracoes',
       'configuracoesEmails',
+      'monitorIntegracao',
       'logs',
     ],
     exportReports: ['relatorioResumido', 'relatorioConsolidado'],
@@ -96,6 +105,8 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'protocolados',
       'segredoJustica',
       'resultados',
+      'aguardandoCirurgia',
+      'resultadosFinanceiros',
       'perdas',
       'relatorioResumido',
       'relatorioConsolidado',
@@ -113,6 +124,8 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'protocolados',
       'segredoJustica',
       'resultados',
+      'aguardandoCirurgia',
+      'resultadosFinanceiros',
       'perdas',
       'relatorioResumido',
       'relatorioConsolidado',
@@ -129,6 +142,8 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'protocolados',
       'segredoJustica',
       'resultados',
+      'aguardandoCirurgia',
+      'resultadosFinanceiros',
       'perdas',
       'relatorioResumido',
       'relatorioConsolidado',
@@ -147,6 +162,8 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'protocolados',
       'segredoJustica',
       'resultados',
+      'aguardandoCirurgia',
+      'resultadosFinanceiros',
       'perdas',
       'relatorioResumido',
       'relatorioConsolidado',
@@ -175,6 +192,8 @@ export const SCREEN_PATHS: Record<ScreenKey, string> = {
   protocolados: '/protocolados',
   segredoJustica: '/segredo-justica',
   resultados: '/resultados',
+  aguardandoCirurgia: '/aguardando-cirurgia',
+  resultadosFinanceiros: '/resultados-financeiros',
   perdas: '/perdas',
   emails: '/emails',
   relatorioResumido: '/relatorios/resumido',
@@ -182,6 +201,7 @@ export const SCREEN_PATHS: Record<ScreenKey, string> = {
   usuarios: '/usuarios',
   configuracoes: '/configuracoes',
   configuracoesEmails: '/configuracoes-emails',
+  monitorIntegracao: '/monitor-integracao',
   logs: '/logs',
 };
 
@@ -197,6 +217,8 @@ export const SCREEN_ORDER: ScreenKey[] = [
   'protocolados',
   'segredoJustica',
   'resultados',
+  'aguardandoCirurgia',
+  'resultadosFinanceiros',
   'perdas',
   'emails',
   'relatorioResumido',
@@ -204,6 +226,7 @@ export const SCREEN_ORDER: ScreenKey[] = [
   'usuarios',
   'configuracoes',
   'configuracoesEmails',
+  'monitorIntegracao',
   'logs',
 ];
 

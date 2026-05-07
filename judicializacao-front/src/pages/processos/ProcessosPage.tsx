@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { DataTable } from 'primereact/datatable';
-import { getOrders, getStatusOrders, atualizarOrder, getMedicosCompleto, getAnexosOrder, criarOrderProcess, processarOrderProcess, salvarJuridico, uploadArquivoIntegracao, marcarSemProfissional } from '../../services/api/orders';
+import { getOrders, getStatusOrders, atualizarOrder, getMedicosCompleto, getAnexosOrder, criarOrderProcess, processarOrderProcess, salvarJuridico, uploadArquivoIntegracao, marcarSemProfissional, analisarEmpenho, extrairEmail } from '../../services/api/orders';
 import type {
   DataTableFilterMeta,
   DataTablePageEvent,
@@ -203,6 +203,7 @@ export function ProcessosPage() {
   const rowActionMenuRef = useRef<TieredMenu>(null);
   const [editDialogVisible, setEditDialogVisible] = useState(false);
   const [processoEditando, setProcessoEditando] = useState<ProcessoTableRow | null>(null);
+  const [atualizandoRefPreco, setAtualizandoRefPreco] = useState(false);
   const [medicosOptions, setMedicosOptions] = useState<{label: string, value: number}[]>([]);
   const [medicos, setMedicos] = useState<any[]>([]);
   const [anexos, setAnexos] = useState<Anexo[]>([])
@@ -216,6 +217,7 @@ export function ProcessosPage() {
   const [anexosProtocolo, setAnexosProtocolo] = useState<any[]>([]);
   const [loadingAnexosProtocolo, setLoadingAnexosProtocolo] = useState(false);
   const [novoProcessoTipoVisible, setNovoProcessoTipoVisible] = useState(false);
+  const [novoProcessoVisible, setNovoProcessoVisible] = useState(false);
   const [novoProcessoManualVisible, setNovoProcessoManualVisible] = useState(false);
   const [novoProcessoJsonVisible, setNovoProcessoJsonVisible] = useState(false);
   const [novoProcessoJsonLoteVisible, setNovoProcessoJsonLoteVisible] = useState(false);
@@ -228,6 +230,10 @@ export function ProcessosPage() {
   const [enviarOrcamentoVisible, setEnviarOrcamentoVisible] = useState(false);
   const [manualProcessForm, setManualProcessForm] = useState<ManualProcessForm>(createManualProcessForm);
   const [manualAttachments, setManualAttachments] = useState<ProcessAttachmentInput[]>([createAttachmentInput()]);
+  const [novoProcessoForm, setNovoProcessoForm] = useState<ManualProcessForm>(createManualProcessForm);
+  const [novoProcessoAttachments, setNovoProcessoAttachments] = useState<ProcessAttachmentInput[]>([createAttachmentInput()]);
+  const [novoProcessoCorpoEmail, setNovoProcessoCorpoEmail] = useState('');
+  const [processandoEmailIA, setProcessandoEmailIA] = useState(false);
   const [jsonProcessInput, setJsonProcessInput] = useState('');
   const [jsonAttachments, setJsonAttachments] = useState<ProcessAttachmentInput[]>([createAttachmentInput()]);
   const [jsonBatchInput, setJsonBatchInput] = useState('');
@@ -842,6 +848,25 @@ ${linhasAnexos}
     setJsonBatchItems([]);
   };
 
+  const resetNovoProcesso = () => {
+    setNovoProcessoForm(createManualProcessForm());
+    setNovoProcessoAttachments([createAttachmentInput()]);
+    setNovoProcessoCorpoEmail('');
+  };
+
+  const abrirNovoProcesso = () => {
+    setNovoProcessoTipoVisible(false);
+    resetNovoProcesso();
+    setNovoProcessoVisible(true);
+  };
+
+  const updateNovoProcessoForm = (field: keyof ManualProcessForm, value: string | number | null) => {
+    setNovoProcessoForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
   const abrirNovoProcessoManual = () => {
     setNovoProcessoTipoVisible(false);
     resetNovoProcessoManual();
@@ -1151,6 +1176,85 @@ ${linhasAnexos}
     }
   };
 
+  const handleProcessarEmailIA = async () => {
+    const corpo = novoProcessoCorpoEmail.trim();
+    if (!corpo) {
+      alert('Cole o conteúdo do email antes de processar.');
+      return;
+    }
+
+    setProcessandoEmailIA(true);
+    try {
+      const { data } = await extrairEmail(corpo);
+      const refPrecoNum = data?.refPreco === null || data?.refPreco === undefined || data?.refPreco === ''
+        ? null
+        : Number(data.refPreco);
+      setNovoProcessoForm({
+        paciente: data?.paciente ?? '',
+        dataNascimento: data?.dataNascimento ?? '',
+        procedimento: data?.procedimento ?? '',
+        refPreco: typeof refPrecoNum === 'number' && !Number.isNaN(refPrecoNum) ? refPrecoNum : null,
+        area: data?.area ?? '',
+        subarea: data?.subarea ?? '',
+        dataPedido: data?.dataPedido ?? '',
+        emailAssunto: data?.email?.assunto ?? '',
+        emailObservacoes: data?.email?.observacoes ?? '',
+        emailRemetente: data?.email?.remetente ?? '',
+        emailCorpo: data?.email?.corpo ?? corpo,
+      });
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.response?.data?.mensagem;
+      console.error('Erro ao extrair dados do email:', err);
+      alert(detail || 'Erro ao processar o email. Tente novamente.');
+    } finally {
+      setProcessandoEmailIA(false);
+    }
+  };
+
+  const handleEnviarNovoProcesso = async () => {
+    const missingFields = validateManualForm(novoProcessoForm);
+    if (missingFields.length > 0) {
+      alert(`Preencha os campos obrigatórios: ${missingFields.join(', ')}`);
+      return;
+    }
+
+    setEnviandoNovoProcesso(true);
+    try {
+      const anexos = await uploadAttachments(novoProcessoAttachments);
+      const payload: OrderProcessJson = {
+        paciente: novoProcessoForm.paciente.trim(),
+        dataNascimento: novoProcessoForm.dataNascimento.trim(),
+        procedimento: novoProcessoForm.procedimento.trim(),
+        refPreco: Number(novoProcessoForm.refPreco ?? 0),
+        area: novoProcessoForm.area.trim(),
+        subarea: novoProcessoForm.subarea.trim(),
+        dataPedido: novoProcessoForm.dataPedido.trim(),
+        email: {
+          assunto: novoProcessoForm.emailAssunto.trim(),
+          observacoes: novoProcessoForm.emailObservacoes.trim(),
+          remetente: novoProcessoForm.emailRemetente.trim(),
+          origem: 'EMAIL AUTOMÁTICO',
+          corpo: novoProcessoForm.emailCorpo.trim(),
+        },
+        anexos,
+      };
+
+      await criarOrderProcess({
+        json: normalizePayloadForStorage(payload) as Record<string, any>,
+        processado: false,
+      });
+
+      setNovoProcessoVisible(false);
+      resetNovoProcesso();
+      alert('Novo processo enviado para a fila com sucesso.');
+    } catch (error) {
+      console.error('Erro ao criar novo processo (email):', error);
+      alert('Erro ao enviar o novo processo.');
+    } finally {
+      setEnviandoNovoProcesso(false);
+    }
+  };
+
   const handleEnviarNovoProcessoJson = async () => {
     let parsedPayload: any;
 
@@ -1263,6 +1367,49 @@ ${linhasAnexos}
     });
   };
 
+
+  const buscarRefPrecoPorProcedimento = async (procedimento: string): Promise<number | null> => {
+    const proc = (procedimento ?? '').trim();
+    if (!proc) {
+      alert('Procedimento não informado.');
+      return null;
+    }
+    setAtualizandoRefPreco(true);
+    try {
+      const { data } = await analisarEmpenho(proc);
+      if (!data?.encontrado) {
+        alert(data?.mensagem || 'Nenhum empenho encontrado para o procedimento informado. Valor não foi alterado.');
+        return null;
+      }
+      const valorMedio = data.dados?.compatibilidade_legacy?.valor_medio;
+      if (typeof valorMedio !== 'number' || Number.isNaN(valorMedio)) {
+        alert('Resposta da análise sem valor médio. Valor não foi alterado.');
+        return null;
+      }
+      return valorMedio;
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.response?.data?.mensagem;
+      alert(detail || 'Erro ao consultar análise de empenho. Valor não foi alterado.');
+      return null;
+    } finally {
+      setAtualizandoRefPreco(false);
+    }
+  };
+
+  const handleAtualizarRefPreco = async () => {
+    if (!processoEditando) return;
+    const valor = await buscarRefPrecoPorProcedimento(processoEditando.procedimento ?? '');
+    if (valor !== null) {
+      setProcessoEditando(prev => prev ? { ...prev, refPreco: valor } : prev);
+    }
+  };
+
+  const handleAtualizarRefPrecoNovoProcesso = async () => {
+    const valor = await buscarRefPrecoPorProcedimento(novoProcessoForm.procedimento);
+    if (valor !== null) {
+      updateNovoProcessoForm('refPreco', valor);
+    }
+  };
 
   const handleSalvarEdicao = async () => {
     if (!processoEditando) return;
@@ -1908,8 +2055,15 @@ ${linhasAnexos}
         >
           <div className="novo-processo-tipo-dialog">
             <Button
+              label="Novo Processo"
+              icon="pi pi-plus"
+              className="novo-processo-tipo-button"
+              onClick={abrirNovoProcesso}
+            />
+            <Button
               label="Novo Processo Manual"
               icon="pi pi-file-edit"
+              outlined
               className="novo-processo-tipo-button"
               onClick={abrirNovoProcessoManual}
             />
@@ -1926,6 +2080,169 @@ ${linhasAnexos}
               outlined
               className="novo-processo-tipo-button"
               onClick={abrirNovoProcessoJsonLote}
+            />
+          </div>
+        </Dialog>
+
+        <Dialog
+          header="Novo Processo"
+          visible={novoProcessoVisible}
+          style={{ width: '74rem', maxWidth: '96vw' }}
+          modal
+          onHide={() => setNovoProcessoVisible(false)}
+          className="processo-edit-dialog"
+        >
+          <div className="processo-form-grid-v2">
+            <div className="field field-span-4">
+              <label>Conteúdo do Email *</label>
+              <InputTextarea
+                value={novoProcessoCorpoEmail}
+                onChange={(e) => setNovoProcessoCorpoEmail(e.target.value)}
+                rows={8}
+                autoResize
+                placeholder="Cole aqui o texto cru do email recebido"
+                disabled={processandoEmailIA}
+              />
+            </div>
+
+            <div className="field field-span-4" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button
+                label={processandoEmailIA ? 'Processando...' : 'Processar Email'}
+                icon="pi pi-sparkles"
+                onClick={handleProcessarEmailIA}
+                loading={processandoEmailIA}
+                disabled={processandoEmailIA || !novoProcessoCorpoEmail.trim()}
+              />
+            </div>
+
+            <div className="field field-span-2">
+              <label>Paciente *</label>
+              <InputText
+                value={novoProcessoForm.paciente}
+                onChange={(e) => updateNovoProcessoForm('paciente', e.target.value)}
+              />
+            </div>
+
+            <div className="field field-span-1">
+              <label>Data de Nascimento *</label>
+              <InputText
+                value={novoProcessoForm.dataNascimento}
+                onChange={(e) => updateNovoProcessoForm('dataNascimento', e.target.value)}
+                placeholder="dd/mm/aaaa"
+              />
+            </div>
+
+            <div className="field field-span-1">
+              <label>Data do Pedido *</label>
+              <InputText
+                value={novoProcessoForm.dataPedido}
+                onChange={(e) => updateNovoProcessoForm('dataPedido', e.target.value)}
+                placeholder="dd/mm/aaaa hh:mm"
+              />
+            </div>
+
+            <div className="field field-span-4">
+              <label>Procedimento *</label>
+              <InputTextarea
+                value={novoProcessoForm.procedimento}
+                onChange={(e) => updateNovoProcessoForm('procedimento', e.target.value)}
+                rows={3}
+                autoResize
+              />
+            </div>
+
+            <div className="field field-span-1">
+              <label>Ref. Preço *</label>
+              <InputNumber
+                value={novoProcessoForm.refPreco ?? undefined}
+                onValueChange={(e) => updateNovoProcessoForm('refPreco', e.value ?? null)}
+                mode="currency"
+                currency="BRL"
+                locale="pt-BR"
+              />
+            </div>
+
+            <div className="field field-span-1 field-button">
+              <label>&nbsp;</label>
+              <Button
+                label="Atualizar Ref. Preço"
+                icon="pi pi-refresh"
+                outlined
+                loading={atualizandoRefPreco}
+                disabled={atualizandoRefPreco}
+                onClick={handleAtualizarRefPrecoNovoProcesso}
+              />
+            </div>
+
+            <div className="field field-span-1">
+              <label>Área *</label>
+              <InputText
+                value={novoProcessoForm.area}
+                onChange={(e) => updateNovoProcessoForm('area', e.target.value)}
+              />
+            </div>
+
+            <div className="field field-span-1">
+              <label>SubÁrea *</label>
+              <InputText
+                value={novoProcessoForm.subarea}
+                onChange={(e) => updateNovoProcessoForm('subarea', e.target.value)}
+              />
+            </div>
+
+            <div className="field field-span-2">
+              <label>Email Assunto</label>
+              <InputText
+                value={novoProcessoForm.emailAssunto}
+                onChange={(e) => updateNovoProcessoForm('emailAssunto', e.target.value)}
+              />
+            </div>
+
+            <div className="field field-span-2">
+              <label>Email Observações</label>
+              <InputText
+                value={novoProcessoForm.emailObservacoes}
+                onChange={(e) => updateNovoProcessoForm('emailObservacoes', e.target.value)}
+              />
+            </div>
+
+            <div className="field field-span-4">
+              <label>Email Remetente *</label>
+              <InputText
+                value={novoProcessoForm.emailRemetente}
+                onChange={(e) => updateNovoProcessoForm('emailRemetente', e.target.value)}
+                placeholder="Nome <email@dominio.com>"
+              />
+            </div>
+
+            <div className="field field-span-4">
+              <label>Email Corpo</label>
+              <InputTextarea
+                value={novoProcessoForm.emailCorpo}
+                onChange={(e) => updateNovoProcessoForm('emailCorpo', e.target.value)}
+                rows={6}
+                autoResize
+              />
+            </div>
+
+            <div className="field field-span-4">
+              <label>Anexos</label>
+              {renderAttachmentInputs(novoProcessoAttachments, setNovoProcessoAttachments)}
+            </div>
+          </div>
+
+          <div className="dialog-footer-actions">
+            <Button
+              label="Cancelar"
+              outlined
+              onClick={() => setNovoProcessoVisible(false)}
+            />
+            <Button
+              label={enviandoNovoProcesso ? 'Enviando...' : 'Enviar'}
+              icon="pi pi-check"
+              className="btn-salvar"
+              onClick={handleEnviarNovoProcesso}
+              loading={enviandoNovoProcesso}
             />
           </div>
         </Dialog>
@@ -2309,8 +2626,9 @@ ${linhasAnexos}
                   label="Atualizar Ref. Preço"
                   icon="pi pi-refresh"
                   outlined
-                  disabled={readOnly}
-                  onClick={() => console.log('Atualizar referência de preço', processoEditando)}
+                  loading={atualizandoRefPreco}
+                  disabled={readOnly || atualizandoRefPreco}
+                  onClick={handleAtualizarRefPreco}
                 />
               </div>
 

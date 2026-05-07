@@ -41,6 +41,8 @@ export const MENU_CONFIG_CLEAN: MenuConfigItem[] = [
     icon: 'pi pi-chart-line',
     children: [
       { label: 'Resultados', icon: 'pi pi-angle-right', path: '/resultados', screen: 'resultados' },
+      { label: 'Aguardando Cirurgia', icon: 'pi pi-angle-right', path: '/aguardando-cirurgia', screen: 'aguardandoCirurgia' },
+      { label: 'Resultados Financeiros', icon: 'pi pi-angle-right', path: '/resultados-financeiros', screen: 'resultadosFinanceiros' },
       { label: 'Perdas', icon: 'pi pi-angle-right', path: '/perdas', screen: 'perdas' },
     ],
   },
@@ -60,6 +62,7 @@ export const MENU_CONFIG_CLEAN: MenuConfigItem[] = [
       { label: 'Usuários', icon: 'pi pi-angle-right', path: '/usuarios', screen: 'usuarios' },
       { label: 'Configurações', icon: 'pi pi-angle-right', path: '/configuracoes', screen: 'configuracoes' },
       { label: 'Configurações Emails', icon: 'pi pi-angle-right', path: '/configuracoes-emails', screen: 'configuracoesEmails' },
+      { label: 'Monitor de Integração', icon: 'pi pi-angle-right', path: '/monitor-integracao', screen: 'monitorIntegracao' },
       { label: 'Logs', icon: 'pi pi-angle-right', path: '/logs', screen: 'logs' },
     ],
   },

@@ -406,7 +406,7 @@
 .orcamento-preview {
   position: sticky;
   top: 0;
-  transform: scale(0.98);
+
   transform-origin: top center;
 }
 
@@ -446,7 +446,7 @@
 
 .orcamento-documento__conteudo {
   position: absolute;
-  inset: 24.2% 11.5% 13.1% 11.5%;
+  inset: 19% 11.5% 13.1% 11.5%;
   display: flex;
   flex-direction: column;
   color: #111827;
@@ -595,7 +595,10 @@
 }
 
 .orcamento-documento__assinatura {
-  margin-top: 260px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   text-align: center;
   font-size: clamp(0.5rem, 0.64vw, 1rem);
   line-height: 1;

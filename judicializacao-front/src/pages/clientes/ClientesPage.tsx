@@ -21,6 +21,7 @@ import { Column } from 'primereact/column';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
+import { InputNumber } from 'primereact/inputnumber';
 import { FilterMatchMode } from 'primereact/api';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
@@ -43,6 +44,7 @@ interface Cliente {
   email: string;
   cnpj: string;
   grupoWhatsapp: string;
+  takeRate: number | null;
   modoValidacao: string;
   status: boolean;
   emailAcesso: string;
@@ -146,6 +148,7 @@ const clienteInicial: ClienteTableRow = {
   email: '',
   cnpj: '',
   grupoWhatsapp: '',
+  takeRate: null,
   modoValidacao: '',
   status: true,
   emailAcesso: '',
@@ -280,6 +283,7 @@ export function ClientesPage() {
       subespecialidade: m.subespecialidade ?? '',
       keywords: m.keywords ?? '',
       grupoWhatsapp: m.grupoWhatsapp ?? '',
+      takeRate: m.takeRate !== null && m.takeRate !== undefined ? Number(m.takeRate) : null,
       status: m.status,
       createDate: m.createDate?.split('T')[0] ?? '',
       updateDate: m.updateDate?.split('T')[0] ?? '',
@@ -768,6 +772,7 @@ const handleSalvarCadastro = async () => {
       subespecialidade: novoCliente.subespecialidade,
       keywords: novoCliente.keywords,
       grupoWhatsapp: novoCliente.grupoWhatsapp,
+      takeRate: novoCliente.takeRate,
       status: novoCliente.status,
     });
 
@@ -874,6 +879,7 @@ const handleSalvarEdicao = async () => {
       subespecialidade: clienteEditando.subespecialidade,
       keywords: clienteEditando.keywords,
       grupoWhatsapp: clienteEditando.grupoWhatsapp,
+      takeRate: clienteEditando.takeRate,
       status: clienteEditando.status,
     });
 
@@ -1333,6 +1339,20 @@ const handleSalvarEdicao = async () => {
                 <InputText value={novoCliente.grupoWhatsapp} onChange={(e) => updateNovoCliente('grupoWhatsapp', e.target.value)} />
               </div>
               <div className="field">
+                <label>Take Rate (%)</label>
+                <InputNumber
+                  value={novoCliente.takeRate ?? undefined}
+                  onValueChange={(e) => updateNovoCliente('takeRate', e.value ?? null)}
+                  mode="decimal"
+                  minFractionDigits={0}
+                  maxFractionDigits={2}
+                  min={0}
+                  max={100}
+                  suffix=" %"
+                  placeholder="Ex.: 20"
+                />
+              </div>
+              <div className="field">
                 <label>Status</label>
                 <Dropdown value={novoCliente.status} options={statusOptions} optionLabel="label" onChange={(e) => updateNovoCliente('status', e.value)} itemTemplate={statusTemplate} valueTemplate={statusTemplate} placeholder="Selecione" />
               </div>
@@ -1561,6 +1581,20 @@ const handleSalvarEdicao = async () => {
                   <div className="field"><label>Subespecialidade</label><Dropdown value={clienteEditando.subespecialidade} options={subespecialidadeOptions} onChange={(e) => updateClienteEditando('subespecialidade', e.value)} placeholder="Selecione" /></div>
                   <div className="field field-span-2"><label>Keywords</label><InputText value={clienteEditando.keywords} onChange={(e) => updateClienteEditando('keywords', e.target.value)} /></div>
                   <div className="field field-span-2"><label>Grupo WhatsApp</label><InputText value={clienteEditando.grupoWhatsapp} onChange={(e) => updateClienteEditando('grupoWhatsapp', e.target.value)} /></div>
+                  <div className="field">
+                    <label>Take Rate (%)</label>
+                    <InputNumber
+                      value={clienteEditando.takeRate ?? undefined}
+                      onValueChange={(e) => updateClienteEditando('takeRate', e.value ?? null)}
+                      mode="decimal"
+                      minFractionDigits={0}
+                      maxFractionDigits={2}
+                      min={0}
+                      max={100}
+                      suffix=" %"
+                      placeholder="Ex.: 20"
+                    />
+                  </div>
                   <div className="field"><label>Status</label><Dropdown value={clienteEditando.status} options={statusOptions} optionLabel="label" onChange={(e) => updateClienteEditando('status', e.value)} itemTemplate={statusTemplate} valueTemplate={statusTemplate} placeholder="Selecione" /></div>
 
                   <div className="field field-span-4 cadastrar-usuario-row">

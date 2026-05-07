@@ -71,6 +71,7 @@ export function ParaProtocolarPage() {
   const [previewUrl, setPreviewUrl] = useState('');
   const [previewTipo, setPreviewTipo] = useState<'pdf' | 'imagem' | 'outro'>('outro');
   const [previewNome, setPreviewNome] = useState('');
+  const [copiandoId, setCopiandoId] = useState<number | null>(null);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -256,6 +257,58 @@ export function ParaProtocolarPage() {
       />
     );
   };
+
+  const handleCopiar = async (rowData: ParaProtocolarTableRow) => {
+    setCopiandoId(rowData.id);
+    try {
+      let linkAnexo = '';
+      try {
+        const res: any = await getAnexosOrder(rowData.id, 'ORCAMENTO');
+        const anexos = res.data?.anexos ?? [];
+        linkAnexo = anexos[0]?.linkImagem ?? '';
+      } catch {
+        linkAnexo = '';
+      }
+
+      const valorFormatado = (rowData.valorOrcamento || 0).toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      const dataEnvio = rowData.dataEnvioOrcamento
+        ? new Date(`${rowData.dataEnvioOrcamento}T00:00:00`).toLocaleDateString('pt-BR')
+        : '';
+
+      const texto = [
+        'Segue orcamento acima para protocolar:',
+        `Paciente: ${rowData.paciente}`,
+        `Valor do orcamento: R$ ${valorFormatado}`,
+        `Cliente: ${rowData.cliente}`,
+        'Orcamento ja enviado ao estado e pronto para protocolacao.',
+        `Data do envio: ${dataEnvio}`,
+        `Anexo: ${linkAnexo}`,
+      ].join('\n');
+
+      await navigator.clipboard.writeText(texto);
+      alert('Texto copiado para a área de transferência.');
+    } catch (err) {
+      console.error('Erro ao copiar:', err);
+      alert('Erro ao copiar o texto.');
+    } finally {
+      setCopiandoId(null);
+    }
+  };
+
+  const copiarBodyTemplate = (rowData: ParaProtocolarTableRow) => (
+    <Button
+      icon="pi pi-copy"
+      rounded
+      outlined
+      severity="info"
+      loading={copiandoId === rowData.id}
+      aria-label={`Copiar texto do pedido ${rowData.id}`}
+      onClick={() => handleCopiar(rowData)}
+    />
+  );
 
   const editarBodyTemplate = (rowData: ParaProtocolarTableRow) => {
     return (
@@ -555,6 +608,13 @@ const handleConfirmarProtocolacao = async () => {
             filterElement={(options) => filterElement(options, 'Buscar')}
             body={statusBodyTemplate}
             style={{ minWidth: '12rem' }}
+          />
+
+          <Column
+            header="Copiar"
+            body={copiarBodyTemplate}
+            style={{ minWidth: '6rem' }}
+            bodyStyle={{ textAlign: 'center' }}
           />
 
           {!readOnly && <Column
