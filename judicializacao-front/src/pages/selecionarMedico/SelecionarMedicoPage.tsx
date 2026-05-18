@@ -14,6 +14,7 @@ import {
   getProcessosResumo,
   marcarSemProfissional,
   sugerirMedicoIA,
+  aplicarSugestaoIA,
   type SugestaoIAResposta,
 } from '../../services/api/orders';
 import { useAccess } from '../../access/AccessContext';
@@ -62,6 +63,10 @@ export function SelecionarMedicoPage() {
   const [salvandoMedico, setSalvandoMedico] = useState(false);
   const [executandoAcaoMassa, setExecutandoAcaoMassa] = useState(false);
   const [iaLoadingId, setIaLoadingId] = useState<number | null>(null);
+  const [iaDialogVisible, setIaDialogVisible] = useState(false);
+  const [iaSugestao, setIaSugestao] = useState<SugestaoIAResposta | null>(null);
+  const [iaOrderId, setIaOrderId] = useState<number | null>(null);
+  const [iaAplicando, setIaAplicando] = useState(false);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -265,22 +270,39 @@ export function SelecionarMedicoPage() {
     try {
       const { data } = await sugerirMedicoIA(rowData.id);
       const sug = data as SugestaoIAResposta;
-
-      // TODO Front-3: substituir alert por dialog de confirmação
-      const fallbackTxt = sug.isFallback ? '\n\n⚠️ FALLBACK (Hospital IBG)' : '';
-      alert(
-        `🤖 Sugestão da IA:\n\n` +
-        `${sug.nomeMedico ?? '(nenhum)'}\n\n` +
-        `Justificativa: ${sug.justificativa}\n\n` +
-        `Confiança: ${sug.confianca}` +
-        fallbackTxt +
-        `\n\nsugestaoId: ${sug.sugestaoId}`,
-      );
+      setIaSugestao(sug);
+      setIaOrderId(rowData.id);
+      setIaDialogVisible(true);
     } catch (error: any) {
       console.error('Erro ao sugerir médico via IA:', error);
       alert(error?.response?.data?.detail ?? 'Erro ao gerar sugestão.');
     } finally {
       setIaLoadingId(null);
+    }
+  };
+
+  const fecharIaDialog = () => {
+    setIaDialogVisible(false);
+    setIaSugestao(null);
+    setIaOrderId(null);
+  };
+
+  const handleAplicarSugestaoIA = async () => {
+    if (!iaSugestao || !iaOrderId) return;
+    if (!iaSugestao.idMedico) {
+      alert('A IA não conseguiu identificar um médico — não há sugestão para aplicar.');
+      return;
+    }
+    setIaAplicando(true);
+    try {
+      await aplicarSugestaoIA(iaSugestao.sugestaoId, iaSugestao.idMedico);
+      fecharIaDialog();
+      await carregarDados();
+    } catch (error: any) {
+      console.error('Erro ao aplicar sugestão IA:', error);
+      alert(error?.response?.data?.detail ?? 'Erro ao aplicar a sugestão.');
+    } finally {
+      setIaAplicando(false);
     }
   };
 
@@ -577,6 +599,64 @@ export function SelecionarMedicoPage() {
             )}
           </div>
         </div>
+      </Dialog>
+
+      <Dialog
+        header="Sugestão da IA"
+        visible={iaDialogVisible}
+        style={{ width: '36rem', maxWidth: '96vw' }}
+        modal
+        onHide={fecharIaDialog}
+      >
+        {iaSugestao && (
+          <div className="ia-sugestao-dialog">
+            <div className="ia-sugestao-dialog__bloco">
+              <div className="ia-sugestao-dialog__label">Médico sugerido</div>
+              <div className="ia-sugestao-dialog__valor">
+                {iaSugestao.nomeMedico ?? '(nenhum)'}
+              </div>
+            </div>
+
+            <div className="ia-sugestao-dialog__bloco">
+              <div className="ia-sugestao-dialog__label">Justificativa</div>
+              <div className="ia-sugestao-dialog__texto">
+                {iaSugestao.justificativa || '-'}
+              </div>
+            </div>
+
+            <div className="ia-sugestao-dialog__row">
+              <div className="ia-sugestao-dialog__bloco">
+                <div className="ia-sugestao-dialog__label">Confiança</div>
+                <div className="ia-sugestao-dialog__valor">
+                  {iaSugestao.confianca}
+                </div>
+              </div>
+
+              {iaSugestao.isFallback && (
+                <div className="ia-sugestao-dialog__warning">
+                  <i className="pi pi-exclamation-triangle" /> Fallback (Hospital IBG)
+                </div>
+              )}
+            </div>
+
+            <div className="ia-sugestao-dialog__actions">
+              <Button
+                label="Cancelar"
+                outlined
+                onClick={fecharIaDialog}
+                disabled={iaAplicando}
+              />
+              <Button
+                label={iaAplicando ? 'Aplicando...' : 'Confirmar Médico'}
+                icon="pi pi-check"
+                severity="success"
+                onClick={handleAplicarSugestaoIA}
+                loading={iaAplicando}
+                disabled={!iaSugestao.idMedico}
+              />
+            </div>
+          </div>
+        )}
       </Dialog>
     </div>
   );

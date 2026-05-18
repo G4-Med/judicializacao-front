@@ -39,6 +39,7 @@ interface ProcessoOrcamento {
   refPreco: number;
   dataStatusJuridico: string | null;
   dias: number;
+  statusJuridico: string | null;
   statusOrcamento: string;
   solicitacao: string;
   orcamentosJuridico: string | null;
@@ -497,44 +498,44 @@ ${blocos}
           <div className="orcamento-form-grid">
             <div className="field field-span-3">
               <label>Paciente</label>
-              <InputText value={processoSelecionado.paciente} disabled />
+              <InputText value={processoSelecionado.paciente} readOnly />
             </div>
             <div className="field field-span-1">
               <label>Idade</label>
-              <InputText value={String(processoSelecionado.idade)} disabled />
+              <InputText value={String(processoSelecionado.idade)} readOnly />
             </div>
             <div className="field field-span-4">
               <label>Procedimento</label>
-              <InputText value={processoSelecionado.procedimento} disabled />
+              <InputText value={processoSelecionado.procedimento} readOnly />
             </div>
             <div className="field field-span-2">
               <label>Área</label>
-              <InputText value={processoSelecionado.area} disabled />
+              <InputText value={processoSelecionado.area} readOnly />
             </div>
             <div className="field field-span-2">
               <label>Subárea</label>
-              <InputText value={processoSelecionado.subarea} disabled />
+              <InputText value={processoSelecionado.subarea} readOnly />
             </div>
             <div className="field field-span-2">
               <label>Data da Solicitação</label>
-              <InputText value={formatarData(processoSelecionado.dataStatusJuridico)} disabled />
+              <InputText value={formatarData(processoSelecionado.dataStatusJuridico)} readOnly />
             </div>
             <div className="field field-span-2">
               <label>Dias em Aberto</label>
-              <InputText value={String(processoSelecionado.dias)} disabled />
+              <InputText value={String(processoSelecionado.dias)} readOnly />
             </div>
 
             {processoSelecionado.solicitacao && (
               <div className="field field-span-4">
                 <label>Solicitação (corpo do e-mail)</label>
-                <InputTextarea value={processoSelecionado.solicitacao} rows={4} disabled autoResize />
+                <InputTextarea value={processoSelecionado.solicitacao} rows={4} readOnly autoResize />
               </div>
             )}
 
             {processoSelecionado.orcamentosJuridico && (
               <div className="field field-span-4">
                 <label>Orçamentos (Jurídico)</label>
-                <InputTextarea value={processoSelecionado.orcamentosJuridico} rows={3} disabled autoResize />
+                <InputTextarea value={processoSelecionado.orcamentosJuridico} rows={3} readOnly autoResize />
               </div>
             )}
 

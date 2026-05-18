@@ -1421,6 +1421,7 @@ ${linhasAnexos}
       procedimento: processoEditando.procedimento,
       area: processoEditando.area,
       subarea: processoEditando.subarea,
+      refPreco: processoEditando.refPreco,
       statusJuridico: processoEditando.statusJuridico || null,
       statusOrcamento: processoEditando.statusOrcamento || null,
       statusPerda: processoEditando.statusPerda || null,
@@ -1431,23 +1432,7 @@ ${linhasAnexos}
       idMedico: processoEditando.idMedico,
     };
 
-    console.log('PAYLOAD ENVIADO PARA API:', payload);      
-
-
-      await atualizarOrder(processoEditando.id, {
-        paciente: processoEditando.paciente,
-        procedimento: processoEditando.procedimento,
-        area: processoEditando.area,
-        subarea: processoEditando.subarea,
-        statusJuridico: processoEditando.statusJuridico || null,
-        statusOrcamento: processoEditando.statusOrcamento || null,
-        statusPerda: processoEditando.statusPerda || null,
-        justificativaPerda: processoEditando.justificativaPerda || null,
-        nprocesso: processoEditando.nprocesso || null,
-        valorOrcamento: processoEditando.valorOrcamento,
-        valorGanho: processoEditando.valorGanho,
-        idMedico: processoEditando.idMedico,
-      });
+      await atualizarOrder(processoEditando.id, payload);
 
       await carregarDados();
 

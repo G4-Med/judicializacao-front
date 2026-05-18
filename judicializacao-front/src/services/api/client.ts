@@ -39,8 +39,10 @@ export const cadastrarUsuarioMedico = (medicoId: number) =>
 export const verificarUsuarioMedico = (medicoId: number) =>
   api.get(`/client/verificar-usuario-medico/${medicoId}/`);
 
-export const getBaseOrcamento = (medicoId: number) =>
-  api.get(`/client/medico/${medicoId}/base-orcamento/`);
+export type TipoBaseOrcamento = 'COTAR' | 'SEGREDO';
+
+export const getBaseOrcamento = (medicoId: number, tipo: TipoBaseOrcamento = 'COTAR') =>
+  api.get(`/client/medico/${medicoId}/base-orcamento/`, { params: { tipo } });
 
 export const salvarBaseOrcamento = (medicoId: number, formData: FormData) =>
   api.post(`/client/medico/${medicoId}/base-orcamento/salvar/`, formData, {

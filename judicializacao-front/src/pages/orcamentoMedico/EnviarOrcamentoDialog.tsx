@@ -7,7 +7,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import { getBaseOrcamento, getDadosMedico } from '../../services/api/client';
+import { getBaseOrcamento, getDadosMedico, type TipoBaseOrcamento } from '../../services/api/client';
 import { salvarOrcamentoMedico, uploadAnexoOrder } from '../../services/api/orders';
 import './OrcamentoMedicoPage.css';
 
@@ -51,6 +51,7 @@ export interface OrcamentoProcessoBase {
   idMedico?: number | null;
   medico_id?: number | null;
   nprocesso?: string;
+  statusJuridico?: string | null;
 }
 
 interface EnviarOrcamentoDialogProps {
@@ -310,10 +311,18 @@ export function EnviarOrcamentoDialog({
       return;
     }
 
+    // Tipo da base é decidido pelo statusJuridico do processo:
+    //  - "Segredo de Justiça"  → base SEGREDO
+    //  - qualquer outro (Cotar, etc) → base COTAR
+    const tipoBase: TipoBaseOrcamento =
+      (processo?.statusJuridico ?? '').trim().toLowerCase() === 'segredo de justiça'
+        ? 'SEGREDO'
+        : 'COTAR';
+
     setLoadingBaseOrcamento(true);
     try {
       const [{ data }, { data: dadosMedico }] = await Promise.all([
-        getBaseOrcamento(medicoId),
+        getBaseOrcamento(medicoId, tipoBase),
         getDadosMedico(medicoId),
       ]);
       const dadosMedicoItem = Array.isArray(dadosMedico) ? dadosMedico[0] : dadosMedico;

@@ -348,3 +348,66 @@ body.dark-theme .selecionar-medico-resumo {
   border-color: #1e2d42;
 }
 body.dark-theme .selecionar-medico-resumo strong { color: #e6eef6; }
+
+/* ---------- Dialog: Sugestão IA ---------- */
+.ia-sugestao-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 4px;
+}
+
+.ia-sugestao-dialog__bloco {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ia-sugestao-dialog__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mc-muted, #5b6b7a);
+}
+
+.ia-sugestao-dialog__valor {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--mc-navy-900, #062a45);
+}
+
+.ia-sugestao-dialog__texto {
+  font-size: 0.92rem;
+  color: var(--mc-ink, #0f2236);
+  line-height: 1.5;
+}
+
+.ia-sugestao-dialog__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ia-sugestao-dialog__warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid #fcd34d;
+}
+
+.ia-sugestao-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--mc-border, #e3eaef);
+}

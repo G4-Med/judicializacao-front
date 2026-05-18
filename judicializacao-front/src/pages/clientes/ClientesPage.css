@@ -583,3 +583,170 @@ body.dark-theme .assinatura-img {
 body.dark-theme .assinatura-canvas {
   background: #fff;
 }
+
+/* ---------- Base Orçamento: 2 uploads de PDF + assinatura/checklists compartilhados ---------- */
+.base-orcamento-help {
+  font-size: 0.85rem;
+  color: var(--mc-muted, #5b6b7a);
+  line-height: 1.5;
+  padding: 10px 14px;
+  background: var(--mc-surface-2, #f9fbfc);
+  border-left: 3px solid var(--mc-navy-700, #0a3d62);
+  border-radius: 6px;
+}
+
+.base-orcamento-pdf {
+  border: 1px solid var(--mc-border, #e3eaef);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: var(--mc-surface, #fff);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.base-orcamento-pdf--cotar   { border-top: 3px solid var(--mc-green-500, #00a651); }
+.base-orcamento-pdf--segredo { border-top: 3px solid #d08a1c; }
+
+.base-orcamento-pdf__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--mc-navy-900, #062a45);
+}
+.base-orcamento-pdf__header i {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+}
+.base-orcamento-pdf--cotar   .base-orcamento-pdf__header i {
+  background: var(--mc-green-50, #e6f7ef);
+  color: var(--mc-green-700, #067b3d);
+}
+.base-orcamento-pdf--segredo .base-orcamento-pdf__header i {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Card do PDF atual salvo */
+.base-orcamento-pdf__atual {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--mc-surface-2, #f9fbfc);
+  border: 1px solid var(--mc-border, #e3eaef);
+  border-radius: 8px;
+}
+
+.base-orcamento-pdf__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  color: var(--mc-navy-700, #0a3d62);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.base-orcamento-pdf__link:hover {
+  color: var(--mc-green-700, #067b3d);
+  text-decoration: underline;
+}
+.base-orcamento-pdf__link i {
+  color: #dc2626;
+  font-size: 1rem;
+}
+
+/* Card do arquivo pendente (não salvo ainda) */
+.base-orcamento-pdf__pendente {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #ecfdf5;
+  border: 1px dashed var(--mc-green-500, #00a651);
+  border-radius: 8px;
+}
+.base-orcamento-pdf__pendente > i {
+  color: var(--mc-green-700, #067b3d);
+  font-size: 1rem;
+}
+.base-orcamento-pdf__pendente-nome {
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--mc-green-700, #067b3d);
+  word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Botão X compacto */
+.base-orcamento-pdf__remove {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+  transition: background .12s ease, color .12s ease, border-color .12s ease;
+}
+.base-orcamento-pdf__remove:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+/* Esconder input nativo + label estilizado */
+.base-orcamento-pdf__input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.base-orcamento-pdf__upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px dashed var(--mc-border-2, #d6e0e6);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--mc-navy-700, #0a3d62);
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease, color .12s ease;
+  align-self: flex-start;
+}
+.base-orcamento-pdf__upload-btn:hover {
+  background: var(--mc-green-50, #e6f7ef);
+  border-color: var(--mc-green-300, #86d6ad);
+  color: var(--mc-green-700, #067b3d);
+}
+.base-orcamento-pdf__upload-btn i {
+  font-size: 0.95rem;
+}

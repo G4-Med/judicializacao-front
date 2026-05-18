@@ -165,9 +165,9 @@ export function EmailsPage() {
     setLoading(true);
 
     try {
-      const listaRes = await getEmailsPendentes();
+      const listaRes = await getEmailsPendentes({ status: 'PENDENTE' });
       const lista = Array.isArray(listaRes.data) ? listaRes.data : [];
-      setRegistros(lista.filter((item) => item.status !== 'ENVIADO'));
+      setRegistros(lista);
     } catch (error) {
       console.error('Erro ao carregar lista de emails pendentes', error);
       setRegistros([]);

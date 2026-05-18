@@ -128,7 +128,9 @@ const baseOrcamentoInicial = {
   ortesesImobilizadores: false,
   examesComplementares: false,
   custoCtiBemodinamica: false,
+  // 2 folhas timbradas (Cotar/Segredo); resto é compartilhado.
   linkBaseOrcamento: '',
+  linkBaseOrcamentoSegredo: '',
   linkAssinatura: '',
 };
 
@@ -208,8 +210,43 @@ export function ClientesPage() {
   const [novoCliente, setNovoCliente] = useState<ClienteTableRow>(clienteInicial);
   const [usuarioCadastrado, setUsuarioCadastrado] = useState(false);
   const [loadingUsuario, setLoadingUsuario] = useState(false);
-  const [baseOrcamentoArquivo, setBaseOrcamentoArquivo] = useState<File | null>(null);
   const [baseOrcamento, setBaseOrcamento] = useState(baseOrcamentoInicial);
+  const [baseOrcamentoArquivoCotar, setBaseOrcamentoArquivoCotar] = useState<File | null>(null);
+  const [baseOrcamentoArquivoSegredo, setBaseOrcamentoArquivoSegredo] = useState<File | null>(null);
+
+  const carregarBaseOrcamentoDoCliente = async (medicoId: number) => {
+    setBaseOrcamentoArquivoCotar(null);
+    setBaseOrcamentoArquivoSegredo(null);
+    try {
+      const { data: base } = await getBaseOrcamento(medicoId);
+      if (base?.exists) {
+        setBaseOrcamento({
+          honorariosEquipeMedica: base.honorariosEquipeMedica ?? false,
+          taxasHospitalares: base.taxasHospitalares ?? false,
+          materiaisOpme: base.materiaisOpme ?? false,
+          medicamentosDiaria: base.medicamentosDiaria ?? false,
+          examesPreOperatorios: base.examesPreOperatorios ?? false,
+          consultaPosOperatoria: base.consultaPosOperatoria ?? false,
+          atendimentoEnfermagem: base.atendimentoEnfermagem ?? false,
+          acompanhanteTaxaAdicional: base.acompanhanteTaxaAdicional ?? false,
+          fisioterapiaPosOperatoria: base.fisioterapiaPosOperatoria ?? false,
+          medicamentosPosAlta: base.medicamentosPosAlta ?? false,
+          ortesesImobilizadores: base.ortesesImobilizadores ?? false,
+          examesComplementares: base.examesComplementares ?? false,
+          custoCtiBemodinamica: base.custoCtiBemodinamica ?? false,
+          // Backend retorna ambos os links (cotar e segredo).
+          linkBaseOrcamento: base.linkBaseOrcamentoCotar ?? base.linkBaseOrcamento ?? '',
+          linkBaseOrcamentoSegredo: base.linkBaseOrcamentoSegredo ?? '',
+          linkAssinatura: base.linkAssinatura ?? '',
+        });
+      } else {
+        setBaseOrcamento(baseOrcamentoInicial);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar base de orçamento:', err);
+      setBaseOrcamento(baseOrcamentoInicial);
+    }
+  };
   const [assinaturaDialogVisible, setAssinaturaDialogVisible] = useState(false);
   const [savingBase, setSavingBase] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -402,7 +439,8 @@ const editarBodyTemplate = (rowData: ClienteTableRow) => {
       onClick={async () => {
         setUsuarioCadastrado(false);
         setBaseOrcamento(baseOrcamentoInicial);
-        setBaseOrcamentoArquivo(null);
+        setBaseOrcamentoArquivoCotar(null);
+        setBaseOrcamentoArquivoSegredo(null);
         setClienteEditando({
           ...clienteInicial,
           ...rowData,
@@ -478,33 +516,7 @@ const editarBodyTemplate = (rowData: ClienteTableRow) => {
             chavePix: db.chavePix ?? '',
           });
 
-          try {
-            const { data: base } = await getBaseOrcamento(rowData.id);
-            if (base.exists) {
-              setBaseOrcamento({
-                honorariosEquipeMedica: base.honorariosEquipeMedica,
-                taxasHospitalares: base.taxasHospitalares,
-                materiaisOpme: base.materiaisOpme,
-                medicamentosDiaria: base.medicamentosDiaria,
-                examesPreOperatorios: base.examesPreOperatorios,
-                consultaPosOperatoria: base.consultaPosOperatoria,
-                atendimentoEnfermagem: base.atendimentoEnfermagem,
-                acompanhanteTaxaAdicional: base.acompanhanteTaxaAdicional,
-                fisioterapiaPosOperatoria: base.fisioterapiaPosOperatoria,
-                medicamentosPosAlta: base.medicamentosPosAlta,
-                ortesesImobilizadores: base.ortesesImobilizadores,
-                examesComplementares: base.examesComplementares,
-                custoCtiBemodinamica: base.custoCtiBemodinamica,
-                linkBaseOrcamento: base.linkBaseOrcamento ?? '',
-                linkAssinatura: base.linkAssinatura ?? '',
-              });
-            } else {
-              setBaseOrcamento(baseOrcamentoInicial);
-            }
-          } catch (baseErr) {
-            console.error('Erro ao carregar base de orçamento do cliente:', baseErr);
-            setBaseOrcamento(baseOrcamentoInicial);
-          }
+          await carregarBaseOrcamentoDoCliente(rowData.id);
         } catch (err) {
           console.error('Erro ao carregar dados do cliente:', err);
         }
@@ -745,7 +757,8 @@ const formatarConta = (valor: string) => {
       updateDate: agora
     });
     setBaseOrcamento(baseOrcamentoInicial);
-    setBaseOrcamentoArquivo(null);
+    setBaseOrcamentoArquivoCotar(null);
+    setBaseOrcamentoArquivoSegredo(null);
 
     setCreateDialogVisible(true);
   };
@@ -1072,7 +1085,8 @@ const handleSalvarEdicao = async () => {
     setSavingBase(true);
     try {
       const form = new FormData();
-      if (baseOrcamentoArquivo) form.append('baseOrcamento', baseOrcamentoArquivo);
+      if (baseOrcamentoArquivoCotar) form.append('baseOrcamento', baseOrcamentoArquivoCotar);
+      if (baseOrcamentoArquivoSegredo) form.append('baseOrcamentoSegredo', baseOrcamentoArquivoSegredo);
       Object.entries(baseOrcamento).forEach(([key, value]) => {
         if (typeof value === 'boolean') form.append(key, String(value));
       });
@@ -1131,7 +1145,7 @@ const handleSalvarEdicao = async () => {
       try {
         await salvarBaseOrcamento(clienteEditando.id, form);
         const url = URL.createObjectURL(blob);
-        setBaseOrcamento(prev => ({ ...prev, linkAssinatura: url }));
+        setBaseOrcamento((prev) => ({ ...prev, linkAssinatura: url }));
         setAssinaturaDialogVisible(false);
         alert('Assinatura salva!');
       } catch {
@@ -1139,6 +1153,218 @@ const handleSalvarEdicao = async () => {
       }
     }, 'image/png');
   };
+
+  // ============================================================
+  // Helper: tab "Base Orçamento" — 2 PDFs (Cotar/Segredo) + 1 assinatura + 1 checklist.
+  // Reutilizada nos dois dialogs (criar e editar).
+  // ============================================================
+  const inclusosCheckList: { key: keyof typeof baseOrcamentoInicial; label: string }[] = [
+    { key: 'honorariosEquipeMedica', label: 'Honorários da equipe médica' },
+    { key: 'taxasHospitalares', label: 'Taxas hospitalares' },
+    { key: 'materiaisOpme', label: 'Materiais e OPME' },
+    { key: 'medicamentosDiaria', label: 'Medicamentos durante a diária do pós-operatório' },
+    { key: 'examesPreOperatorios', label: 'Exames pré-operatórios básicos' },
+    { key: 'consultaPosOperatoria', label: '1 Consulta pós-operatória' },
+    { key: 'atendimentoEnfermagem', label: 'Atendimento de enfermagem 24h' },
+  ];
+  const naoInclusosCheckList: { key: keyof typeof baseOrcamentoInicial; label: string }[] = [
+    { key: 'acompanhanteTaxaAdicional', label: 'Acompanhante (taxa adicional)' },
+    { key: 'fisioterapiaPosOperatoria', label: 'Fisioterapia pós-operatória' },
+    { key: 'medicamentosPosAlta', label: 'Medicamentos pós-alta' },
+    { key: 'ortesesImobilizadores', label: 'Órteses e imobilizadores' },
+    { key: 'examesComplementares', label: 'Exames complementares extras' },
+    { key: 'custoCtiBemodinamica', label: 'Custo com CTI e hemodinâmica' },
+  ];
+
+  const handleRemoverFolhaTimbrada = async (accent: 'cotar' | 'segredo') => {
+    if (!clienteEditando) return;
+    const ok = window.confirm(
+      `Tem certeza que deseja remover a folha timbrada (${accent === 'cotar' ? 'Cotar' : 'Segredo de Justiça'})?`,
+    );
+    if (!ok) return;
+
+    try {
+      const form = new FormData();
+      if (accent === 'cotar') form.append('removerBaseOrcamento', 'true');
+      else form.append('removerBaseOrcamentoSegredo', 'true');
+      await salvarBaseOrcamento(clienteEditando.id, form);
+      setBaseOrcamento((prev) => ({
+        ...prev,
+        ...(accent === 'cotar'
+          ? { linkBaseOrcamento: '' }
+          : { linkBaseOrcamentoSegredo: '' }),
+      }));
+      if (accent === 'cotar') setBaseOrcamentoArquivoCotar(null);
+      else setBaseOrcamentoArquivoSegredo(null);
+    } catch (err) {
+      console.error('Erro ao remover folha timbrada:', err);
+      alert('Erro ao remover folha timbrada.');
+    }
+  };
+
+  const renderUploadPdf = (
+    titulo: string,
+    linkAtual: string,
+    arquivo: File | null,
+    setArquivo: (f: File | null) => void,
+    accent: 'cotar' | 'segredo',
+  ) => {
+    const inputId = `base-pdf-${accent}`;
+    return (
+      <div className={`base-orcamento-pdf base-orcamento-pdf--${accent}`}>
+        <div className="base-orcamento-pdf__header">
+          <i className={accent === 'cotar' ? 'pi pi-file-edit' : 'pi pi-lock'} />
+          <span>{titulo}</span>
+        </div>
+
+        {linkAtual && !arquivo && (
+          <div className="base-orcamento-pdf__atual">
+            <a
+              href={linkAtual}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="base-orcamento-pdf__link"
+            >
+              <i className="pi pi-file-pdf" />
+              <span>Ver PDF atual</span>
+            </a>
+            <button
+              type="button"
+              className="base-orcamento-pdf__remove"
+              aria-label="Remover folha timbrada"
+              title="Remover"
+              onClick={() => handleRemoverFolhaTimbrada(accent)}
+            >
+              <i className="pi pi-times" />
+            </button>
+          </div>
+        )}
+
+        {arquivo && (
+          <div className="base-orcamento-pdf__pendente">
+            <i className="pi pi-upload" />
+            <span className="base-orcamento-pdf__pendente-nome">{arquivo.name}</span>
+            <button
+              type="button"
+              className="base-orcamento-pdf__remove"
+              aria-label="Cancelar arquivo selecionado"
+              title="Cancelar"
+              onClick={() => setArquivo(null)}
+            >
+              <i className="pi pi-times" />
+            </button>
+          </div>
+        )}
+
+        <input
+          id={inputId}
+          type="file"
+          accept=".pdf"
+          onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
+          className="base-orcamento-pdf__input-hidden"
+        />
+        <label htmlFor={inputId} className="base-orcamento-pdf__upload-btn">
+          <i className="pi pi-cloud-upload" />
+          <span>
+            {linkAtual || arquivo ? 'Trocar arquivo' : 'Selecionar arquivo PDF'}
+          </span>
+        </label>
+      </div>
+    );
+  };
+
+  const renderBaseOrcamentoTabContent = () => (
+    <div className="cliente-form-grid">
+      <small className="field field-span-4 base-orcamento-help">
+        A assinatura e os checklists abaixo são compartilhados entre os dois tipos. Só a folha
+        timbrada (PDF) é diferente — o sistema escolhe a folha certa em "Orçamento Médico"
+        conforme o status jurídico do pedido.
+      </small>
+
+      <div className="field field-span-2 base-orcamento-section">
+        <label>Folhas Timbradas (PDF)</label>
+        {renderUploadPdf(
+          'Cotar',
+          baseOrcamento.linkBaseOrcamento,
+          baseOrcamentoArquivoCotar,
+          setBaseOrcamentoArquivoCotar,
+          'cotar',
+        )}
+      </div>
+
+      <div className="field field-span-2 base-orcamento-section">
+        <label>&nbsp;</label>
+        {renderUploadPdf(
+          'Segredo de Justiça',
+          baseOrcamento.linkBaseOrcamentoSegredo,
+          baseOrcamentoArquivoSegredo,
+          setBaseOrcamentoArquivoSegredo,
+          'segredo',
+        )}
+      </div>
+
+      <div className="field field-span-4 base-orcamento-section">
+        <label>Assinatura</label>
+        <div className="base-orcamento-row">
+          {baseOrcamento.linkAssinatura ? (
+            <img src={baseOrcamento.linkAssinatura} alt="Assinatura" className="assinatura-img" />
+          ) : (
+            <span className="assinatura-vazia">Nenhuma assinatura cadastrada</span>
+          )}
+          <Button
+            label="Criar Assinatura"
+            icon="pi pi-pencil"
+            outlined
+            onClick={() => setAssinaturaDialogVisible(true)}
+          />
+        </div>
+      </div>
+
+      <div className="field field-span-4 base-orcamento-checks">
+        <div className="checks-grid">
+          <div>
+            <p className="checks-title">INCLUSOS (marque o que está incluso)</p>
+            {inclusosCheckList.map(({ key, label }) => (
+              <div key={key} className="check-item">
+                <input
+                  type="checkbox"
+                  checked={baseOrcamento[key] as boolean}
+                  onChange={(e) =>
+                    setBaseOrcamento((prev) => ({ ...prev, [key]: e.target.checked }))
+                  }
+                />
+                <label>{label}</label>
+              </div>
+            ))}
+          </div>
+          <div>
+            <p className="checks-title">NÃO INCLUSOS (marque o que NÃO está incluso)</p>
+            {naoInclusosCheckList.map(({ key, label }) => (
+              <div key={key} className="check-item">
+                <input
+                  type="checkbox"
+                  checked={baseOrcamento[key] as boolean}
+                  onChange={(e) =>
+                    setBaseOrcamento((prev) => ({ ...prev, [key]: e.target.checked }))
+                  }
+                />
+                <label>{label}</label>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="field field-span-4 base-orcamento-actions">
+        <Button
+          label="Salvar Base de Orçamento"
+          icon="pi pi-check"
+          loading={savingBase}
+          onClick={handleSalvarBaseOrcamento}
+        />
+      </div>
+    </div>
+  );
 
 
 
@@ -1478,80 +1704,7 @@ const handleSalvarEdicao = async () => {
           </TabPanel>
 
           <TabPanel header="Base Orçamento">
-            <div className="cliente-form-grid">
-              <div className="field field-span-4 base-orcamento-section">
-                <label>Folha Timbrada (PDF)</label>
-                <div className="base-orcamento-row">
-                  {baseOrcamento.linkBaseOrcamento && (
-                    <a href={baseOrcamento.linkBaseOrcamento} target="_blank" rel="noopener noreferrer" className="base-orcamento-link">
-                      <i className="pi pi-file-pdf" />
-                      Ver PDF atual
-                    </a>
-                  )}
-                  <input type="file" accept=".pdf" onChange={(e) => setBaseOrcamentoArquivo(e.target.files?.[0] ?? null)} className="base-orcamento-file" />
-                </div>
-                {baseOrcamentoArquivo && (
-                  <span className="base-orcamento-filename">
-                    <i className="pi pi-file" />
-                    {baseOrcamentoArquivo.name}
-                  </span>
-                )}
-              </div>
-
-              <div className="field field-span-4 base-orcamento-section">
-                <label>Assinatura</label>
-                <div className="base-orcamento-row">
-                  {baseOrcamento.linkAssinatura ? (
-                    <img src={baseOrcamento.linkAssinatura} alt="Assinatura" className="assinatura-img" />
-                  ) : (
-                    <span className="assinatura-vazia">Nenhuma assinatura cadastrada</span>
-                  )}
-                  <Button label="Criar Assinatura" icon="pi pi-pencil" outlined onClick={() => setAssinaturaDialogVisible(true)} />
-                </div>
-              </div>
-
-              <div className="field field-span-4 base-orcamento-checks">
-                <div className="checks-grid">
-                  <div>
-                    <p className="checks-title">INCLUSOS (marque o que está incluso)</p>
-                    {[
-                      { key: 'honorariosEquipeMedica', label: 'Honorários da equipe médica' },
-                      { key: 'taxasHospitalares', label: 'Taxas hospitalares' },
-                      { key: 'materiaisOpme', label: 'Materiais e OPME' },
-                      { key: 'medicamentosDiaria', label: 'Medicamentos durante a diária do pós-operatório' },
-                      { key: 'examesPreOperatorios', label: 'Exames pré-operatórios básicos' },
-                      { key: 'consultaPosOperatoria', label: '1 Consulta pós-operatória' },
-                      { key: 'atendimentoEnfermagem', label: 'Atendimento de enfermagem 24h' },
-                    ].map(({ key, label }) => (
-                      <div key={key} className="check-item">
-                        <input type="checkbox" checked={baseOrcamento[key as keyof typeof baseOrcamento] as boolean} onChange={(e) => setBaseOrcamento(prev => ({ ...prev, [key]: e.target.checked }))} />
-                        <label>{label}</label>
-                      </div>
-                    ))}
-                  </div>
-                  <div>
-                    <p className="checks-title">NÃO INCLUSOS (marque o que NÃO está incluso)</p>
-                    {[
-                      { key: 'acompanhanteTaxaAdicional', label: 'Acompanhante (taxa adicional)' },
-                      { key: 'fisioterapiaPosOperatoria', label: 'Fisioterapia pós-operatória' },
-                      { key: 'medicamentosPosAlta', label: 'Medicamentos pós-alta' },
-                      { key: 'ortesesImobilizadores', label: 'Órteses e imobilizadores' },
-                      { key: 'examesComplementares', label: 'Exames complementares extras' },
-                      { key: 'custoCtiBemodinamica', label: 'Custo com CTI e hemodinâmica' },
-                    ].map(({ key, label }) => (
-                      <div key={key} className="check-item">
-                        <input type="checkbox" checked={baseOrcamento[key as keyof typeof baseOrcamento] as boolean} onChange={(e) => setBaseOrcamento(prev => ({ ...prev, [key]: e.target.checked }))} />
-                        <label>{label}</label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="field field-span-4 base-orcamento-actions">
-                <Button label="Salvar Base de Orçamento" icon="pi pi-check" loading={savingBase} onClick={handleSalvarBaseOrcamento} />
-              </div>
-            </div>
+            {renderBaseOrcamentoTabContent()}
           </TabPanel>
         </TabView>
 
@@ -1712,80 +1865,7 @@ const handleSalvarEdicao = async () => {
               </TabPanel>
 
               <TabPanel header="Base Orçamento">
-                <div className="cliente-form-grid">
-                  <div className="field field-span-4 base-orcamento-section">
-                    <label>Folha Timbrada (PDF)</label>
-                    <div className="base-orcamento-row">
-                      {baseOrcamento.linkBaseOrcamento && (
-                        <a href={baseOrcamento.linkBaseOrcamento} target="_blank" rel="noopener noreferrer" className="base-orcamento-link">
-                          <i className="pi pi-file-pdf" />
-                          Ver PDF atual
-                        </a>
-                      )}
-                      <input type="file" accept=".pdf" onChange={(e) => setBaseOrcamentoArquivo(e.target.files?.[0] ?? null)} className="base-orcamento-file" />
-                    </div>
-                    {baseOrcamentoArquivo && (
-                      <span className="base-orcamento-filename">
-                        <i className="pi pi-file" />
-                        {baseOrcamentoArquivo.name}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="field field-span-4 base-orcamento-section">
-                    <label>Assinatura</label>
-                    <div className="base-orcamento-row">
-                      {baseOrcamento.linkAssinatura ? (
-                        <img src={baseOrcamento.linkAssinatura} alt="Assinatura" className="assinatura-img" />
-                      ) : (
-                        <span className="assinatura-vazia">Nenhuma assinatura cadastrada</span>
-                      )}
-                      <Button label="Criar Assinatura" icon="pi pi-pencil" outlined onClick={() => setAssinaturaDialogVisible(true)} />
-                    </div>
-                  </div>
-
-                  <div className="field field-span-4 base-orcamento-checks">
-                    <div className="checks-grid">
-                      <div>
-                        <p className="checks-title">INCLUSOS (marque o que está incluso)</p>
-                        {[
-                          { key: 'honorariosEquipeMedica', label: 'Honorários da equipe médica' },
-                          { key: 'taxasHospitalares', label: 'Taxas hospitalares' },
-                          { key: 'materiaisOpme', label: 'Materiais e OPME' },
-                          { key: 'medicamentosDiaria', label: 'Medicamentos durante a diária do pós-operatório' },
-                          { key: 'examesPreOperatorios', label: 'Exames pré-operatórios básicos' },
-                          { key: 'consultaPosOperatoria', label: '1 Consulta pós-operatória' },
-                          { key: 'atendimentoEnfermagem', label: 'Atendimento de enfermagem 24h' },
-                        ].map(({ key, label }) => (
-                          <div key={key} className="check-item">
-                            <input type="checkbox" checked={baseOrcamento[key as keyof typeof baseOrcamento] as boolean} onChange={(e) => setBaseOrcamento((prev) => ({ ...prev, [key]: e.target.checked }))} />
-                            <label>{label}</label>
-                          </div>
-                        ))}
-                      </div>
-                      <div>
-                        <p className="checks-title">NÃO INCLUSOS (marque o que NÃO está incluso)</p>
-                        {[
-                          { key: 'acompanhanteTaxaAdicional', label: 'Acompanhante (taxa adicional)' },
-                          { key: 'fisioterapiaPosOperatoria', label: 'Fisioterapia pós-operatória' },
-                          { key: 'medicamentosPosAlta', label: 'Medicamentos pós-alta' },
-                          { key: 'ortesesImobilizadores', label: 'Órteses e imobilizadores' },
-                          { key: 'examesComplementares', label: 'Exames complementares extras' },
-                          { key: 'custoCtiBemodinamica', label: 'Custo com CTI e hemodinâmica' },
-                        ].map(({ key, label }) => (
-                          <div key={key} className="check-item">
-                            <input type="checkbox" checked={baseOrcamento[key as keyof typeof baseOrcamento] as boolean} onChange={(e) => setBaseOrcamento((prev) => ({ ...prev, [key]: e.target.checked }))} />
-                            <label>{label}</label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="field field-span-4 base-orcamento-actions">
-                    <Button label="Salvar Base de Orçamento" icon="pi pi-check" loading={savingBase} onClick={handleSalvarBaseOrcamento} />
-                  </div>
-                </div>
+                {renderBaseOrcamentoTabContent()}
               </TabPanel>
             </TabView>
           </fieldset>

@@ -595,6 +595,7 @@
 }
 
 .orcamento-documento__assinatura {
+  margin-bottom: 22px;
   position: absolute;
   bottom: 0;
   left: 0;

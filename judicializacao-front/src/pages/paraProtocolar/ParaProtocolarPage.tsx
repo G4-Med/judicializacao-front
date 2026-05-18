@@ -221,7 +221,7 @@ export function ParaProtocolarPage() {
       const listaAnexos: any[] = res.data.anexos ?? [];
 
       if (listaAnexos.length === 0) {
-        alert('Nenhum orÃ§amento anexado para este pedido.');
+        alert('Nenhum orçamento anexado para este pedido.');
         return;
       }
 
@@ -241,7 +241,7 @@ export function ParaProtocolarPage() {
 
       abrirPreview(anexo.linkImagem, nomeArquivo, tipo);
     } catch {
-      alert('Erro ao carregar o orÃ§amento do pedido.');
+      alert('Erro ao carregar o orçamento do pedido.');
     }
   };
 
@@ -252,7 +252,7 @@ export function ParaProtocolarPage() {
         rounded
         outlined
         severity="secondary"
-        aria-label={`Baixar orÃ§amento do pedido ${rowData.id}`}
+        aria-label={`Baixar orçamento do pedido ${rowData.id}`}
         onClick={() => abrirOrcamentoAnexo(rowData, 'download')}
       />
     );
@@ -281,6 +281,7 @@ export function ParaProtocolarPage() {
       const texto = [
         'Segue orcamento acima para protocolar:',
         `Paciente: ${rowData.paciente}`,
+        `Numero do processo: ${rowData.nprocesso || '-'}`,
         `Valor do orcamento: R$ ${valorFormatado}`,
         `Cliente: ${rowData.cliente}`,
         'Orcamento ja enviado ao estado e pronto para protocolacao.',
@@ -335,7 +336,7 @@ export function ParaProtocolarPage() {
   const protocolarBodyTemplate = (rowData: ParaProtocolarTableRow) => {
     return (
       <Button
-        label="Protocolar"
+        label=""
         icon="pi pi-send"
         severity="success"
         outlined
@@ -357,7 +358,7 @@ export function ParaProtocolarPage() {
   const excluirBodyTemplate = (rowData: ParaProtocolarTableRow) => {
     return (
       <Button
-        label="NÃ£o Protocolar"
+        label=""
         icon="pi pi-times"
         severity="danger"
         outlined
@@ -399,20 +400,20 @@ export function ParaProtocolarPage() {
 
   const handleSalvarEdicao = () => {
     if (!registroEditando) return;
-    console.log('Salvar ediÃ§Ã£o:', registroEditando);
+    console.log('Salvar edição:', registroEditando);
     setEditDialogVisible(false);
   };
 
 const handleConfirmarProtocolacao = async () => {
   if (!registroProtocolando) return
 
-  // ValidaÃ§Ãµes obrigatÃ³rias
+  // Validações obrigatórias
   if (!dataProtocolo) {
-    alert('A data de protocolaÃ§Ã£o Ã© obrigatÃ³ria.')
+    alert('A data de protocolação é obrigatória.')
     return
   }
   if (!arquivoPeticao) {
-    alert('O arquivo de petiÃ§Ã£o Ã© obrigatÃ³rio.')
+    alert('O arquivo de petição é obrigatório.')
     return
   }
 
@@ -445,7 +446,7 @@ const handleConfirmarProtocolacao = async () => {
     setArquivoExtra2(null)
     carregarDados()
   } catch (err) {
-    alert('Erro ao confirmar protocolaÃ§Ã£o.')
+    alert('Erro ao confirmar protocolação.')
   } finally {
     setEnviandoProtocolo(false)
   }
@@ -456,7 +457,7 @@ const handleConfirmarProtocolacao = async () => {
     if (!registroNaoProtocolar || !naoProtocolarOpcao) return;
 
     if (!naoProtocolarObs.trim()) {
-      alert('ObservaÃ§Ã£o Ã© obrigatÃ³ria.');
+      alert('Observação é obrigatória.');
       return;
     }
 
@@ -479,7 +480,7 @@ const handleConfirmarProtocolacao = async () => {
       <div className="page-header">
         <div>
           <h1>Para Protocolar</h1>
-          <p>GestÃ£o dos processos prontos para protocolaÃ§Ã£o</p>
+          <p>Gestão dos processos prontos para protocolação</p>
         </div>
 
 
@@ -575,7 +576,7 @@ const handleConfirmarProtocolacao = async () => {
 
           <Column
             field="dataEnvioOrcamento"
-            header="Data Envio OrÃ§amento"
+            header="Data Envio Orçamento"
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -594,7 +595,7 @@ const handleConfirmarProtocolacao = async () => {
           />
 
           <Column
-            header="OrÃ§amento"
+            header="Orçamento"
             body={anexoBodyTemplate}
             style={{ minWidth: '7rem' }}
             bodyStyle={{ textAlign: 'center' }}
@@ -632,7 +633,7 @@ const handleConfirmarProtocolacao = async () => {
           />}
 
           {!readOnly && <Column
-            header="Excluir"
+            header="Não Protocolar"
             body={excluirBodyTemplate}
             style={{ minWidth: '12rem' }}
             bodyStyle={{ textAlign: 'center' }}
@@ -678,7 +679,7 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field">
-              <label>NÃºmero do Processo</label>
+              <label>Número do Processo</label>
               <InputText
                 value={registroEditando.numeroProcesso}
                 onChange={(e) => updateRegistroEditando('numeroProcesso', e.target.value)}
@@ -686,7 +687,7 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field">
-              <label>Data Envio OrÃ§amento</label>
+              <label>Data Envio Orçamento</label>
               <InputText value={formatarData(registroEditando.dataEnvioOrcamento)} disabled />
             </div>
 
@@ -698,25 +699,25 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field field-span-4">
-              <label>OrÃ§amento do Pedido</label>
+              <label>Orçamento do Pedido</label>
 
               {loadingAnexosOrcamento && (
                 <span style={{ fontSize: '0.9rem', color: '#888' }}>
                   <i className="pi pi-spin pi-spinner" style={{ marginRight: '6px' }} />
-                  Carregando orÃ§amento...
+                  Carregando orçamento...
                 </span>
               )}
 
               {!loadingAnexosOrcamento && anexosOrcamento.length === 0 && (
                 <span style={{ fontSize: '0.9rem', color: '#aaa' }}>
-                  Nenhum orÃ§amento anexado.
+                  Nenhum orçamento anexado.
                 </span>
               )}
 
               {!loadingAnexosOrcamento && anexosOrcamento.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {anexosOrcamento.map((anexo, index) => {
-                    const nomeArquivo = anexo.linkImagem.split('/').pop() || `OrÃ§amento ${index + 1}`;
+                    const nomeArquivo = anexo.linkImagem.split('/').pop() || `Orçamento ${index + 1}`;
                     const extensao = nomeArquivo.split('.').pop()?.toLowerCase();
                     const icone = extensao === 'pdf'
                       ? 'pi pi-file-pdf'
@@ -761,7 +762,7 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field field-span-4">
-              <label>ObservaÃ§Ãµes</label>
+              <label>Observações</label>
               <InputTextarea
                 value={registroEditando.observacoes}
                 onChange={(e) => updateRegistroEditando('observacoes', e.target.value)}
@@ -824,7 +825,7 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field">
-              <label>NÃºmero do Processo</label>
+              <label>Número do Processo</label>
               <InputText value={registroProtocolando.numeroProcesso} disabled />
             </div>
 
@@ -834,30 +835,30 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field field-span-4">
-              <label>ObservaÃ§Ãµes</label>
+              <label>Observações</label>
               <InputTextarea value={registroProtocolando.observacoes} rows={4} disabled />
             </div>
 
 <div className="field field-span-4">
-  <label>OrÃ§amento do Pedido</label>
+  <label>Orçamento do Pedido</label>
 
   {loadingAnexosOrcamento && (
     <span style={{ fontSize: '0.9rem', color: '#888' }}>
       <i className="pi pi-spin pi-spinner" style={{ marginRight: '6px' }} />
-      Carregando orÃ§amento...
+      Carregando orçamento...
     </span>
   )}
 
   {!loadingAnexosOrcamento && anexosOrcamento.length === 0 && (
     <span style={{ fontSize: '0.9rem', color: '#aaa' }}>
-      Nenhum orÃ§amento anexado.
+      Nenhum orçamento anexado.
     </span>
   )}
 
   {!loadingAnexosOrcamento && anexosOrcamento.length > 0 && (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
       {anexosOrcamento.map((anexo, index) => {
-        const nomeArquivo = anexo.linkImagem.split('/').pop() || `OrÃ§amento ${index + 1}`;
+        const nomeArquivo = anexo.linkImagem.split('/').pop() || `Orçamento ${index + 1}`;
         const extensao = nomeArquivo.split('.').pop()?.toLowerCase();
         const icone = extensao === 'pdf'
           ? 'pi pi-file-pdf'
@@ -903,7 +904,7 @@ const handleConfirmarProtocolacao = async () => {
 
 <div className="field field-span-2">
   <label>
-    Data ProtocolaÃ§Ã£o
+    Data Protocolação
     <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>
   </label>
   <Calendar
@@ -920,8 +921,8 @@ const handleConfirmarProtocolacao = async () => {
 
 <div className="field field-span-2">
   <label>
-    PetiÃ§Ã£o
-    <span style={{ color: '#ef4444', marginLeft: '4px' }}>*obrigatÃ³rio</span>
+    Petição
+    <span style={{ color: '#ef4444', marginLeft: '4px' }}>*obrigatório</span>
   </label>
   <label
     style={{
@@ -938,7 +939,7 @@ const handleConfirmarProtocolacao = async () => {
     }}
   >
     <i className={arquivoPeticao ? 'pi pi-file-check' : 'pi pi-upload'} />
-    <span>{arquivoPeticao ? arquivoPeticao.name : 'Selecionar petiÃ§Ã£o...'}</span>
+    <span>{arquivoPeticao ? arquivoPeticao.name : 'Selecionar petição...'}</span>
     <input
       type="file"
       accept=".pdf,.jpg,.jpeg,.png"
@@ -1011,7 +1012,7 @@ const handleConfirmarProtocolacao = async () => {
         {!readOnly && <div className="dialog-footer-actions">
           <Button label="Cancelar" outlined onClick={() => setProtocolarDialogVisible(false)} />
 <Button
-  label={enviandoProtocolo ? 'Enviando...' : 'Confirmar ProtocolaÃ§Ã£o'}
+  label={enviandoProtocolo ? 'Enviando...' : 'Confirmar Protocolação'}
   icon="pi pi-check"
   onClick={handleConfirmarProtocolacao}
   loading={enviandoProtocolo}
@@ -1021,7 +1022,7 @@ const handleConfirmarProtocolacao = async () => {
       </Dialog>
 
       <Dialog
-        header="NÃ£o Protocolar"
+        header="Não Protocolar"
         visible={naoProtocolarDialogVisible}
         style={{ width: '64rem', maxWidth: '95vw' }}
         modal
@@ -1057,7 +1058,7 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field">
-              <label>NÃºmero do Processo</label>
+              <label>Número do Processo</label>
               <InputText value={registroNaoProtocolar.numeroProcesso} disabled />
             </div>
 
@@ -1067,30 +1068,30 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field field-span-4">
-              <label>ObservaÃ§Ãµes</label>
+              <label>Observações</label>
               <InputTextarea value={registroNaoProtocolar.observacoes} rows={4} disabled />
             </div>
 
             <div className="field field-span-4">
-              <label>OrÃ§amento do Pedido</label>
+              <label>Orçamento do Pedido</label>
 
               {loadingAnexosOrcamento && (
                 <span style={{ fontSize: '0.9rem', color: '#888' }}>
                   <i className="pi pi-spin pi-spinner" style={{ marginRight: '6px' }} />
-                  Carregando orÃ§amento...
+                  Carregando orçamento...
                 </span>
               )}
 
               {!loadingAnexosOrcamento && anexosOrcamento.length === 0 && (
                 <span style={{ fontSize: '0.9rem', color: '#aaa' }}>
-                  Nenhum orÃ§amento anexado.
+                  Nenhum orçamento anexado.
                 </span>
               )}
 
               {!loadingAnexosOrcamento && anexosOrcamento.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {anexosOrcamento.map((anexo, index) => {
-                    const nomeArquivo = anexo.linkImagem.split('/').pop() || `OrÃ§amento ${index + 1}`;
+                    const nomeArquivo = anexo.linkImagem.split('/').pop() || `Orçamento ${index + 1}`;
                     const extensao = nomeArquivo.split('.').pop()?.toLowerCase();
                     const icone = extensao === 'pdf'
                       ? 'pi pi-file-pdf'
@@ -1135,7 +1136,7 @@ const handleConfirmarProtocolacao = async () => {
             </div>
 
             <div className="field field-span-4">
-              <label>Escolha uma opÃ§Ã£o</label>
+              <label>Escolha uma opção</label>
 
               <div className="radio-group">
                 <div className="radio-item">
@@ -1157,7 +1158,7 @@ const handleConfirmarProtocolacao = async () => {
                     onChange={(e) => setNaoProtocolarOpcao(e.value)}
                     checked={naoProtocolarOpcao === 'segredo'}
                   />
-                  <label htmlFor="opcaoSegredo">NÃ£o Protocolar e marcar como Segredo de JustiÃ§a</label>
+                  <label htmlFor="opcaoSegredo">Não Protocolar e marcar como Segredo de Justiça</label>
                 </div>
 
                 <div className="radio-item">
@@ -1168,14 +1169,14 @@ const handleConfirmarProtocolacao = async () => {
                     onChange={(e) => setNaoProtocolarOpcao(e.value)}
                     checked={naoProtocolarOpcao === 'diretoria'}
                   />
-                  <label htmlFor="opcaoDiretoria">Diretoria falou para nÃ£o protocolar</label>
+                  <label htmlFor="opcaoDiretoria">Diretoria falou para não protocolar</label>
                 </div>
               </div>
             </div>
 
             <div className="field field-span-4">
               <label>
-                Obs <span style={{ color: '#ef4444' }}>*obrigatÃ³rio</span>
+                Obs <span style={{ color: '#ef4444' }}>*obrigatório</span>
               </label>
               <InputTextarea
                 value={naoProtocolarObs}
