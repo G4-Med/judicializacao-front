@@ -68,12 +68,12 @@ export const getAguardandoCirurgia = () =>
 
 export const confirmarCirurgia = (
   orderId: number,
-  payload: { valorComissao: number; dataConfirmacao: string },
+  payload: { valorComissao: number; dataConfirmacao: string; linkAnexo?: string | null },
 ) => api.post(`/financeiro/${orderId}/confirmar/`, payload);
 
 export const registrarPerdaCirurgia = (
   orderId: number,
-  payload: { descCirurgiaPerda: string; dataConfirmacao: string },
+  payload: { descCirurgiaPerda: string; dataConfirmacao: string; linkAnexo?: string | null },
 ) => api.post(`/financeiro/${orderId}/perda/`, payload);
 
 export const getResultadosFinanceiros = () =>

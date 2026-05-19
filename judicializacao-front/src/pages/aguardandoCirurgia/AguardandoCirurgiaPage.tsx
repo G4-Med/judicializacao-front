@@ -9,7 +9,7 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { InputNumber } from 'primereact/inputnumber';
 import { Calendar } from 'primereact/calendar';
 import { FilterMatchMode } from 'primereact/api';
-import { getAnexosOrder } from '../../services/api/orders';
+import { getAnexosOrder, uploadAnexoOrder } from '../../services/api/orders';
 import {
   getAguardandoCirurgia,
   confirmarCirurgia,
@@ -52,6 +52,7 @@ export function AguardandoCirurgiaPage() {
   const [perdaModo, setPerdaModo] = useState(false);
   const [descPerda, setDescPerda] = useState('');
   const [dataConfirmacao, setDataConfirmacao] = useState<Date | null>(new Date());
+  const [anexoAcompanhamento, setAnexoAcompanhamento] = useState<File | null>(null);
 
   const [anexosRelatorio, setAnexosRelatorio] = useState<Anexo[]>([]);
   const [anexosOrcamento, setAnexosOrcamento] = useState<Anexo[]>([]);
@@ -104,6 +105,7 @@ export function AguardandoCirurgiaPage() {
     setPerdaModo(false);
     setDescPerda('');
     setDataConfirmacao(new Date());
+    setAnexoAcompanhamento(null);
     setAnexosRelatorio([]);
     setAnexosOrcamento([]);
     setAnexosProtocolo([]);
@@ -131,6 +133,7 @@ export function AguardandoCirurgiaPage() {
     setPerdaModo(false);
     setDescPerda('');
     setDataConfirmacao(new Date());
+    setAnexoAcompanhamento(null);
   };
 
   const formatarDataIso = (d: Date) => {
@@ -138,6 +141,12 @@ export function AguardandoCirurgiaPage() {
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const uploadAnexoSeNecessario = async (orderId: number): Promise<string | null> => {
+    if (!anexoAcompanhamento) return null;
+    const resUpload: any = await uploadAnexoOrder(orderId, anexoAcompanhamento, 'ACOMPANHAMENTO');
+    return resUpload?.data?.linkImagem ?? resUpload?.data?.url ?? null;
   };
 
   const handleConfirmarCirurgia = async () => {
@@ -152,9 +161,11 @@ export function AguardandoCirurgiaPage() {
     }
     setSalvando(true);
     try {
+      const linkAnexo = await uploadAnexoSeNecessario(registroAtual.id);
       await confirmarCirurgia(registroAtual.id, {
         valorComissao,
         dataConfirmacao: formatarDataIso(dataConfirmacao),
+        linkAnexo,
       });
       alert('Cirurgia confirmada e registro financeiro criado.');
       fecharDialog();
@@ -180,9 +191,11 @@ export function AguardandoCirurgiaPage() {
     }
     setSalvando(true);
     try {
+      const linkAnexo = await uploadAnexoSeNecessario(registroAtual.id);
       await registrarPerdaCirurgia(registroAtual.id, {
         descCirurgiaPerda: descPerda.trim(),
         dataConfirmacao: formatarDataIso(dataConfirmacao),
+        linkAnexo,
       });
       alert('Perda registrada.');
       fecharDialog();
@@ -400,9 +413,34 @@ export function AguardandoCirurgiaPage() {
                   onChange={(e) => setDataConfirmacao(e.value as Date | null)}
                   dateFormat="dd/mm/yy"
                   showIcon
-                  locale="pt-BR"
+                  locale="pt"
                   placeholder="dd/mm/aaaa"
                 />
+              </div>
+
+              <div className="ag-cir-field ag-cir-field--span-4">
+                <label>Anexo do acompanhamento (opcional)</label>
+                <div className="acompanhamento-anexo-row">
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.webp"
+                    onChange={(e) => setAnexoAcompanhamento(e.target.files?.[0] ?? null)}
+                  />
+                  {anexoAcompanhamento && (
+                    <span className="acompanhamento-anexo-info">
+                      <i className="pi pi-file" />
+                      {anexoAcompanhamento.name}
+                      <button
+                        type="button"
+                        className="acompanhamento-anexo-remove"
+                        onClick={() => setAnexoAcompanhamento(null)}
+                        title="Remover"
+                      >
+                        <i className="pi pi-times" />
+                      </button>
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

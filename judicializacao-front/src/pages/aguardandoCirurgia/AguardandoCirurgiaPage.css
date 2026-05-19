@@ -308,3 +308,37 @@
   .ag-cir-form__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ag-cir-field--span-3, .ag-cir-field--span-4 { grid-column: span 2; }
 }
+
+/* Anexo do acompanhamento (mesmo padrão de Protocolados/Resultados) */
+.acompanhamento-anexo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.acompanhamento-anexo-row input[type="file"] {
+  font-size: 0.85rem;
+}
+.acompanhamento-anexo-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #ecfdf5;
+  border: 1px solid #86efac;
+  color: #065f46;
+  font-size: 0.82rem;
+}
+.acompanhamento-anexo-info i.pi-file { color: #0a3d62; }
+.acompanhamento-anexo-remove {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+}
+.acompanhamento-anexo-remove:hover { color: #dc2626; }

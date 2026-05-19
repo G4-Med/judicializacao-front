@@ -13,7 +13,7 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { FilterMatchMode } from 'primereact/api';
 import { Dialog } from 'primereact/dialog';
 import { Timeline } from 'primereact/timeline';
-import { getProtocolados, salvarResultadoProtocolado, adicionarAcompanhamento, getAnexosOrder } from '../../services/api/orders';
+import { getProtocolados, salvarResultadoProtocolado, adicionarAcompanhamento, getAnexosOrder, uploadAnexoOrder } from '../../services/api/orders';
 import { InputNumber } from 'primereact/inputnumber';
 import { getStatusTagStyle } from '../../utils/statusTag';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
@@ -24,6 +24,7 @@ interface HistoricoAcompanhamento {
   id: number;
   acompanhamento: string;
   descricao: string;
+  linkAnexo?: string | null;
   createDate: string;
 }
 
@@ -90,8 +91,17 @@ export function ProtocoladosPage() {
   const [registroAtualizando, setRegistroAtualizando] = useState<ProtocoladoTableRow | null>(null);
 
   const [novoAcompanhamento, setNovoAcompanhamento] = useState('');
+  const [tipoAcompanhamento, setTipoAcompanhamento] = useState<string>('');
+  const [anexoAcompanhamento, setAnexoAcompanhamento] = useState<File | null>(null);
+  const [salvandoAcompanhamento, setSalvandoAcompanhamento] = useState(false);
   const [parecerJuridico, setParecerJuridico] = useState('');
   const [resultadoSelecionado, setResultadoSelecionado] = useState<ResultadoType>('');
+
+  const TIPOS_ACOMPANHAMENTO = [
+    'Valor já depositado ao medico',
+    'Cirurgia Marcada',
+    'Contato realizado pelo Juridico',
+  ];
 
 
 
@@ -109,6 +119,8 @@ export function ProtocoladosPage() {
     setUpdateDialogVisible(false);
     setTipoAcao('');
     setNovoAcompanhamento('');
+    setTipoAcompanhamento('');
+    setAnexoAcompanhamento(null);
     setParecerJuridico('');
     setResultadoSelecionado('');
     setValorGanho(null);
@@ -156,11 +168,26 @@ export function ProtocoladosPage() {
   useEffect(() => { void carregarDados(); }, []);
 
   const handleSalvarAcompanhamento = async () => {
-    if (!registroAtualizando || !novoAcompanhamento.trim()) return;
+    if (!registroAtualizando) return;
+    if (!tipoAcompanhamento) {
+      alert('Selecione um tipo de acompanhamento.');
+      return;
+    }
+    setSalvandoAcompanhamento(true);
     try {
+      let linkAnexo: string | null = null;
+      if (anexoAcompanhamento) {
+        const resUpload: any = await uploadAnexoOrder(
+          registroAtualizando.id,
+          anexoAcompanhamento,
+          'ACOMPANHAMENTO',
+        );
+        linkAnexo = resUpload?.data?.linkImagem ?? resUpload?.data?.url ?? null;
+      }
       await adicionarAcompanhamento(registroAtualizando.id, {
-        acompanhamento: 'Acompanhamento',
+        acompanhamento: tipoAcompanhamento,
         descricao: novoAcompanhamento,
+        linkAnexo,
       });
       const registrosAtualizados = await carregarDados();
       const registroAtualizado = registrosAtualizados.find(
@@ -172,9 +199,13 @@ export function ProtocoladosPage() {
         );
       }
       setNovoAcompanhamento('');
+      setTipoAcompanhamento('');
+      setAnexoAcompanhamento(null);
       setTipoAcao('');
     } catch (err) {
       alert('Erro ao salvar acompanhamento.');
+    } finally {
+      setSalvandoAcompanhamento(false);
     }
   };
 
@@ -260,6 +291,21 @@ export function ProtocoladosPage() {
     return `${dia}/${mes}/${ano}`;
   };
 
+  // Aceita ISO ('2026-04-17T16:18:34.635068+00:00'), Django ('2026-04-17 16:18:34.635068+00:00')
+  // ou só data ('2026-04-17'). Devolve "dd/mm/aaaa hh:mm" no fuso local.
+  const formatarDataHora = (value?: string | null): string => {
+    if (!value) return '-';
+    const normalizado = value.includes('T') ? value : value.replace(' ', 'T');
+    const d = new Date(normalizado);
+    if (Number.isNaN(d.getTime())) return '-';
+    const dia = String(d.getDate()).padStart(2, '0');
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const ano = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${dia}/${mes}/${ano} ${hh}:${mm}`;
+  };
+
 
 
   const getResultadoSeverity = (
@@ -292,6 +338,8 @@ export function ProtocoladosPage() {
         onClick={() => {
           setRegistroAtualizando({ ...rowData, documentos: [] });
           setNovoAcompanhamento('');
+          setTipoAcompanhamento('');
+          setAnexoAcompanhamento(null);
           setParecerJuridico('');
           setResultadoSelecionado('');
           getAnexosOrder(rowData.id, 'ORCAMENTO')
@@ -609,10 +657,20 @@ export function ProtocoladosPage() {
                   content={(item: HistoricoAcompanhamento) => (
                     <div className="timeline-card">
                       <div className="timeline-date">
-                        {item.createDate?.split('T')[0]?.split('-').reverse().join('/') ?? '-'}
+                        {formatarDataHora(item.createDate)}
                       </div>
                       <div className="timeline-title">{item.acompanhamento}</div>
                       <div className="timeline-description">{item.descricao}</div>
+                      {item.linkAnexo && (
+                        <a
+                          className="timeline-anexo-link"
+                          href={item.linkAnexo}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <i className="pi pi-paperclip" /> Ver anexo
+                        </a>
+                      )}
                     </div>
                   )}
                   className="processo-timeline"
@@ -642,18 +700,68 @@ export function ProtocoladosPage() {
               {tipoAcao === 'acompanhamento' && (
                 <div className="update-form-grid">
                   <div className="field field-span-4">
-                    <label>Descrição</label>
-                    <InputTextarea
-                      value={novoAcompanhamento}
-                      onChange={(e) => setNovoAcompanhamento(e.target.value)}
-                      rows={4}
-                      placeholder="Digite a atualização do processo..."
-                    />
+                    <label>Tipo de Acompanhamento *</label>
+                    <div className="resultado-actions" style={{ flexWrap: 'wrap' }}>
+                      {TIPOS_ACOMPANHAMENTO.map((tipo) => (
+                        <Button
+                          key={tipo}
+                          label={tipo}
+                          severity={tipoAcompanhamento === tipo ? 'info' : 'secondary'}
+                          outlined={tipoAcompanhamento !== tipo}
+                          onClick={() => setTipoAcompanhamento(tipo)}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <div className="field field-span-4" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button label="Salvar Acompanhamento" icon="pi pi-check"
-                      onClick={handleSalvarAcompanhamento} />
-                  </div>
+
+                  {tipoAcompanhamento && (
+                    <>
+                      <div className="field field-span-4">
+                        <label>Descrição (opcional)</label>
+                        <InputTextarea
+                          value={novoAcompanhamento}
+                          onChange={(e) => setNovoAcompanhamento(e.target.value)}
+                          rows={4}
+                          placeholder="Detalhes do acompanhamento..."
+                        />
+                      </div>
+                      <div className="field field-span-4">
+                        <label>Anexo (opcional)</label>
+                        <div className="acompanhamento-anexo-row">
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png,.webp"
+                            onChange={(e) =>
+                              setAnexoAcompanhamento(e.target.files?.[0] ?? null)
+                            }
+                          />
+                          {anexoAcompanhamento && (
+                            <span className="acompanhamento-anexo-info">
+                              <i className="pi pi-file" />
+                              {anexoAcompanhamento.name}
+                              <button
+                                type="button"
+                                className="acompanhamento-anexo-remove"
+                                onClick={() => setAnexoAcompanhamento(null)}
+                                title="Remover"
+                              >
+                                <i className="pi pi-times" />
+                              </button>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="field field-span-4" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button
+                          label={salvandoAcompanhamento ? 'Salvando...' : 'Salvar Acompanhamento'}
+                          icon="pi pi-check"
+                          loading={salvandoAcompanhamento}
+                          disabled={salvandoAcompanhamento}
+                          onClick={handleSalvarAcompanhamento}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
