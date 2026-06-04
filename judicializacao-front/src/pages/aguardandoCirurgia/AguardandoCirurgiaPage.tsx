@@ -39,6 +39,193 @@ function formatarData(value: string | null) {
   return d.toLocaleDateString('pt-BR');
 }
 
+function escapeHtml(value: unknown) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+type ExcelCell = string | number;
+
+function getCrcTable() {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n += 1) {
+    let c = n;
+    for (let k = 0; k < 8; k += 1) {
+      c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+    }
+    table[n] = c >>> 0;
+  }
+  return table;
+}
+
+const crcTable = getCrcTable();
+
+function crc32(data: Uint8Array) {
+  let crc = 0xffffffff;
+  for (let i = 0; i < data.length; i += 1) {
+    crc = crcTable[(crc ^ data[i]) & 0xff] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function stringToBytes(value: string) {
+  return new TextEncoder().encode(value);
+}
+
+function bytesToArrayBuffer(bytes: Uint8Array) {
+  const buffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buffer).set(bytes);
+  return buffer;
+}
+
+function writeUint16(view: DataView, offset: number, value: number) {
+  view.setUint16(offset, value, true);
+}
+
+function writeUint32(view: DataView, offset: number, value: number) {
+  view.setUint32(offset, value, true);
+}
+
+function createZip(files: Array<{ name: string; content: string }>) {
+  const localParts: Uint8Array[] = [];
+  const centralParts: Uint8Array[] = [];
+  let offset = 0;
+
+  files.forEach((file) => {
+    const nameBytes = stringToBytes(file.name);
+    const contentBytes = stringToBytes(file.content);
+    const crc = crc32(contentBytes);
+
+    const localHeader = new ArrayBuffer(30);
+    const localView = new DataView(localHeader);
+    writeUint32(localView, 0, 0x04034b50);
+    writeUint16(localView, 4, 20);
+    writeUint16(localView, 6, 0);
+    writeUint16(localView, 8, 0);
+    writeUint16(localView, 10, 0);
+    writeUint16(localView, 12, 0);
+    writeUint32(localView, 14, crc);
+    writeUint32(localView, 18, contentBytes.length);
+    writeUint32(localView, 22, contentBytes.length);
+    writeUint16(localView, 26, nameBytes.length);
+    writeUint16(localView, 28, 0);
+
+    localParts.push(new Uint8Array(localHeader), nameBytes, contentBytes);
+
+    const centralHeader = new ArrayBuffer(46);
+    const centralView = new DataView(centralHeader);
+    writeUint32(centralView, 0, 0x02014b50);
+    writeUint16(centralView, 4, 20);
+    writeUint16(centralView, 6, 20);
+    writeUint16(centralView, 8, 0);
+    writeUint16(centralView, 10, 0);
+    writeUint16(centralView, 12, 0);
+    writeUint16(centralView, 14, 0);
+    writeUint32(centralView, 16, crc);
+    writeUint32(centralView, 20, contentBytes.length);
+    writeUint32(centralView, 24, contentBytes.length);
+    writeUint16(centralView, 28, nameBytes.length);
+    writeUint16(centralView, 30, 0);
+    writeUint16(centralView, 32, 0);
+    writeUint16(centralView, 34, 0);
+    writeUint16(centralView, 36, 0);
+    writeUint32(centralView, 38, 0);
+    writeUint32(centralView, 42, offset);
+
+    centralParts.push(new Uint8Array(centralHeader), nameBytes);
+    offset += 30 + nameBytes.length + contentBytes.length;
+  });
+
+  const centralSize = centralParts.reduce((total, part) => total + part.length, 0);
+  const endHeader = new ArrayBuffer(22);
+  const endView = new DataView(endHeader);
+  writeUint32(endView, 0, 0x06054b50);
+  writeUint16(endView, 8, files.length);
+  writeUint16(endView, 10, files.length);
+  writeUint32(endView, 12, centralSize);
+  writeUint32(endView, 16, offset);
+  writeUint16(endView, 20, 0);
+
+  const blobParts = [...localParts, ...centralParts, new Uint8Array(endHeader)]
+    .map(bytesToArrayBuffer);
+
+  return new Blob(blobParts, {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+}
+
+function columnName(index: number) {
+  let name = '';
+  let n = index;
+  while (n >= 0) {
+    name = String.fromCharCode((n % 26) + 65) + name;
+    n = Math.floor(n / 26) - 1;
+  }
+  return name;
+}
+
+function createWorksheet(rows: ExcelCell[][]) {
+  const sheetRows = rows.map((row, rowIndex) => {
+    const cells = row.map((cell, cellIndex) => {
+      const reference = `${columnName(cellIndex)}${rowIndex + 1}`;
+      if (typeof cell === 'number') {
+        return `<c r="${reference}"><v>${cell}</v></c>`;
+      }
+      return `<c r="${reference}" t="inlineStr"><is><t>${escapeHtml(cell)}</t></is></c>`;
+    }).join('');
+    return `<row r="${rowIndex + 1}">${cells}</row>`;
+  }).join('');
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+      <sheetData>${sheetRows}</sheetData>
+    </worksheet>`;
+}
+
+function createXlsxBlob(rows: ExcelCell[][]) {
+  return createZip([
+    {
+      name: '[Content_Types].xml',
+      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+          <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+          <Default Extension="xml" ContentType="application/xml"/>
+          <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+          <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+        </Types>`,
+    },
+    {
+      name: '_rels/.rels',
+      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+          <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+        </Relationships>`,
+    },
+    {
+      name: 'xl/workbook.xml',
+      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+          <sheets><sheet name="Aguardando Cirurgia" sheetId="1" r:id="rId1"/></sheets>
+        </workbook>`,
+    },
+    {
+      name: 'xl/_rels/workbook.xml.rels',
+      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+          <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+        </Relationships>`,
+    },
+    {
+      name: 'xl/worksheets/sheet1.xml',
+      content: createWorksheet(rows),
+    },
+  ]);
+}
+
 export function AguardandoCirurgiaPage() {
   const [loading, setLoading] = useState(false);
   const [itens, setItens] = useState<AguardandoCirurgiaItem[]>([]);
@@ -96,6 +283,38 @@ export function AguardandoCirurgiaPage() {
     () => itens.map((item, index) => ({ ...item, sequencial: index + 1 })),
     [itens],
   );
+
+  const handleExportarExcel = () => {
+    if (linhas.length === 0) return;
+
+    const rows: ExcelCell[][] = [
+      ['#', 'Paciente', 'Medico', 'Procedimento', 'Valor', 'Comissao estimada', 'Processo', 'Dias', 'Data pedido', 'Status'],
+      ...linhas.map((row) => [
+        row.sequencial,
+        row.paciente,
+        row.medico || '-',
+        row.procedimento || '-',
+        Number((row.valor || 0).toFixed(2)),
+        Number((row.comissaoEstimada || 0).toFixed(2)),
+        row.nprocesso || '-',
+        row.dias,
+        formatarData(row.dataPedido),
+        row.statusProcesso || '-',
+      ]),
+    ];
+
+    const blob = createXlsxBlob(rows);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dataAtual = new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = `aguardando-cirurgia-${dataAtual}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const abrirConfirmar = async (rowData: AguardandoCirurgiaItem) => {
     setRegistroAtual(rowData);
@@ -259,6 +478,13 @@ export function AguardandoCirurgiaPage() {
           <h1>Aguardando Cirurgia</h1>
           <p>Pedidos com ganho confirmado aguardando realização da cirurgia.</p>
         </div>
+        <Button
+          label="Exportar Excel"
+          icon="pi pi-file-excel"
+          className="ag-cir-export-button"
+          onClick={handleExportarExcel}
+          disabled={loading || linhas.length === 0}
+        />
       </div>
 
       <div className="kpi-grid kpi-grid-3">

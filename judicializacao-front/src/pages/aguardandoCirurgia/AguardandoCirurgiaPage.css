@@ -32,6 +32,17 @@
   color: var(--mc-muted, #5b6b7a);
   font-size: 0.92rem;
 }
+.aguardando-cirurgia-page .ag-cir-export-button {
+  flex-shrink: 0;
+  background: var(--mc-green-500, #00a651);
+  border-color: var(--mc-green-500, #00a651);
+  border-radius: 8px;
+  font-weight: 600;
+}
+.aguardando-cirurgia-page .ag-cir-export-button:hover {
+  background: var(--mc-green-600, #008f46);
+  border-color: var(--mc-green-600, #008f46);
+}
 
 /* ---------- KPIs ---------- */
 .aguardando-cirurgia-page .kpi-grid {
@@ -303,6 +314,13 @@
 }
 
 @media (max-width: 1100px) {
+  .aguardando-cirurgia-page .page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .aguardando-cirurgia-page .ag-cir-export-button {
+    align-self: flex-start;
+  }
   .aguardando-cirurgia-page .kpi-grid-3 { grid-template-columns: 1fr; }
   .ag-cir-anexos { grid-template-columns: 1fr; }
   .ag-cir-form__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

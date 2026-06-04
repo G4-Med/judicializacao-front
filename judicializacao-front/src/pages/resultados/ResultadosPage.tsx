@@ -177,6 +177,7 @@ const TIPOS_ACOMPANHAMENTO = [
   'Valor já depositado ao medico',
   'Cirurgia Marcada',
   'Contato realizado pelo Juridico',
+  'Informação Juridico',
 ];
 const [parecerJuridico, setParecerJuridico] = useState('');
 const [resultadoSelecionado, setResultadoSelecionado] = useState<ResultadoTipo>('');
