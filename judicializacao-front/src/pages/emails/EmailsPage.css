@@ -57,6 +57,9 @@
 .emails-page .kpi-grid-4 {
   grid-template-columns: repeat(4, 1fr);
 }
+.emails-page .kpi-grid-5 {
+  grid-template-columns: repeat(5, 1fr);
+}
 
 .emails-page .kpi-card {
   background: var(--mc-surface, #fff);
@@ -420,6 +423,7 @@
    ============================================================ */
 @media (max-width: 1500px) {
   .emails-page .kpi-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .emails-page .kpi-grid-5 { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 900px) {
   .emails-page .page-header { flex-direction: column; align-items: stretch; }
@@ -427,6 +431,7 @@
 }
 @media (max-width: 700px) {
   .emails-page .kpi-grid-4 { grid-template-columns: 1fr; }
+  .emails-page .kpi-grid-5 { grid-template-columns: 1fr; }
   .email-dialog-actions { flex-direction: column-reverse; }
   .email-dialog-actions .p-button,
   .email-anexos-actions .p-button { width: 100%; }

@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { DataTable } from 'primereact/datatable';
-import { getOrders, getStatusOrders, atualizarOrder, getMedicosCompleto, getAnexosOrder, criarOrderProcess, processarOrderProcess, salvarJuridico, uploadArquivoIntegracao, marcarSemProfissional, analisarEmpenho, extrairEmail } from '../../services/api/orders';
+import { getOrders, getStatusOrders, atualizarOrder, getMedicosCompleto, getAnexosOrder, uploadAnexoOrder, criarOrderProcess, processarOrderProcess, salvarJuridico, uploadArquivoIntegracao, marcarSemProfissional, analisarEmpenho, extrairEmail } from '../../services/api/orders';
 import type {
   DataTableFilterMeta,
   DataTablePageEvent,
@@ -208,6 +208,22 @@ export function ProcessosPage() {
   const [medicos, setMedicos] = useState<any[]>([]);
   const [anexos, setAnexos] = useState<Anexo[]>([])
   const [loadingAnexos, setLoadingAnexos] = useState(false)
+  const [uploadingRelatorio, setUploadingRelatorio] = useState(false)
+
+  const handleUploadRelatorio = async (file: File) => {
+    if (!processoEditando) return;
+    setUploadingRelatorio(true);
+    try {
+      await uploadAnexoOrder(processoEditando.id, file, 'RELATORIO');
+      const res: any = await getAnexosOrder(processoEditando.id, 'RELATORIO');
+      setAnexos(res.data.anexos ?? []);
+    } catch (err) {
+      console.error('Erro ao subir relatório:', err);
+      alert('Erro ao subir o anexo. Tente novamente.');
+    } finally {
+      setUploadingRelatorio(false);
+    }
+  };
   const [anexosOrcamento, setAnexosOrcamento] = useState<any[]>([]);
   const [loadingAnexosOrcamento, setLoadingAnexosOrcamento] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false)
@@ -1448,7 +1464,12 @@ ${linhasAnexos}
 
 
 
- const renderAnexos = (lista: any[], loading: boolean, titulo: string) => (
+ const renderAnexos = (
+   lista: any[],
+   loading: boolean,
+   titulo: string,
+   opcoesUpload?: { onUpload: (file: File) => Promise<void> | void; uploading: boolean },
+ ) => (
   <div className="field field-span-4" style={{ marginTop: '1rem' }}>
     <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>
       <i className="pi pi-paperclip" style={{ marginRight: '6px' }} />
@@ -1514,6 +1535,39 @@ ${linhasAnexos}
             </div>
           )
         })}
+      </div>
+    )}
+
+    {opcoesUpload && (
+      <div
+        style={{
+          marginTop: '10px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px 12px',
+          border: '1px dashed #d6e0e6',
+          borderRadius: '8px',
+          background: '#f9fbfc',
+        }}
+      >
+        <i className="pi pi-cloud-upload" style={{ color: '#0a3d62', fontSize: '1.1rem' }} />
+        <input
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png,.webp"
+          disabled={opcoesUpload.uploading}
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (file) await opcoesUpload.onUpload(file);
+            e.target.value = '';
+          }}
+          style={{ flex: 1, fontSize: '0.85rem' }}
+        />
+        {opcoesUpload.uploading && (
+          <span style={{ fontSize: '0.85rem', color: '#0a3d62', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <i className="pi pi-spin pi-spinner" /> Enviando...
+          </span>
+        )}
       </div>
     )}
   </div>
@@ -2850,7 +2904,10 @@ ${linhasAnexos}
             </div>
           </Dialog>
 
-          {renderAnexos(anexos, loadingAnexos, 'Relatórios Anexados')}
+          {renderAnexos(anexos, loadingAnexos, 'Relatórios Anexados', {
+            onUpload: handleUploadRelatorio,
+            uploading: uploadingRelatorio,
+          })}
           {/* Fim Anexos */}
 
 

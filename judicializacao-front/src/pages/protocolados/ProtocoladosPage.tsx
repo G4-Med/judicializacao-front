@@ -13,7 +13,7 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { FilterMatchMode } from 'primereact/api';
 import { Dialog } from 'primereact/dialog';
 import { Timeline } from 'primereact/timeline';
-import { getProtocolados, salvarResultadoProtocolado, adicionarAcompanhamento, getAnexosOrder, uploadAnexoOrder } from '../../services/api/orders';
+import { getProtocolados, salvarResultadoProtocolado, adicionarAcompanhamento, getAnexosOrder, uploadAnexoOrder, getMedicosCompleto } from '../../services/api/orders';
 import { InputNumber } from 'primereact/inputnumber';
 import { getStatusTagStyle } from '../../utils/statusTag';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
@@ -129,8 +129,22 @@ export function ProtocoladosPage() {
   const carregarDados = async () => {
     setLoading(true);
     try {
-      const { data } = await getProtocolados();
-      const registrosMapeados = data.map((o: any) => ({
+      const [protocoladosRes, medicosRes] = await Promise.all([
+        getProtocolados(),
+        getMedicosCompleto().catch(() => ({ data: [] })),
+      ]);
+
+      const medicosLista = Array.isArray(medicosRes.data) ? medicosRes.data : [];
+      const medicosLookup = medicosLista.reduce<Record<number, any>>((acc, m: any) => {
+        acc[m.id] = m;
+        return acc;
+      }, {});
+
+      const registrosMapeados = protocoladosRes.data.map((o: any) => {
+        const medico = o.idMedico != null ? medicosLookup[o.idMedico] : null;
+        const nomeCliente = medico?.razaoSocial || medico?.nomeMedico || medico?.nomeSistema || '';
+
+        return {
           id: o.id,
           paciente: o.paciente ?? '',
           nprocesso: o.nprocesso ?? '',
@@ -146,14 +160,15 @@ export function ProtocoladosPage() {
           analiseJuridicaFinal: o.analiseJuridicaFinal ?? '',
           historico: o.historico ?? [],
           // legados
-          cliente: o.area ?? '',
+          cliente: nomeCliente,
           valor: o.valorOrcamento ?? o.refPreco ?? 0,
           numeroProcesso: o.nprocesso ?? '',
           dataProtocolo: o.dataProtocolo ?? '',
           status: 'Protocolado',
           resultado: 'Em andamento',
           documentos: [],
-        }));
+        };
+      });
 
       setRegistros(registrosMapeados);
       return registrosMapeados;

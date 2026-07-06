@@ -165,11 +165,19 @@ export function EmailsPage() {
     setLoading(true);
 
     try {
-      const listaRes = await getEmailsPendentes({ status: 'PENDENTE' });
-      const lista = Array.isArray(listaRes.data) ? listaRes.data : [];
-      setRegistros(lista);
+      // Traz PENDENTE e ERRO em paralelo (não traz ENVIADO/CANCELADO,
+      // que é o gargalo). ERRO precisa aparecer pro operador reenviar.
+      const [pendentesRes, errosRes] = await Promise.all([
+        getEmailsPendentes({ status: 'PENDENTE' }),
+        getEmailsPendentes({ status: 'ERRO' }).catch(() => ({ data: [] })),
+      ]);
+      const pendentes = Array.isArray(pendentesRes.data) ? pendentesRes.data : [];
+      const erros = Array.isArray(errosRes.data) ? errosRes.data : [];
+      // Erros primeiro (precisam de atenção), depois pendentes — preserva a
+      // ordem cronológica original dentro de cada grupo.
+      setRegistros([...erros, ...pendentes]);
     } catch (error) {
-      console.error('Erro ao carregar lista de emails pendentes', error);
+      console.error('Erro ao carregar lista de emails', error);
       setRegistros([]);
     }
 
@@ -562,7 +570,7 @@ export function EmailsPage() {
 
       {readOnly && <ReadOnlyBanner />}
 
-      <div className="kpi-grid kpi-grid-4">
+      <div className="kpi-grid kpi-grid-5">
         <div className="kpi-card">
           <div className="kpi-header">
             <span>Quantidade de emails para enviar</span>
@@ -593,6 +601,16 @@ export function EmailsPage() {
             <i className="pi pi-times-circle"></i>
           </div>
           <div className="kpi-value">{kpis.darPerda}</div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>Emails com erro</span>
+            <i className="pi pi-exclamation-triangle"></i>
+          </div>
+          <div className="kpi-value kpi-value-danger">
+            {registros.filter((r) => r.status === 'ERRO').length}
+          </div>
         </div>
       </div>
 
