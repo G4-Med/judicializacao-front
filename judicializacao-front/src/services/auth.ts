@@ -1,8 +1,10 @@
 import axios from 'axios';
 import { clearAuthProfile, persistAuthProfile } from '../access/authProfile';
 
-const AUTH_URL = 'http://localhost:8000/api/auth/token/';
-const FORGOT_PASSWORD_BASE_URL = 'http://localhost:8000/api/auth/esqueci-senha';
+const API_BASE = import.meta.env.VITE_API_URL;
+
+const AUTH_URL = `${API_BASE}/auth/token/`;
+const FORGOT_PASSWORD_BASE_URL = `${API_BASE}/auth/esqueci-senha`;
 
 export async function login(username: string, password: string) {
   const { data } = await axios.post(AUTH_URL, { username, password });
