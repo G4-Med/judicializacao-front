@@ -154,6 +154,17 @@ export function UsuariosPage() {
     [grupos]
   );
 
+  const medicosAtivos = useMemo(
+    () =>
+      medicos.filter((m) => {
+        if (typeof m.ativo === 'boolean') return m.ativo;
+        if (typeof m.status === 'boolean') return m.status;
+        if (typeof m.status === 'string') return m.status.toLowerCase() === 'ativo';
+        return true;
+      }),
+    [medicos]
+  );
+
   const medicoOptions = useMemo(
     () => {
       // Ao criar novo usuário, mostra TODOS os médicos ativos.
@@ -357,17 +368,6 @@ export function UsuariosPage() {
       setSalvando(false);
     }
   };
-
-  const medicosAtivos = useMemo(
-    () =>
-      medicos.filter((m) => {
-        if (typeof m.ativo === 'boolean') return m.ativo;
-        if (typeof m.status === 'boolean') return m.status;
-        if (typeof m.status === 'string') return m.status.toLowerCase() === 'ativo';
-        return true;
-      }),
-    [medicos]
-  );
 
   const abrirVincular = async (row: UsuarioRow) => {
     setUsuarioVinculando(row);
