@@ -1,3 +1,7 @@
+// Tema base do PrimeReact (light) empacotado no bundle — evita depender
+// de CDN externo em produção. O setTheme() em utils/theme.ts injeta um
+// <link> adicional pra trocar pra dark em runtime.
+import 'primereact/resources/themes/lara-light-blue/theme.css'
 import 'primereact/resources/primereact.min.css'
 import 'primeicons/primeicons.css'
 import 'primeflex/primeflex.css'

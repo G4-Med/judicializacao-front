@@ -155,11 +155,17 @@ export function UsuariosPage() {
   );
 
   const medicoOptions = useMemo(
-    () =>
-      medicos
-        .filter((m) => medicosDropdownIds.includes(m.id))
-        .map((m) => ({ label: nomeMedico(m), value: m.id })),
-    [medicos, medicosDropdownIds]
+    () => {
+      // Ao criar novo usuário, mostra TODOS os médicos ativos.
+      // Ao editar, restringe aos médicos já autorizados (medicosDropdownIds
+      // é populado a partir do backend em abrirEditar).
+      const listaBase =
+        dialogModo === 'criar'
+          ? medicosAtivos
+          : medicos.filter((m) => medicosDropdownIds.includes(m.id));
+      return listaBase.map((m) => ({ label: nomeMedico(m), value: m.id }));
+    },
+    [dialogModo, medicos, medicosAtivos, medicosDropdownIds]
   );
 
   const mapUsuario = (u: ApiUsuario, index: number): UsuarioRow => {

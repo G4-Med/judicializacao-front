@@ -1,23 +1,25 @@
+// O tema LIGHT (lara-light-blue) já é importado no main.tsx como padrão
+// permanente do bundle. Para trocar para DARK em runtime, injetamos um
+// <link> adicional apontando pro CSS do tema dark via CDN. Se o CDN
+// falhar, o light continua ativo — sem quebrar a UI.
+const THEME_LINK_ID = 'app-theme-dark-override';
+const DARK_THEME_URL =
+  'https://unpkg.com/primereact/resources/themes/lara-dark-blue/theme.css';
+
 export function setTheme(theme: 'light' | 'dark') {
-  const themeId = 'app-theme';
-  const existing = document.getElementById(themeId);
+  const existing = document.getElementById(THEME_LINK_ID);
 
-  const themeFile =
-    theme === 'dark'
-      ? 'lara-dark-blue'
-      : 'lara-light-blue';
-
-  if (existing) {
-    existing.setAttribute(
-      'href',
-      `https://unpkg.com/primereact/resources/themes/${themeFile}/theme.css`
-    );
+  if (theme === 'dark') {
+    if (!existing) {
+      const link = document.createElement('link');
+      link.id = THEME_LINK_ID;
+      link.rel = 'stylesheet';
+      link.href = DARK_THEME_URL;
+      document.head.appendChild(link);
+    }
   } else {
-    const link = document.createElement('link');
-    link.id = themeId;
-    link.rel = 'stylesheet';
-    link.href = `https://unpkg.com/primereact/resources/themes/${themeFile}/theme.css`;
-    document.head.appendChild(link);
+    // volta pro light: basta remover o override (o tema light bundled reassume)
+    existing?.remove();
   }
 
   document.body.classList.remove('light-theme', 'dark-theme');
