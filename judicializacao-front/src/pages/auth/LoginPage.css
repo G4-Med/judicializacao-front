@@ -197,6 +197,30 @@
   transform: translateX(0);
 }
 
+/* Card único (recuperar senha): o painel tem mais campos que o de login.
+   Com height fixo + overflow:hidden, os últimos elementos (rodapé/link) eram
+   CORTADOS. Aqui o card cresce conforme o conteúdo e o painel vira relative
+   (empurra a altura, já que absolute não contribui para a altura do card). */
+.login-page__card--single {
+  height: auto;
+  min-height: 640px;
+}
+.login-page__card--single .login-page__panel--static {
+  position: relative;
+  top: auto;
+  bottom: auto;
+  left: auto;
+  right: auto;
+  margin-left: 50%;            /* ocupa a metade direita do card */
+  min-height: 640px;
+  padding-top: 44px;
+  padding-bottom: 44px;
+  box-sizing: border-box;
+}
+.login-page__card--single .login-page__form--static {
+  margin-top: 0;
+}
+
 /* ---------- Conteúdo do formulário ---------- */
 .login-page__eyebrow {
   display: inline-block;
@@ -423,5 +447,10 @@
   .login-page__panel--static {
     display: grid;
     right: auto;
+    margin-left: 0;
+  }
+  .login-page__card--single .login-page__panel--static {
+    margin-left: 0;
+    min-height: 0;
   }
 }
