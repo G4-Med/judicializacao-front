@@ -20,7 +20,7 @@ const BrandMark = ({ compact = false }: BrandProps) => (
     </span>
     <div className="login-page__brand-text">
       <div>MED<span>CHECK</span></div>
-      <small>Judicialização · Saúde</small>
+      <small>Urgência e Emergência Judicial</small>
     </div>
   </div>
 );
