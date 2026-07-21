@@ -657,7 +657,7 @@ export function EmailsPage() {
           />
 
           <Column
-            field="procedimento"
+            field="procedimento" className="col-procedimento-upper"
             header="Procedimento"
             sortable
             filter
