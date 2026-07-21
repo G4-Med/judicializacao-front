@@ -150,8 +150,21 @@ export function HomePage() {
   const [resultados, setResultados] = useState<ResultadoResumo[]>([]);
   const [perdas, setPerdas] = useState<PerdaResumo[]>([]);
   const [buscaProcedimento, setBuscaProcedimento] = useState('');
-  const metricCardVariants = ['home-card--navy', 'home-card--green', 'home-card--amber', 'home-card--rose'];
-  const valueCardVariants = ['home-card--amber', 'home-card--green', 'home-card--rose', 'home-card--navy'];
+  // Contagens (mês×vida) = número neutro (só o ícone guarda a categoria).
+  const metricCardVariants = [
+    'home-card--navy home-card--count',
+    'home-card--green home-card--count',
+    'home-card--amber home-card--count',
+    'home-card--rose home-card--count',
+  ];
+  // Valores: cor semântica SÓ onde importa — Ganho (verde) e Perda (vermelho).
+  // Em aberto e Conversão ficam neutros (evita o arco-íris "cara-de-IA").
+  const valueCardVariants = [
+    'home-card--amber home-card--count',
+    'home-card--green',
+    'home-card--rose',
+    'home-card--navy home-card--count',
+  ];
 
   useEffect(() => {
     setLoading(true);
@@ -499,11 +512,11 @@ export function HomePage() {
       <section className="home-hero">
         <div className="home-hero__content">
           <span className="home-hero__eyebrow"><Button icon="pi pi-circle-fill"></Button> PAINEL PRINCIPAL · {indicadores.mesAtualLabel}</span>
-          <h1>Acompanhe a <span>judicialização</span> da operação em um só lugar</h1>
+          <h1>Acompanhe a <span>urgência e emergência</span> de casos judiciais em um só lugar</h1>
           <p>
-            Auditoria e gestão dos processos do mês com o histórico consolidado da base. 
-            Visualize valores em aberto, conversão financeira e a performance dos procedimentos 
-            com a precisão que a MEDCHECK entrega ao setor de saúde.
+            Auditoria e gestão dos processos do mês com o histórico consolidado da base.
+            Visualize valores em aberto, conversão financeira e a performance dos procedimentos
+            com a precisão que a MEDCHECK entrega à saúde de Minas Gerais.
           </p>
           <div className="home-hero__actions">
             <Button
