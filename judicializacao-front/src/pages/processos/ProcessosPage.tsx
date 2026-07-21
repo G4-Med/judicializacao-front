@@ -1775,7 +1775,7 @@ ${linhasAnexos}
       <div className="page-header">
         <div>
           <h1>Processos</h1>
-          <p>Gestão dos processos de judicialização</p>
+          <p>Gestão dos casos de urgência e emergência judicial</p>
         </div>
 
         <div className="page-actions">
@@ -1995,6 +1995,7 @@ ${linhasAnexos}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
+            className="col-procedimento-upper"
             style={{ minWidth: '18rem' }}
           />
 
