@@ -179,7 +179,14 @@
 .home-card--navy  .home-card__metric { color: var(--mc-navy-700); }
 .home-card--green .home-card__metric { color: var(--mc-green-700); }
 .home-card--rose  .home-card__metric { color: var(--mc-rose); }
-.home-card--amber .home-card__metric { color: var(--mc-amber); }
+/* Âmbar original (#d08a1c) tem contraste ~3.3:1 no branco — abaixo de AA para
+   texto. Tom escurecido garante leitura sem perder a semântica de "atenção". */
+.home-card--amber .home-card__metric { color: #a86a10; }
+
+/* Linha de CONTAGENS (mês x vida): número em neutro — cor é reservada para o
+   semáforo FINANCEIRO (linha de valores). O chip do ícone mantém a categoria.
+   Menos cores gritando juntas = hierarquia visual profissional. */
+.home-card--count .home-card__metric { color: var(--mc-ink); }
 
 .home-card__meta {
   margin-top: auto;
@@ -267,6 +274,61 @@
   border-radius: var(--mc-radius-lg);
 }
 
+/* ---------- Série temporal de perdas ---------- */
+.home-chart-canvas {
+  position: relative;
+  height: 340px;
+  padding: 10px 6px 4px;
+}
+.home-chart-canvas canvas { max-width: 100%; }
+
+.home-chart-footnote {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--mc-muted);
+  text-align: right;
+}
+
+.home-search {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.home-search > .pi-search {
+  position: absolute;
+  left: 14px;
+  color: var(--mc-muted-2);
+  font-size: 14px;
+  pointer-events: none;
+}
+.home-search .p-inputtext {
+  width: 280px;
+  height: 42px;
+  padding: 0 40px 0 40px;
+  border-radius: 12px;
+  border: 1px solid var(--mc-border-2);
+  background: var(--mc-surface-2);
+  font-size: 13.5px;
+  color: var(--mc-ink);
+}
+.home-search .p-inputtext:focus {
+  border-color: var(--mc-green-500);
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.14);
+}
+.home-search__clear {
+  position: absolute;
+  right: 6px;
+  width: 30px; height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mc-muted);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.home-search__clear:hover { background: var(--mc-rose-50); color: var(--mc-rose); }
+
 
 .home-hero__eyebrow button {
   width: 10px; height: 10px; border-radius: 50%;
@@ -285,6 +347,16 @@ body.dark-theme .home-card__meta { color: var(--mc-muted); }
 body.dark-theme .home-card__metric { color: var(--mc-ink); }
 body.dark-theme .home-card--green .home-card__metric { color: #4fc588; }
 body.dark-theme .home-card--navy  .home-card__metric { color: #8ab4d6; }
+/* No escuro os tons precisam CLAREAR (não escurecer) para manter contraste */
+body.dark-theme .home-card--amber .home-card__metric { color: #e8a93d; }
+body.dark-theme .home-card--rose  .home-card__metric { color: #e57687; }
+body.dark-theme .home-card--count .home-card__metric { color: var(--mc-ink); }
+body.dark-theme .home-search .p-inputtext {
+  background: var(--mc-surface-2);
+  border-color: var(--mc-border-2);
+  color: var(--mc-ink);
+}
+body.dark-theme .home-chart-footnote { color: var(--mc-muted); }
 body.dark-theme .home-block__header h2,
 body.dark-theme .home-panel__title,
 body.dark-theme .home-chart-item__title { color: var(--mc-ink); }
@@ -313,4 +385,6 @@ body.dark-theme .home-panel__badge {
   .home-hero { padding: 24px; }
   .home-panel__head { flex-direction: column; align-items: flex-start; }
   .home-chart-frame { padding: 12px; }
+  .home-search, .home-search .p-inputtext { width: 100%; }
+  .home-chart-canvas { height: 280px; }
 }
