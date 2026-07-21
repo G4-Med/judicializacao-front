@@ -264,7 +264,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             filterElement={(o) => filterElement(o, 'Buscar')}
             style={{ minWidth: '7rem' }}
           />
-          <Column field="procedimento" header="Procedimento" sortable filter
+          <Column field="procedimento" className="col-procedimento-upper" header="Procedimento" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '18rem' }} />
           <Column
             field="dias"
@@ -423,6 +423,16 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                 }}
                 placeholder="Selecione"
               />
+              <div className="status-significados">
+                <div className="status-significados__titulo">
+                  <i className="pi pi-info-circle" /> Significado de cada decisão
+                </div>
+                <ul>
+                  <li><strong>Cotar</strong> — o jurídico aprovou o caso: segue para cotação de orçamento com os médicos (exige o nº do processo).</li>
+                  <li><strong>Não Cotar</strong> — o jurídico recusou o caso (inviável ou fora do escopo): não segue para orçamento (exige o motivo em Observações).</li>
+                  <li><strong>Segredo de Justiça</strong> — processo sob sigilo judicial: tratamento diferenciado, com fluxo próprio de resposta.</li>
+                </ul>
+              </div>
             </div>
 
             <div className="field field-span-4">
