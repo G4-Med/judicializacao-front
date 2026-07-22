@@ -143,6 +143,8 @@ const formatCurrencyCompact = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 1,
 });
 
+const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
 export function HomePage() {
   const [loading, setLoading] = useState(false);
   const [exportando, setExportando] = useState(false);
@@ -377,9 +379,10 @@ export function HomePage() {
     perdasFiltradas.forEach((item) => {
       const data = parseApiDate(item.dataStatusPerda ?? item.dataPedido);
       if (!data) return;
+      // Formato mmm/aa (ex: jul/26) em vez de MM/YYYY — pedido Yago 21/07.
       const chave = porAno
         ? String(data.getFullYear())
-        : `${String(data.getMonth() + 1).padStart(2, '0')}/${data.getFullYear()}`;
+        : `${MESES_ABREV[data.getMonth()]}/${String(data.getFullYear()).slice(-2)}`;
       const ord = porAno ? data.getFullYear() : data.getFullYear() * 100 + data.getMonth();
       const bucket = buckets.get(chave) ?? { valor: 0, qtd: 0, ord };
       bucket.valor += toNumber(item.valorOrcamento) || toNumber(item.refPreco);
