@@ -1,6 +1,8 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { getOrders, getPerdas, getResultados } from '../../services/api/orders';
 import { Button } from 'primereact/button'
+import { Chart } from 'primereact/chart';
+import { InputText } from 'primereact/inputtext';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import './HomePage.css';
@@ -130,14 +132,41 @@ function truncateProcedimento(value: string): string {
   return `${value.slice(0, 80).trim()}...`;
 }
 
+function normalizarTexto(value: string): string {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+const formatCurrencyCompact = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+
+const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
 export function HomePage() {
   const [loading, setLoading] = useState(false);
   const [exportando, setExportando] = useState(false);
   const [orders, setOrders] = useState<OrderResumo[]>([]);
   const [resultados, setResultados] = useState<ResultadoResumo[]>([]);
   const [perdas, setPerdas] = useState<PerdaResumo[]>([]);
-  const metricCardVariants = ['home-card--navy', 'home-card--green', 'home-card--amber', 'home-card--rose'];
-  const valueCardVariants = ['home-card--amber', 'home-card--green', 'home-card--rose', 'home-card--navy'];
+  const [buscaProcedimento, setBuscaProcedimento] = useState('');
+  // Contagens (mês×vida) = número neutro (só o ícone guarda a categoria).
+  const metricCardVariants = [
+    'home-card--navy home-card--count',
+    'home-card--green home-card--count',
+    'home-card--amber home-card--count',
+    'home-card--rose home-card--count',
+  ];
+  // Valores: cor semântica SÓ onde importa — Ganho (verde) e Perda (vermelho).
+  // Em aberto e Conversão ficam neutros (evita o arco-íris "cara-de-IA").
+  const valueCardVariants = [
+    'home-card--amber home-card--count',
+    'home-card--green',
+    'home-card--rose',
+    'home-card--navy home-card--count',
+  ];
 
   useEffect(() => {
     setLoading(true);
@@ -328,6 +357,112 @@ export function HomePage() {
     };
   }, [orders, perdas, resultados]);
 
+  // Série temporal de perdas — agrupa por ANO quando a base cobre 2+ anos;
+  // por MÊS quando ainda não (senão o gráfico teria uma barra só).
+  const serieTemporal = useMemo(() => {
+    const buscaNorm = normalizarTexto(buscaProcedimento.trim());
+    const perdasFiltradas = buscaNorm
+      ? perdas.filter((item) => normalizarTexto(item.procedimento ?? '').includes(buscaNorm))
+      : perdas;
+
+    let minAno = Infinity;
+    let maxAno = -Infinity;
+    perdasFiltradas.forEach((item) => {
+      const data = parseApiDate(item.dataStatusPerda ?? item.dataPedido);
+      if (!data) return;
+      minAno = Math.min(minAno, data.getFullYear());
+      maxAno = Math.max(maxAno, data.getFullYear());
+    });
+    const porAno = maxAno > minAno;
+
+    const buckets = new Map<string, { valor: number; qtd: number; ord: number }>();
+    perdasFiltradas.forEach((item) => {
+      const data = parseApiDate(item.dataStatusPerda ?? item.dataPedido);
+      if (!data) return;
+      // Formato mmm/aa (ex: jul/26) em vez de MM/YYYY — pedido Yago 21/07.
+      const chave = porAno
+        ? String(data.getFullYear())
+        : `${MESES_ABREV[data.getMonth()]}/${String(data.getFullYear()).slice(-2)}`;
+      const ord = porAno ? data.getFullYear() : data.getFullYear() * 100 + data.getMonth();
+      const bucket = buckets.get(chave) ?? { valor: 0, qtd: 0, ord };
+      bucket.valor += toNumber(item.valorOrcamento) || toNumber(item.refPreco);
+      bucket.qtd += 1;
+      buckets.set(chave, bucket);
+    });
+
+    const entradas = Array.from(buckets.entries()).sort((a, b) => a[1].ord - b[1].ord);
+    return {
+      granularidade: porAno ? 'ano' : 'mês',
+      labels: entradas.map(([chave]) => chave),
+      valores: entradas.map(([, b]) => b.valor),
+      quantidades: entradas.map(([, b]) => b.qtd),
+      totalFiltrado: perdasFiltradas.length,
+    };
+  }, [perdas, buscaProcedimento]);
+
+  const serieChartData = useMemo(
+    () => ({
+      labels: serieTemporal.labels,
+      datasets: [
+        {
+          type: 'bar' as const,
+          label: 'Valor perdido',
+          data: serieTemporal.valores,
+          backgroundColor: 'rgba(200, 57, 77, 0.72)',
+          hoverBackgroundColor: 'rgba(200, 57, 77, 0.9)',
+          borderRadius: 8,
+          maxBarThickness: 64,
+          yAxisID: 'y',
+        },
+        {
+          type: 'line' as const,
+          label: 'Processos perdidos',
+          data: serieTemporal.quantidades,
+          borderColor: '#1d5a8a',
+          backgroundColor: '#1d5a8a',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          tension: 0.3,
+          yAxisID: 'y1',
+        },
+      ],
+    }),
+    [serieTemporal]
+  );
+
+  const serieChartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index' as const, intersect: false },
+      plugins: {
+        legend: { position: 'top' as const, labels: { usePointStyle: true, boxWidth: 8 } },
+        tooltip: {
+          callbacks: {
+            label: (ctx: { dataset: { label?: string; yAxisID?: string }; parsed: { y: number } }) =>
+              ctx.dataset.yAxisID === 'y'
+                ? ` ${ctx.dataset.label}: ${formatCurrency(ctx.parsed.y)}`
+                : ` ${ctx.dataset.label}: ${ctx.parsed.y}`,
+          },
+        },
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: {
+          position: 'left' as const,
+          grid: { color: 'rgba(120, 144, 170, 0.18)' },
+          ticks: { callback: (value: string | number) => formatCurrencyCompact.format(Number(value)) },
+        },
+        y1: {
+          position: 'right' as const,
+          grid: { display: false },
+          ticks: { precision: 0 },
+        },
+      },
+    }),
+    []
+  );
+
   const handleExportarRelatorio = async () => {
     const elemento = document.getElementById('home-report-export');
     if (!elemento || exportando) return;
@@ -380,11 +515,11 @@ export function HomePage() {
       <section className="home-hero">
         <div className="home-hero__content">
           <span className="home-hero__eyebrow"><Button icon="pi pi-circle-fill"></Button> PAINEL PRINCIPAL · {indicadores.mesAtualLabel}</span>
-          <h1>Acompanhe a <span>judicialização</span> da operação em um só lugar</h1>
+          <h1>Acompanhe a <span>urgência e emergência</span> de casos judiciais em um só lugar</h1>
           <p>
-            Auditoria e gestão dos processos do mês com o histórico consolidado da base. 
-            Visualize valores em aberto, conversão financeira e a performance dos procedimentos 
-            com a precisão que a MEDCHECK entrega ao setor de saúde.
+            Auditoria e gestão dos processos do mês com o histórico consolidado da base.
+            Visualize valores em aberto, conversão financeira e a performance dos procedimentos
+            com a precisão que a MEDCHECK entrega à saúde de Minas Gerais.
           </p>
           <div className="home-hero__actions">
             <Button
@@ -426,7 +561,7 @@ export function HomePage() {
 
         <div className="home-grid home-grid--four">
           {indicadores.cardsMesVida.map((card, index) => (
-            <article key={card.titulo} className={`home-card home-card--metric ${metricCardVariants[index] ?? 'home-card--navy'}`}>
+            <article key={card.titulo} className={`home-card home-card--metric home-card--count ${metricCardVariants[index] ?? 'home-card--navy'}`}>
               <div className="home-card__top">
                 <h3 className="home-card__title">{card.titulo}</h3>
                 <div className="home-card__icon">
@@ -486,6 +621,57 @@ export function HomePage() {
       <section className="home-panel home-panel--chart">
         <div className="home-panel__head">
           <div>
+            <div className="home-panel__title">Perdas ao longo do tempo</div>
+            <div className="home-panel__sub">
+              Valor perdido e quantidade de processos por {serieTemporal.granularidade}. Use a busca
+              para focar um procedimento específico.
+            </div>
+          </div>
+          <span className="home-search">
+            <i className="pi pi-search" />
+            <InputText
+              value={buscaProcedimento}
+              onChange={(e) => setBuscaProcedimento(e.target.value)}
+              placeholder="Buscar procedimento..."
+              aria-label="Buscar procedimento"
+            />
+            {buscaProcedimento && (
+              <button
+                type="button"
+                className="home-search__clear"
+                onClick={() => setBuscaProcedimento('')}
+                aria-label="Limpar busca"
+              >
+                <i className="pi pi-times" />
+              </button>
+            )}
+          </span>
+        </div>
+
+        {serieTemporal.labels.length === 0 ? (
+          <div className="home-empty-state">
+            {buscaProcedimento
+              ? `Nenhuma perda encontrada para "${buscaProcedimento}".`
+              : 'Nenhum dado com data disponível para montar a série temporal.'}
+          </div>
+        ) : (
+          <>
+            <div className="home-chart-canvas">
+              <Chart type="bar" data={serieChartData} options={serieChartOptions} />
+            </div>
+            <div className="home-chart-footnote">
+              {serieTemporal.totalFiltrado} processo{serieTemporal.totalFiltrado === 1 ? '' : 's'} perdido
+              {serieTemporal.totalFiltrado === 1 ? '' : 's'}
+              {buscaProcedimento ? ' no filtro atual' : ' na base'} · valores somados por{' '}
+              {serieTemporal.granularidade}
+            </div>
+          </>
+        )}
+      </section>
+
+      <section className="home-panel home-panel--chart">
+        <div className="home-panel__head">
+          <div>
             <div className="home-panel__title">Análise de perdas por procedimento</div>
             <div className="home-panel__sub">
               Orçamento enviado x orçamento ganho nos procedimentos perdidos mais recentes.
@@ -505,13 +691,15 @@ export function HomePage() {
           <div className="home-chart-frame">
             <div className="home-chart-list">
             {indicadores.graficoProcedimentos.map((item) => {
+              // Barra zerada fica VAZIA (largura mínima só quando há valor real —
+              // stub pintado em R$ 0,00 mentia visualmente que houve ganho).
               const ganhoWidth =
-                indicadores.maiorValorGrafico > 0
-                  ? Math.max(4, (item.valorOrcamentoGanho / indicadores.maiorValorGrafico) * 100)
+                indicadores.maiorValorGrafico > 0 && item.valorOrcamentoGanho > 0
+                  ? Math.max(2, (item.valorOrcamentoGanho / indicadores.maiorValorGrafico) * 100)
                   : 0;
               const orcamentoWidth =
-                indicadores.maiorValorGrafico > 0
-                  ? Math.max(4, (item.valorOrcamentoEnviado / indicadores.maiorValorGrafico) * 100)
+                indicadores.maiorValorGrafico > 0 && item.valorOrcamentoEnviado > 0
+                  ? Math.max(2, (item.valorOrcamentoEnviado / indicadores.maiorValorGrafico) * 100)
                   : 0;
 
               return (

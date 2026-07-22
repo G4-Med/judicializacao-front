@@ -1,89 +1,39 @@
-const STATUS_COLOR_MAP: Record<string, { backgroundColor: string; color: string; borderColor: string }> = {
-  'aguardando juridico': {
-    backgroundColor: '#2563eb',
-    color: '#ffffff',
-    borderColor: '#1d4ed8',
-  },
-  'aguardando orcamento': {
-    backgroundColor: '#f97316',
-    color: '#ffffff',
-    borderColor: '#ea580c',
-  },
-  'aguardando protocolar': {
-    backgroundColor: '#8b5cf6',
-    color: '#ffffff',
-    borderColor: '#7c3aed',
-  },
-  'aguardando resposta': {
-    backgroundColor: '#f59e0b',
-    color: '#111827',
-    borderColor: '#d97706',
-  },
-  'aguardando resposta - segredo de justica': {
-    backgroundColor: '#a16207',
-    color: '#ffffff',
-    borderColor: '#854d0e',
-  },
-  ganho: {
-    backgroundColor: '#16a34a',
-    color: '#ffffff',
-    borderColor: '#15803d',
-  },
-  perda: {
-    backgroundColor: '#dc2626',
-    color: '#ffffff',
-    borderColor: '#b91c1c',
-  },
-  cotar: {
-    backgroundColor: '#3b82f6',
-    color: '#ffffff',
-    borderColor: '#2563eb',
-  },
-  'nao cotar': {
-    backgroundColor: '#ef4444',
-    color: '#ffffff',
-    borderColor: '#dc2626',
-  },
-  'segredo de justica': {
-    backgroundColor: '#7c3aed',
-    color: '#ffffff',
-    borderColor: '#6d28d9',
-  },
-  'solicitado ao medico': {
-    backgroundColor: '#60a5fa',
-    color: '#0f172a',
-    borderColor: '#3b82f6',
-  },
-  'solicitar exames': {
-    backgroundColor: '#fbbf24',
-    color: '#111827',
-    borderColor: '#f59e0b',
-  },
-  'orcamento enviado': {
-    backgroundColor: '#22c55e',
-    color: '#ffffff',
-    borderColor: '#16a34a',
-  },
-  'perda pelo medico': {
-    backgroundColor: '#ef4444',
-    color: '#ffffff',
-    borderColor: '#dc2626',
-  },
-  'perda pelo juridico': {
-    backgroundColor: '#b91c1c',
-    color: '#ffffff',
-    borderColor: '#991b1b',
-  },
-  'perda por falta de especialista': {
-    backgroundColor: '#64748b',
-    color: '#ffffff',
-    borderColor: '#475569',
-  },
-  'perda pelo orcamento': {
-    backgroundColor: '#b45309',
-    color: '#ffffff',
-    borderColor: '#92400e',
-  },
+// Paleta SÓBRIA de status — pílulas de tom suave (fundo claro + texto colorido
+// escuro + borda sutil), agrupadas em 5 famílias semânticas. Antes eram 18 cores
+// saturadas sólidas (rainbow "cara-de-IA"); agora é calmo, profissional e legível,
+// mantendo a distinção funcional. Mandato @R 2026-07-21 ("nada muito colorido").
+type TagStyle = { backgroundColor: string; color: string; borderColor: string };
+
+// Famílias (soft tint): AZUL=jurídico/em-rota · ÂMBAR=aguardando · VERDE=positivo
+// · VERMELHO=perda/negativo · NEUTRO=sem info/segredo.
+const AZUL: TagStyle    = { backgroundColor: '#eff6ff', color: '#1e40af', borderColor: '#bfdbfe' };
+const AMBAR: TagStyle   = { backgroundColor: '#fef6e7', color: '#92600e', borderColor: '#f4dda8' };
+const VERDE: TagStyle   = { backgroundColor: '#e9f7ef', color: '#15803d', borderColor: '#bbe6c9' };
+const VERMELHO: TagStyle= { backgroundColor: '#fdecec', color: '#b42318', borderColor: '#f6cfcb' };
+const NEUTRO: TagStyle  = { backgroundColor: '#f1f5f9', color: '#475569', borderColor: '#e2e8f0' };
+
+const STATUS_COLOR_MAP: Record<string, TagStyle> = {
+  // Aguardando (em andamento)
+  'aguardando juridico': AZUL,
+  'aguardando orcamento': AMBAR,
+  'aguardando protocolar': AMBAR,
+  'aguardando resposta': AMBAR,
+  'aguardando resposta - segredo de justica': NEUTRO,
+  // Positivo / avançou
+  ganho: VERDE,
+  'orcamento enviado': VERDE,
+  cotar: AZUL,
+  'solicitado ao medico': AZUL,
+  'solicitar exames': AMBAR,
+  // Negativo / perda
+  perda: VERMELHO,
+  'nao cotar': VERMELHO,
+  'perda pelo medico': VERMELHO,
+  'perda pelo juridico': VERMELHO,
+  'perda pelo orcamento': VERMELHO,
+  'perda por falta de especialista': NEUTRO,
+  // Neutro / sigilo
+  'segredo de justica': NEUTRO,
 };
 
 function normalizeStatus(status: string) {
@@ -94,14 +44,7 @@ function normalizeStatus(status: string) {
     .trim();
 }
 
-export function getStatusTagStyle(status: string) {
+export function getStatusTagStyle(status: string): TagStyle {
   const normalizedStatus = normalizeStatus(status || '');
-
-  return (
-    STATUS_COLOR_MAP[normalizedStatus] ?? {
-      backgroundColor: '#64748b',
-      color: '#ffffff',
-      borderColor: '#475569',
-    }
-  );
+  return STATUS_COLOR_MAP[normalizedStatus] ?? NEUTRO;
 }

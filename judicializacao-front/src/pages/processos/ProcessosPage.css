@@ -542,7 +542,7 @@
   background: #ffffff;
   color: #0f2236;
   padding: 28px;
-  font-family: Arial, sans-serif;
+  font-family: var(--mc-font-body, "Inter", "Helvetica Neue", Arial, sans-serif);
 }
 
 .processos-export-sheet__header {

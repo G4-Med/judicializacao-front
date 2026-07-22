@@ -23,7 +23,7 @@ const BrandMark = ({ compact = false }: BrandProps) => (
     </span>
     <div className="login-page__brand-text">
       <div>MED<span>CHECK</span></div>
-      <small>Judicialização · Saúde</small>
+      <small>Urgência e Emergência Judicial</small>
     </div>
   </div>
 );
@@ -55,7 +55,7 @@ const LoginLogoGroup = ({ view }: LoginLogoGroupProps) => (
     <div className={`login-page__logo login-page__logo--left ${view === 'recover' ? 'is-active' : ''}`}>
       <BrandMark />
       <p className="login-page__tagline">
-        Gestão integrada de processos de<br />judicialização da saúde.
+        Gestão integrada de casos de urgência e emergência judicial em saúde.
       </p>
     </div>
     <div className={`login-page__logo login-page__logo--right ${view === 'login' ? 'is-active' : ''}`}>

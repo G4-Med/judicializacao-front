@@ -61,8 +61,19 @@ const MC = {
   border:   '#e3eaef',
 };
 
-/* paleta categórica para gráficos com várias categorias */
-const MC_CATEGORICAL = [MC.navy, MC.amber, MC.green, MC.navyMid, MC.greenLt, MC.rose, MC.navyLt];
+/* Cor SEMÂNTICA por rótulo de status (¬por posição na lista — antes "Perda"
+   caía no laranja e "Perda pelo Jurídico" no VERDE, invertendo a leitura). */
+const corSemanticaStatus = (label: string): string => {
+  const l = label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (l.includes('perda') || l.includes('nao cotar')) return MC.rose;
+  if (l.includes('ganho') || l.includes('enviado')) return MC.green;
+  if (l.includes('aguardando') || l.includes('solicitar')) return MC.amber;
+  return MC.navy;
+};
+
+/* Donut de perdas: TODAS as fatias são perda — variar em tons de vermelho/neutro
+   (distinguível sem mentir a semântica; verde numa perda comunica o oposto). */
+const TONS_PERDA = ['#c8394d', '#8f2436', '#e07a89', '#64748b', '#b5836a'];
 
 function parseApiDate(value?: string | null): Date | null {
   if (!value) return null;
@@ -424,7 +435,7 @@ export function DashboardPage() {
       label,
       value: statusPerdaValues[idx],
       pct: statusPerdaTotal > 0 ? (statusPerdaValues[idx] / statusPerdaTotal) * 100 : 0,
-      color: MC_CATEGORICAL[idx % MC_CATEGORICAL.length],
+      color: TONS_PERDA[idx % TONS_PERDA.length],
     }));
 
     return {
@@ -434,7 +445,7 @@ export function DashboardPage() {
         datasets: [{
           label: 'Quantidade',
           data: Object.values(statusPedidoMap),
-          backgroundColor: Object.keys(statusPedidoMap).map((_, i) => MC_CATEGORICAL[i % MC_CATEGORICAL.length]),
+          backgroundColor: Object.keys(statusPedidoMap).map((k) => corSemanticaStatus(k)),
           borderRadius: 8,
           maxBarThickness: 56,
         }]

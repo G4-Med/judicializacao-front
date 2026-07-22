@@ -450,7 +450,7 @@ ${blocos}
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }} />
           <Column field="idade" header="Idade" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '7rem' }} />
-          <Column field="procedimento" header="Procedimento" sortable filter
+          <Column field="procedimento" className="col-procedimento-upper" header="Procedimento" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '18rem' }} />
           <Column field="medico" header="Médico" sortable filter
             filterElement={(o) => dropdownFilterElement(o, medicosOptions)} style={{ minWidth: '14rem' }} />

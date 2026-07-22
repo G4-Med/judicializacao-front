@@ -408,7 +408,7 @@ export function SelecionarMedicoPage() {
             style={{ minWidth: '16rem' }}
           />
           <Column
-            field="procedimento"
+            field="procedimento" className="col-procedimento-upper"
             header="Procedimento"
             sortable
             filter

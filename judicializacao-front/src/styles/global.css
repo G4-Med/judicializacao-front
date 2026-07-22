@@ -5,7 +5,10 @@ body,
   padding: 0;
   min-height: 100vh;
   width: 100%;
-  font-family: Arial, Helvetica, sans-serif;
+  /* Fonte da marca (Inter) — antes estava Arial hardcoded e, por carregar
+     depois dos tokens + #root envolver todo o app, o corpo inteiro renderizava
+     em Arial em vez da fonte projetada. */
+  font-family: var(--mc-font-body, "Inter", "Helvetica Neue", Arial, sans-serif);
 }
 
 * {
@@ -39,3 +42,6 @@ body,
   padding: 0.2rem 0.45rem;
 }
 
+
+/* Padronização: nomes de procedimento sempre em CAIXA ALTA nas tabelas. */
+.col-procedimento-upper, .col-procedimento-upper * { text-transform: uppercase; }

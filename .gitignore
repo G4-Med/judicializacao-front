@@ -1,0 +1,15 @@
+# Memória de sessão / ferramentas internas (não pertencem ao repo do produto)
+_caderno_sessoes/
+CADERNO_DE_BORDO.md
+.claude/
+.claude/settings.local.json
+
+# Node / build
+node_modules/
+dist/
+*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
