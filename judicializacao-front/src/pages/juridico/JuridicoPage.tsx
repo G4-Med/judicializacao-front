@@ -151,7 +151,9 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
       return;
     }
 
-    if (statusJuridico === 'Não Cotar' && !obs.trim()) {
+    // Recusa exige o motivo com as palavras da pessoa (mín. 20 chars) — é este texto
+    // que alimenta a análise de padrões de recusa (regra também aplicada no backend).
+    if (statusJuridico === 'Não Cotar' && obs.trim().length < 20) {
       setObsObrigatorio(true);
       return;
     }
@@ -457,7 +459,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                 value={obs}
                 onChange={(e) => {
                   setObs(e.target.value);
-                  if (e.target.value.trim()) setObsObrigatorio(false);
+                  if (e.target.value.trim().length >= 20) setObsObrigatorio(false);
                 }}
                 rows={3}
                 autoResize
@@ -467,7 +469,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
               />
               {obsObrigatorio && (
                 <small style={{ color: '#ef4444' }}>
-                  Observações é obrigatório quando o status é "Não Cotar"
+                  Para "Não Cotar", descreva o motivo com suas palavras (mínimo 20 caracteres)
                 </small>
               )}
             </div>

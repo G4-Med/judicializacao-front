@@ -335,11 +335,24 @@ export function ProcessosPage() {
 
     try {
       if (action === 'juridico' && typeof extraValue === 'string') {
+        // Recusa exige o motivo REAL (não frase-carimbo): 100/100 recusas históricas
+        // tinham o mesmo texto hardcoded = zero informação. O texto alimenta a análise.
+        let obsRecusa: string | null = null;
+        if (extraValue === 'Não Cotar') {
+          const motivo = window.prompt(
+            'Descreva o motivo da recusa jurídica com suas palavras (mínimo 20 caracteres):'
+          );
+          if (!motivo || motivo.trim().length < 20) {
+            alert('Recusa não registrada: o motivo precisa ter pelo menos 20 caracteres.');
+            return;
+          }
+          obsRecusa = motivo.trim();
+        }
         await salvarJuridico(rowData.id, {
           nprocesso: rowData.nprocesso || null,
           statusJuridico: extraValue,
           orcamentos: null,
-          obs: extraValue === 'Não Cotar' ? 'Juridico falou para nao cotar' : null,
+          obs: obsRecusa,
         });
         setProcessoMenuSelecionado(null);
         await carregarDados();
@@ -596,13 +609,28 @@ ${linhasAnexos}
     setExecutandoAcaoMassa(true);
     try {
       if (tipo === 'juridico') {
+        // Recusa em LOTE também exige motivo real (nunca frase-carimbo) — 1 motivo
+        // declarado vale para todos os selecionados, e o operador sabe disso.
+        let obsRecusaLote: string | null = null;
+        if (valor === 'Não Cotar') {
+          const motivo = window.prompt(
+            `Motivo da recusa jurídica (mínimo 20 caracteres) — será aplicado aos ` +
+            `${selectedProcessos.length} processos selecionados:`
+          );
+          if (!motivo || motivo.trim().length < 20) {
+            alert('Recusa não registrada: o motivo precisa ter pelo menos 20 caracteres.');
+            setExecutandoAcaoMassa(false);
+            return;
+          }
+          obsRecusaLote = motivo.trim();
+        }
         await Promise.all(
           selectedProcessos.map((processo) =>
             salvarJuridico(processo.id, {
               nprocesso: processo.nprocesso || null,
               statusJuridico: valor,
               orcamentos: null,
-              obs: valor === 'Não Cotar' ? 'Juridico falou para nao cotar' : null,
+              obs: obsRecusaLote,
             })
           )
         );
