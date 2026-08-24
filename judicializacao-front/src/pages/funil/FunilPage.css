@@ -144,3 +144,63 @@
 /* número que ainda pode mudar: mesma cor, peso menor — sinaliza provisório sem
    gritar. Esconder seria pior (são 53 decisões reais); fingir definitivo também. */
 .funil__conversao-num strong.is-provisorio { color: #B45309; }
+
+/* ── DETALHE (a lista por trás dos números) ─────────────────── */
+.fdet { margin-top: 2.4rem; padding-top: 1.6rem; border-top: 1px solid var(--surface-border, #e5e7eb); }
+.fdet__topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.fdet__topo h2 { font-size: 1.15rem; font-weight: 700; margin: 0 0 .2rem; }
+.fdet__sub { margin: 0; font-size: .88rem; color: var(--text-color-secondary, #6b7280); }
+.fdet__baixar {
+  border: 0; background: #0F766E; color: #fff; border-radius: 8px;
+  padding: .48rem 1rem; font-size: .86rem; font-weight: 600; cursor: pointer;
+}
+.fdet__baixar:disabled { background: var(--surface-border, #d1d5db); cursor: not-allowed; }
+
+.fdet__erro { background: rgba(220,38,38,.08); color: #991B1B; border-radius: 10px; padding: .8rem 1rem; margin-bottom: .9rem; font-size: .88rem; }
+.fdet__aviso {
+  background: var(--surface-hover, rgba(0,0,0,.04)); border-left: 3px solid #9CA3AF;
+  border-radius: 0 8px 8px 0; padding: .65rem .9rem; margin: 0 0 .9rem;
+  font-size: .85rem; line-height: 1.5; color: var(--text-color-secondary, #6b7280);
+}
+
+.fdet__filtros { display: flex; gap: .8rem; flex-wrap: wrap; align-items: flex-end; margin-bottom: 1rem; }
+.fdet__filtros label { display: flex; flex-direction: column; gap: .2rem; font-size: .78rem; }
+.fdet__filtros label > span { color: var(--text-color-secondary, #6b7280); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.fdet__filtros label > span em { font-style: normal; font-weight: 400; text-transform: none; letter-spacing: 0; }
+.fdet__filtros select, .fdet__filtros input {
+  border: 1px solid var(--surface-border, #e5e7eb); border-radius: 8px;
+  padding: .38rem .55rem; font: inherit; font-size: .85rem;
+  background: var(--surface-card, #fff); color: inherit; max-width: 230px;
+}
+.fdet__idade > div { display: flex; gap: .3rem; }
+.fdet__idade input { width: 74px; }
+.fdet__limpar {
+  border: 1px solid var(--surface-border, #e5e7eb); background: transparent; color: inherit;
+  border-radius: 8px; padding: .38rem .8rem; font-size: .82rem; cursor: pointer;
+}
+
+.fdet__envolve { overflow-x: auto; }
+.fdet__tabela { width: 100%; border-collapse: collapse; font-size: .84rem; min-width: 980px; }
+.fdet__tabela th {
+  text-align: left; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--text-color-secondary, #6b7280); font-weight: 600;
+  padding: .45rem .55rem; border-bottom: 1px solid var(--surface-border, #e5e7eb); white-space: nowrap;
+}
+.fdet__tabela td { padding: .55rem .55rem; border-bottom: 1px solid var(--surface-border, #f3f4f6); vertical-align: top; }
+.fdet__tabela td em {
+  display: block; font-style: normal; font-size: .74rem;
+  color: var(--text-color-secondary, #9ca3af); margin-top: .12rem;
+}
+.fdet__tag { font-weight: 700; font-size: .8rem; }
+.fdet__just { max-width: 320px; line-height: 1.45; }
+/* a lacuna aparece como texto, ¬como célula vazia: em branco o leitor lê
+   "não houve motivo" quando o que houve foi "ninguém escreveu". */
+.fdet__na { color: var(--text-color-secondary, #9ca3af); font-style: italic; font-size: .8rem; }
+
+.fdet__paginas { display: flex; align-items: center; gap: .8rem; justify-content: center; margin-top: 1rem; font-size: .85rem; }
+.fdet__paginas button {
+  border: 1px solid var(--surface-border, #e5e7eb); background: transparent; color: inherit;
+  border-radius: 8px; padding: .35rem .8rem; font-size: .82rem; cursor: pointer;
+}
+.fdet__paginas button:disabled { opacity: .4; cursor: not-allowed; }
+.fdet__carregando, .fdet__vazio { font-size: .88rem; color: var(--text-color-secondary, #6b7280); padding: 1.2rem 0; }

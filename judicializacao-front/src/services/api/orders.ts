@@ -178,3 +178,14 @@ export const getSlaEstourados = () => api.get('/sla/estourados/');
 
 export const getSlaTrajetoria = (orderId: number) =>
   api.get(`/orders/${orderId}/trajetoria/`);
+
+// Detalhe do funil — a lista por trás de cada número, com filtros.
+// `formato: 'csv'` NÃO passa por aqui: o download usa a URL direta com o
+// token, porque o navegador precisa receber o arquivo como anexo.
+export const getFunilDetalhe = (params: Record<string, string | number> = {}) =>
+  api.get('/funil/detalhe/', { params });
+
+// Download do CSV: precisa do cabeçalho de autenticação, então NÃO dá para
+// usar um <a href> simples — busca como blob e o componente entrega ao usuário.
+export const baixarFunilCsv = (params: Record<string, string | number> = {}) =>
+  api.get('/funil/detalhe/', { params: { ...params, formato: 'csv' }, responseType: 'blob' });

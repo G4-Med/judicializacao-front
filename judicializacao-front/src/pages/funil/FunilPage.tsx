@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getFunil } from '../../services/api/orders';
+import { FunilDetalhe } from './FunilDetalhe';
 import './FunilPage.css';
 
 /**
@@ -302,6 +303,10 @@ export function FunilPage() {
           </table>
         </section>
       )}
+      {/* A lista por trás dos números. Fica DEPOIS do funil de propósito:
+          primeiro o leitor vê ONDE se perde, depois QUEM se perdeu. */}
+      {dados && <FunilDetalhe inicio={foco?.inicio} fim={foco?.fim} />}
+
     </div>
   );
 }
