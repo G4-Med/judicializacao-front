@@ -147,3 +147,21 @@ export interface ExtrairEmailResposta {
 
 export const extrairEmail = (corpoEmail: string) =>
   api.post<ExtrairEmailResposta>('/ia/extrair-email/', { corpo_email: corpoEmail });
+
+/**
+ * Baixa o orçamento CONSOLIDADO: o backend junta todos os anexos do tipo
+ * ORCAMENTO num único PDF (e comprime se estourar o limite do e-mail).
+ * `responseType: 'blob'` é obrigatório — sem ele o axios trata o PDF como
+ * texto e o arquivo chega corrompido.
+ */
+export const getOrcamentoConsolidado = (orderId: number) =>
+  api.get(`/orders/${orderId}/orcamento-consolidado/`, { responseType: 'blob' });
+
+/**
+ * O funil: cada fase medida, onde o pedido morre e por quê.
+ * `periodo` ∈ mensal | trimestral | semestral | anual | custom
+ * (custom exige inicio e fim em AAAA-MM-DD).
+ */
+export const getFunil = (params: {
+  periodo?: string; janelas?: number; inicio?: string; fim?: string;
+} = {}) => api.get('/funil/', { params });

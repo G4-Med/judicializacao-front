@@ -28,7 +28,9 @@ export type ScreenKey =
   | 'configuracoes'
   | 'configuracoesEmails'
   | 'monitorIntegracao'
-  | 'logs';
+  | 'logs'
+  | 'processoOperacional'
+  | 'funil';
 
 export type ReportKey = 'relatorioResumido' | 'relatorioConsolidado';
 
@@ -42,6 +44,8 @@ interface GroupPermissionConfig {
 export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
   ADMIN: {
     view: [
+      'funil',
+      'processoOperacional',
       'home',
       'dashboard',
       'processos',
@@ -94,6 +98,8 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
   },
   GERENTE: {
     view: [
+      'funil',
+      'processoOperacional',
       'home',
       'dashboard',
       'processos',
@@ -117,6 +123,8 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
   },
   JURIDICO: {
     view: [
+      'funil',
+      'processoOperacional',
       'home',
       'clientes',
       'juridico',
@@ -136,6 +144,7 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
   },
   MEDICO: {
     view: [
+      'processoOperacional',
       'home',
       'orcamentoMedico',
       'paraProtocolar',
@@ -154,6 +163,8 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
   },
   SUPERVISOR: {
     view: [
+      'funil',
+      'processoOperacional',
       'home',
       'juridico',
       'selecionarMedico',
@@ -173,7 +184,7 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
     allMedicos: false,
   },
   SECRETARIA: {
-    view: ['home', 'selecionarMedico'],
+    view: ['processoOperacional', 'home', 'selecionarMedico'],
     edit: ['selecionarMedico'],
     exportReports: [],
     allMedicos: false,
@@ -203,6 +214,8 @@ export const SCREEN_PATHS: Record<ScreenKey, string> = {
   configuracoesEmails: '/configuracoes-emails',
   monitorIntegracao: '/monitor-integracao',
   logs: '/logs',
+  processoOperacional: '/processo-operacional',
+  funil: '/funil',
 };
 
 export const SCREEN_ORDER: ScreenKey[] = [

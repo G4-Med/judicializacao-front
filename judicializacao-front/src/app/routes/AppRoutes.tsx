@@ -18,6 +18,8 @@ import { PerdasPage } from '../../pages/perdas/PerdasPage';
 import { UsuariosPage } from '../../pages/usuarios/UsuariosPage';
 import { ConfiguracoesPage } from '../../pages/configuracoes/ConfiguracoesPage';
 import { LogsPage } from '../../pages/logs/LogsPage';
+import { FunilPage } from '../../pages/funil/FunilPage';
+import { ProcessoOperacionalPage } from '../../pages/processoOperacional/ProcessoOperacionalPage';
 import { JuridicoPage } from '../../pages/juridico/JuridicoPage';
 import { OrcamentoMedicoPage } from '../../pages/orcamentoMedico/OrcamentoMedicoPage';
 import { SelecionarMedicoPage } from '../../pages/selecionarMedico/SelecionarMedicoPage';
@@ -54,6 +56,8 @@ export function AppRoutes() {
         <Route path="/para-protocolar" element={<ProtectedScreen screen="paraProtocolar"><ParaProtocolarPage /></ProtectedScreen>} />
         <Route path="/protocolados" element={<ProtectedScreen screen="protocolados"><ProtocoladosPage /></ProtectedScreen>} />
         <Route path="/segredo-justica" element={<ProtectedScreen screen="segredoJustica"><SegredoJusticaPage /></ProtectedScreen>} />
+        <Route path="/funil" element={<ProtectedScreen screen="funil"><FunilPage /></ProtectedScreen>} />
+        <Route path="/processo-operacional" element={<ProtectedScreen screen="processoOperacional"><ProcessoOperacionalPage /></ProtectedScreen>} />
         <Route path="/juridico" element={<ProtectedScreen screen="juridico"><JuridicoPage /></ProtectedScreen>} />
         <Route path="/selecionar-medico" element={<ProtectedScreen screen="selecionarMedico"><SelecionarMedicoPage /></ProtectedScreen>} />
         <Route path="/orcamento-medico" element={<ProtectedScreen screen="orcamentoMedico"><OrcamentoMedicoPage /></ProtectedScreen>} />
