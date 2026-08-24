@@ -24,6 +24,7 @@ export const MENU_CONFIG_CLEAN: MenuConfigItem[] = [
   { label: 'Home', icon: 'pi pi-home', path: '/home', screen: 'home' },
   { label: 'Dashboard', icon: 'pi pi-chart-bar', path: '/dashboard', screen: 'dashboard' },
   { label: 'Funil', icon: 'pi pi-filter', path: '/funil', screen: 'funil' },
+  { label: 'SLA', icon: 'pi pi-clock', path: '/sla', screen: 'sla' },
   { label: 'Processos', icon: 'pi pi-briefcase', path: '/processos', screen: 'processos' },
   { label: 'Clientes', icon: 'pi pi-users', path: '/clientes', screen: 'clientes' },
   {

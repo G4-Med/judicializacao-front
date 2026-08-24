@@ -165,3 +165,16 @@ export const getOrcamentoConsolidado = (orderId: number) =>
 export const getFunil = (params: {
   periodo?: string; janelas?: number; inicio?: string; fim?: string;
 } = {}) => api.get('/funil/', { params });
+
+// SLA — os 4 endpoints. Índices/por-médico/estourados são agregados; a
+// trajetória é por pedido (o "o que aconteceu com ESTE processo").
+export const getSlaIndices = (params: {
+  periodo?: string; janelas?: number;
+} = {}) => api.get('/sla/indices/', { params });
+
+export const getSlaPorMedico = () => api.get('/sla/por-medico/');
+
+export const getSlaEstourados = () => api.get('/sla/estourados/');
+
+export const getSlaTrajetoria = (orderId: number) =>
+  api.get(`/orders/${orderId}/trajetoria/`);
