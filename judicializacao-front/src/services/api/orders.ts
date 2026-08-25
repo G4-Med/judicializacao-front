@@ -21,6 +21,9 @@ export const adicionarAcompanhamento = (id: number, data: any) => api.post(`/ord
 export const getResultados = () => api.get('/orders/resultados/');
 export const getPerdas = () => api.get('/orders/perdas/');
 export const getMedicosCompleto = () => api.get('client/medico-completo/lista/');
+export const getRelatorioResumido = (medicoId: number) => api.get(`/relatorios/resumido/${medicoId}/`);
+export const enviarRelatorioResumido = (medicoId: number, destinatario?: string) =>
+  api.post(`/relatorios/resumido/${medicoId}/enviar/`, destinatario ? { destinatario } : {});
 export const getEmailsPendentes = (params?: { status?: string; tipoEmail?: string }) =>
   api.get('/orders/emails/', { params });
 export const getEmailsPendentesKpis = () => api.get('/orders/emails/kpis/');
