@@ -6,6 +6,7 @@ import { logout } from '../../services/auth'
 import { setTheme } from '../../utils/theme'
 import { getEmailsPendentesCount } from '../../services/api/orders'
 import logo from '../../assets/logo-horizontal.png'
+import { AjudaModal } from '../../components/AjudaModal/AjudaModal'
 import './Header.css'
 
 interface Props {
@@ -16,6 +17,7 @@ export function Header({ onMenuClick }: Props) {
   const [dark, setDark] = useState(false)
   const [emailsPendentes, setEmailsPendentes] = useState(0)
   const [notificacoesAbertas, setNotificacoesAbertas] = useState(false)
+  const [ajudaAberta, setAjudaAberta] = useState(false)
   const navigate = useNavigate()
   const notificacoesRef = useRef<HTMLDivElement | null>(null)
 
@@ -107,7 +109,12 @@ export function Header({ onMenuClick }: Props) {
           )}
         </div>
 
-        <Button icon="pi pi-question-circle" text rounded className="mc-iconbtn" tooltip="Ajuda" tooltipOptions={{ position: 'bottom' }}/>
+        <Button
+          icon="pi pi-question-circle" text rounded className="mc-iconbtn"
+          onClick={() => setAjudaAberta(true)}
+          tooltip="Ajuda" tooltipOptions={{ position: 'bottom' }}
+        />
+        <AjudaModal visible={ajudaAberta} onHide={() => setAjudaAberta(false)} />
         <Button
           icon="pi pi-sign-out"
           text rounded className="mc-iconbtn"
