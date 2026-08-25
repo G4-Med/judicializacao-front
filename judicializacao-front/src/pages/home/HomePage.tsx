@@ -612,6 +612,7 @@ export function HomePage() {
                   <i className={card.icone} />
                 </div>
               </div>
+              <span className="home-card__period">Mês atual</span>
               <div className="home-card__metric">{loading ? '--' : card.valorMes}</div>
               <div className="home-card__meta">
                 <span>Vida toda:</span>
@@ -624,7 +625,9 @@ export function HomePage() {
 
       <PainelColapsavel
         titulo="Valores e conversão"
-        sub="Valor financeiro em destaque com a quantidade de processos correspondente embaixo."
+        sub="Vida toda (não é o mês). Ganho/Perda/Conversão conta só quem chegou a disputar preço com o
+        Estado — os pedidos recusados antes de orçar (jurídico/médico/especialista) ficam no painel acima,
+        em 'QTDE Pedidos Recusados', e não entram aqui."
         className="home-block"
       >
         <div className="home-grid home-grid--four">
@@ -636,6 +639,7 @@ export function HomePage() {
                   <i className={card.icone} />
                 </div>
               </div>
+              <span className="home-card__period">Vida toda (acumulado)</span>
               <div className="home-card__metric">
                 {loading
                   ? '--'
@@ -643,10 +647,13 @@ export function HomePage() {
                     ? formatPercent(card.valorPrincipal)
                     : formatCurrency(card.valorPrincipal)}
               </div>
+              {card.percentual && (
+                <div className="home-card__submeta">por valor (R$ ganho ÷ R$ ganho+perdido)</div>
+              )}
               <div className="home-card__meta">
                 {card.percentual ? (
                   <>
-                    <span>ganho / (ganho + perda)</span>
+                    <span>por quantidade de processos</span>
                     <strong>{loading ? '--' : `${card.quantidade}%`}</strong>
                   </>
                 ) : (
