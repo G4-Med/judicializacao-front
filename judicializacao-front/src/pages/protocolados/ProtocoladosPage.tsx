@@ -19,6 +19,7 @@ import { getStatusTagStyle } from '../../utils/statusTag';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import { useAccess } from '../../access/AccessContext';
 import './ProtocoladosPage.css';
+import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -97,7 +98,12 @@ export function ProtocoladosPage() {
   const [parecerJuridico, setParecerJuridico] = useState('');
   const [resultadoSelecionado, setResultadoSelecionado] = useState<ResultadoType>('');
 
+  // 'Anotação do jurídico' vem PRIMEIRO e é o default: os outros três são EVENTOS
+  // (algo aconteceu), mas o uso mais comum é a nota de andamento — "acompanhei hoje,
+  // segue aguardando decisão". Sem esse tipo, quem só queria anotar não tinha onde.
+  const ANOTACAO_LIVRE = 'Anotação do jurídico';
   const TIPOS_ACOMPANHAMENTO = [
+    ANOTACAO_LIVRE,
     'Valor já depositado ao medico',
     'Cirurgia Marcada',
     'Contato realizado pelo Juridico',
@@ -184,8 +190,12 @@ export function ProtocoladosPage() {
 
   const handleSalvarAcompanhamento = async () => {
     if (!registroAtualizando) return;
-    if (!tipoAcompanhamento) {
-      alert('Selecione um tipo de acompanhamento.');
+    // Se a pessoa só escreveu a observação e não marcou tipo, isso é uma ANOTAÇÃO —
+    // ¬motivo para bloquear. Bloquear aqui era o que fazia a tela parecer que não
+    // aceitava texto (o campo ficava escondido até escolher tipo).
+    const tipoFinal = tipoAcompanhamento || (novoAcompanhamento.trim() ? ANOTACAO_LIVRE : '');
+    if (!tipoFinal) {
+      alert('Escreva uma observação ou selecione um tipo de acompanhamento.');
       return;
     }
     setSalvandoAcompanhamento(true);
@@ -200,7 +210,7 @@ export function ProtocoladosPage() {
         linkAnexo = resUpload?.data?.linkImagem ?? resUpload?.data?.url ?? null;
       }
       await adicionarAcompanhamento(registroAtualizando.id, {
-        acompanhamento: tipoAcompanhamento,
+        acompanhamento: tipoFinal,
         descricao: novoAcompanhamento,
         linkAnexo,
       });
@@ -423,6 +433,7 @@ export function ProtocoladosPage() {
 
   return (
     <div className="protocolados-page">
+      <PrimeiraVisitaInfo etapaId="protocolados" />
       <div className="page-header">
         <div>
           <h1>Protocolados</h1>
@@ -729,17 +740,19 @@ export function ProtocoladosPage() {
                     </div>
                   </div>
 
+                  {/* SEMPRE visível: antes ficava escondido atrás da escolha de tipo, e
+                      quem só queria anotar concluía que a tela não aceitava texto. */}
+                  <div className="field field-span-4">
+                    <label>Observação</label>
+                    <InputTextarea
+                      value={novoAcompanhamento}
+                      onChange={(e) => setNovoAcompanhamento(e.target.value)}
+                      rows={4}
+                      placeholder="Ex: acompanhei hoje, processo segue aguardando decisão."
+                    />
+                  </div>
                   {tipoAcompanhamento && (
                     <>
-                      <div className="field field-span-4">
-                        <label>Descrição (opcional)</label>
-                        <InputTextarea
-                          value={novoAcompanhamento}
-                          onChange={(e) => setNovoAcompanhamento(e.target.value)}
-                          rows={4}
-                          placeholder="Detalhes do acompanhamento..."
-                        />
-                      </div>
                       <div className="field field-span-4">
                         <label>Anexo (opcional)</label>
                         <div className="acompanhamento-anexo-row">

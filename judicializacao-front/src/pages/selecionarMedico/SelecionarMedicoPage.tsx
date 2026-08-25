@@ -20,6 +20,7 @@ import {
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './SelecionarMedicoPage.css';
+import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
 interface ProcessoResumo {
   id: number;
@@ -308,6 +309,7 @@ export function SelecionarMedicoPage() {
 
   return (
     <div className="selecionar-medico-page">
+      <PrimeiraVisitaInfo etapaId="selecionar-medico" />
       <div className="page-header">
         <div>
           <h1>Selecionar Médico</h1>

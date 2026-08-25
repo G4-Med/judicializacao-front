@@ -1,0 +1,98 @@
+/* ============================================================
+   PRIMEIRA VISITA — lembrete de dono/SLA na 1a abertura da tela
+   ============================================================ */
+.pvi {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border-2, #e2e8f0);
+  border-left-width: 4px;
+  border-radius: var(--mc-radius-lg, 12px);
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  font-family: var(--mc-font-body);
+  color: var(--mc-ink, #1f2937);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.pvi__cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.pvi__cabecalho strong {
+  font-family: var(--mc-font-heading);
+  font-size: 1rem;
+  color: var(--mc-navy-900, #0f172a);
+  flex: 1;
+}
+
+.pvi__dono {
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.pvi__fechar {
+  background: transparent;
+  border: 0;
+  color: var(--mc-muted, #6b7280);
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 4px;
+}
+.pvi__fechar:hover { color: var(--mc-ink, #1f2937); }
+
+.pvi p { margin: 6px 0; }
+
+.pvi__quemedono {
+  color: var(--mc-muted, #6b7280);
+  font-size: 0.86rem;
+}
+
+.pvi__sla {
+  background: var(--mc-muted-2, #f8fafc);
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: inline-block;
+}
+
+.pvi__atencao {
+  color: var(--mc-rose, #b91c1c);
+  font-weight: 500;
+}
+
+.pvi__rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.pvi__rodape a {
+  color: var(--mc-green-500, #0f766e);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+.pvi__rodape a:hover { text-decoration: underline; }
+
+.pvi__entendi {
+  background: var(--mc-navy-900, #0f172a);
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.pvi__entendi:hover { opacity: 0.9; }
+
+@media (max-width: 600px) {
+  .pvi__rodape { flex-direction: column; align-items: flex-start; }
+}

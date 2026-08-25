@@ -18,6 +18,7 @@ import { getStatusTagStyle } from '../../utils/statusTag';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import { useAccess } from '../../access/AccessContext';
 import './SegredoJusticaPage.css';
+import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
 interface DocumentoProcesso {
   label: string;
@@ -53,7 +54,7 @@ interface SegredoJusticaTableRow extends SegredoJustica {
   dias: number;
 }
 
-type ResultadoType = 'ganho' | 'perda' | '';
+type ResultadoType = 'ganho' | 'perda' | 'habilitacao' | '';
 
 export function SegredoJusticaPage() {
   const { isReadOnly } = useAccess();
@@ -258,8 +259,15 @@ useEffect(() => { carregarDados(); }, []);
       alert('Selecione um resultado antes de salvar.');
       return;
     }
-    if (valorGanho === null || valorGanho <= 0) {
+    // Habilitação não é desfecho financeiro — é o processo saindo do escuro e
+    // voltando para o acompanhamento normal. Exigir valor aqui obrigaria a
+    // inventar um número, e número inventado contamina o indicador.
+    if (resultadoSelecionado !== 'habilitacao' && (valorGanho === null || valorGanho <= 0)) {
       alert(resultadoSelecionado === 'ganho' ? 'Informe o valor ganho.' : 'Informe o valor da causa.');
+      return;
+    }
+    if (resultadoSelecionado === 'habilitacao' && !parecerJuridico.trim()) {
+      alert('Escreva no parecer como a habilitação foi obtida.');
       return;
     }
 
@@ -279,6 +287,7 @@ useEffect(() => { carregarDados(); }, []);
 
   return (
     <div className="segredo-justica-page">
+      <PrimeiraVisitaInfo etapaId="segredo-justica" />
       <div className="page-header">
         <div>
           <h1>Segredos de Justiça</h1>
@@ -525,9 +534,21 @@ useEffect(() => { carregarDados(); }, []);
                       setValorGanho(null);
                     }}
                   />
+                  {/* F4 · Habilitação: o processo deixa de ser cego e vai para
+                      Protocolados, onde é acompanhado como qualquer outro. */}
+                  <Button
+                    label="Habilitação obtida"
+                    icon="pi pi-unlock"
+                    severity={resultadoSelecionado === 'habilitacao' ? 'info' : 'secondary'}
+                    outlined={resultadoSelecionado !== 'habilitacao'}
+                    onClick={() => {
+                      setResultadoSelecionado('habilitacao');
+                      setValorGanho(null);
+                    }}
+                  />
                 </div>}
 
-                {resultadoSelecionado !== '' && (
+                {resultadoSelecionado !== '' && resultadoSelecionado !== 'habilitacao' && (
                   <div className="field">
                     <label>{resultadoSelecionado === 'ganho' ? 'Valor Ganho' : 'Valor da Causa'}</label>
                     <InputNumber

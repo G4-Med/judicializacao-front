@@ -12,6 +12,7 @@ import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder } from '..
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './JuridicoPage.css';
+import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
 interface ProcessoJuridico {
   id: number;
@@ -24,6 +25,8 @@ interface ProcessoJuridico {
   dias: number;
   statusJuridico: string;
   nprocesso: string;
+  numeroSei: string | null;
+  familiaSei: string | null;
   solicitacao: string;
   emailSolicitante: string;
 }
@@ -65,6 +68,10 @@ export function JuridicoPage() {
   const [obsObrigatorio, setObsObrigatorio] = useState(false);
   const [nprocessoObrigatorio, setNprocessoObrigatorio] = useState(false);
   const [nprocesso, setNprocesso] = useState('');
+  // SEI (reunião 22/08): o pedido ganha DOIS números — o do processo e o do SEI.
+  // O SEI é o que permite achar o pagamento do lado do Estado.
+  const [numeroSei, setNumeroSei] = useState('');
+  const [familiaSei, setFamiliaSei] = useState<string | null>(null);
   const [statusJuridico, setStatusJuridico] = useState('');
   const [orcamentos, setOrcamentos] = useState('');
   const [obs, setObs] = useState('');
@@ -127,6 +134,8 @@ export function JuridicoPage() {
 const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
   setProcessoEditando(rowData);
   setNprocesso(rowData.nprocesso ?? '');
+  setNumeroSei(rowData.numeroSei ?? '');
+  setFamiliaSei(rowData.familiaSei ?? null);
   setStatusJuridico('');
   setOrcamentos('');
   setObs('');
@@ -160,6 +169,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
 
       const payload = {
         nprocesso: nprocesso || null,
+        numeroSei: numeroSei || null,
         statusJuridico: statusJuridico || null,
         orcamentos: orcamentos || null,
         obs: obs || null,
@@ -213,6 +223,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
 
   return (
     <div className="juridico-page">
+      <PrimeiraVisitaInfo etapaId="juridico" />
       <div className="page-header">
         <div>
           <h1>Jurídico</h1>
@@ -409,6 +420,27 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
               {nprocessoObrigatorio && (
                 <small style={{ color: '#ef4444' }}>
                   Número do Processo é obrigatório quando o status é "Cotar"
+                </small>
+              )}
+            </div>
+
+            {/* SEI — o par do número do processo (reunião 22/08). É por ele que se
+                acha o pagamento do lado do Estado; por isso vive ao lado, ¬escondido. */}
+            <div className="field field-span-2">
+              <label>Número do SEI</label>
+              <InputText
+                value={numeroSei}
+                onChange={(e) => setNumeroSei(e.target.value)}
+                placeholder="Ex: 1080.01.0012345/2026-45"
+                disabled={readOnly}
+              />
+              {familiaSei && (
+                <small style={{ color: familiaSei === 'PAGADOR' ? '#16a34a' : '#64748b' }}>
+                  {familiaSei === 'PAGADOR'
+                    ? 'Família PAGADOR — este SEI casa com o empenho do depósito judicial'
+                    : familiaSei === 'ADMINISTRATIVO'
+                      ? 'Família ADMINISTRATIVO — SEI do pedido'
+                      : `Família ${familiaSei}`}
                 </small>
               )}
             </div>

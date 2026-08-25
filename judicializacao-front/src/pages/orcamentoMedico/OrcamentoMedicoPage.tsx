@@ -19,6 +19,7 @@ import { getStatusTagStyle } from '../../utils/statusTag';
 import { EnviarOrcamentoDialog } from './EnviarOrcamentoDialog';
 import { useAccess } from '../../access/AccessContext';
 import './OrcamentoMedicoPage.css';
+import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
 GlobalWorkerOptions.workerSrc = pdfWorker;
 void useRef;
@@ -404,6 +405,7 @@ ${blocos}
 
   return (
     <div className="orcamento-medico-page">
+      <PrimeiraVisitaInfo etapaId="orcamento-medico" />
       <div className="page-header">
         <div>
           <h1>Orçamento Médico</h1>

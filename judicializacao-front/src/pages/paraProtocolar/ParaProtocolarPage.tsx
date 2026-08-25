@@ -6,7 +6,7 @@ import type {
   DataTableSortEvent
 } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { getParaProtocolar, salvarProtocolar, uploadAnexoOrder, getOrders, getMedicosCompleto, getAnexosOrder } from '../../services/api/orders';
+import { getParaProtocolar, salvarProtocolar, uploadAnexoOrder, getOrders, getMedicosCompleto, getAnexosOrder, getOrcamentoConsolidado } from '../../services/api/orders';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -20,6 +20,7 @@ import { getStatusTagStyle } from '../../utils/statusTag';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import { useAccess } from '../../access/AccessContext';
 import './ParaProtocolarPage.css';
+import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
 interface ParaProtocolar {
   id: number;
@@ -215,6 +216,45 @@ export function ParaProtocolarPage() {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  // Baixa o orçamento JÁ CONSOLIDADO pelo backend (N arquivos → 1 PDF).
+  // Vai por fetch autenticado porque a rota exige token — window.open não carrega
+  // o cabeçalho de autorização e cairia em 401.
+  const baixarOrcamentoConsolidado = async (orderId: number, nprocesso?: string) => {
+    try {
+      const resp = await getOrcamentoConsolidado(orderId);
+
+      // O backend declara no cabeçalho o que entrou e o que ficou de fora.
+      // Arquivo que não desceu é AVISADO — silêncio aqui seria um orçamento
+      // incompleto entrando nos autos sem ninguém saber.
+      try {
+        const relatorio = JSON.parse(resp.headers['x-consolidacao'] ?? '{}');
+        const fora = [...(relatorio.ignorados ?? []), ...(relatorio.nao_baixados ?? [])];
+        if (fora.length > 0) {
+          alert(
+            `Atenção: o PDF foi gerado com ${relatorio.paginas} página(s), mas ` +
+            `${fora.length} arquivo(s) ficaram de fora:\n\n` +
+            fora.map((f: any) => `• ${f.arquivo} — ${f.motivo}`).join('\n') +
+            `\n\nConfira antes de protocolar.`
+          );
+        }
+      } catch { /* cabeçalho ausente não impede o download */ }
+
+      const url = window.URL.createObjectURL(new Blob([resp.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `orcamento-${(nprocesso || orderId).toString().replace(/\//g, '-')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 404) alert('Este pedido ainda não tem orçamento anexado.');
+      else if (status === 502) alert('Os arquivos do orçamento não puderam ser baixados do storage. Tente de novo em instantes.');
+      else alert('Erro ao gerar o orçamento consolidado.');
+    }
+  };
+
   const abrirOrcamentoAnexo = async (rowData: ParaProtocolarTableRow, modo: 'preview' | 'download') => {
     try {
       const res: any = await getAnexosOrder(rowData.id, 'ORCAMENTO');
@@ -225,6 +265,18 @@ export function ParaProtocolarPage() {
         return;
       }
 
+      // DOWNLOAD = sempre o PDF CONSOLIDADO (todos os arquivos num só).
+      // Antes baixava `listaAnexos[0]` — só o PRIMEIRO. Quando o médico mandava
+      // honorário + hospital + OPME em arquivos separados, quem protocolava levava
+      // UM e não sabia dos outros dois. É a promessa da reunião de 24/08:
+      // "mesmo que eu receba três arquivos dele, você vai baixar um PDF com tudo junto".
+      if (modo === 'download') {
+        await baixarOrcamentoConsolidado(rowData.id, rowData.nprocesso);
+        return;
+      }
+
+      // PREVIEW segue mostrando o primeiro arquivo (é espiada rápida, ¬a entrega).
+      // Quando há mais de um, o rótulo do botão avisa quantos são.
       const anexo = listaAnexos[0];
       const nomeArquivo = anexo.linkImagem.split('/').pop() || 'orcamento';
       const extensao = nomeArquivo.split('.').pop()?.toLowerCase();
@@ -233,11 +285,6 @@ export function ParaProtocolarPage() {
         : ['jpg', 'jpeg', 'png'].includes(extensao ?? '')
           ? 'imagem'
           : 'outro';
-
-      if (modo === 'download') {
-        await baixarArquivo(anexo.linkImagem, nomeArquivo);
-        return;
-      }
 
       abrirPreview(anexo.linkImagem, nomeArquivo, tipo);
     } catch {
@@ -477,6 +524,7 @@ const handleConfirmarProtocolacao = async () => {
 
   return (
     <div className="para-protocolar-page">
+      <PrimeiraVisitaInfo etapaId="para-protocolar" />
       <div className="page-header">
         <div>
           <h1>Para Protocolar</h1>
