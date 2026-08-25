@@ -172,7 +172,7 @@ export const getFunil = (params: {
 // SLA — os 4 endpoints. Índices/por-médico/estourados são agregados; a
 // trajetória é por pedido (o "o que aconteceu com ESTE processo").
 export const getSlaIndices = (params: {
-  periodo?: string; janelas?: number;
+  periodo?: string; janelas?: number; inicio?: string; fim?: string;
 } = {}) => api.get('/sla/indices/', { params });
 
 export const getSlaPorMedico = () => api.get('/sla/por-medico/');

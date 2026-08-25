@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  getSlaIndices, getSlaPorMedico, getSlaEstourados, getSlaTrajetoria,
+  getSlaIndices, getSlaPorMedico, getSlaEstourados, getSlaTrajetoria, getOrders,
 } from '../../services/api/orders';
 import './SlaPage.css';
 
@@ -85,6 +85,7 @@ const PERIODOS = [
   { valor: 'trimestral', rotulo: 'Trimestral' },
   { valor: 'semestral', rotulo: 'Semestral' },
   { valor: 'anual', rotulo: 'Anual' },
+  { valor: 'custom', rotulo: 'Personalizado' },
 ];
 
 const ABAS = [
@@ -113,18 +114,25 @@ const SITUACAO_ROTULO: Record<string, string> = {
 export function SlaPage() {
   const [aba, setAba] = useState('indices');
   const [periodo, setPeriodo] = useState('trimestral');
+  const [customInicio, setCustomInicio] = useState('');
+  const [customFim, setCustomFim] = useState('');
   const [indices, setIndices] = useState<RespIndices | null>(null);
   const [medicos, setMedicos] = useState<{ medicos: LinhaMedico[]; meta_dias: number; nota: string } | null>(null);
   const [estourados, setEstourados] = useState<{ total: number; itens: Estourado[]; nota: string } | null>(null);
   const [buscaId, setBuscaId] = useState('');
+  const [buscaNome, setBuscaNome] = useState('');
+  const [candidatos, setCandidatos] = useState<{ id: number; paciente: string; statusProcesso: string }[]>([]);
   const [trajetoria, setTrajetoria] = useState<Trajetoria | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState('');
 
-  const carregarIndices = async (p = periodo) => {
+  const carregarIndices = async (p = periodo, inicio = customInicio, fim = customFim) => {
+    if (p === 'custom' && (!inicio || !fim)) return; // aguarda as duas datas antes de consultar
     setCarregando(true); setErro('');
     try {
-      const r = await getSlaIndices({ periodo: p, janelas: 6 });
+      const r = await getSlaIndices(
+        p === 'custom' ? { periodo: p, inicio, fim } : { periodo: p, janelas: 6 }
+      );
       setIndices(r.data);
     } catch (e: any) {
       setErro(e?.response?.data?.error ?? 'Não foi possível carregar os índices de SLA.');
@@ -142,16 +150,33 @@ export function SlaPage() {
     }
   }, [aba, medicos, estourados]);
 
-  const buscarTrajetoria = async () => {
-    const id = Number(buscaId);
+  const buscarTrajetoria = async (idParam?: number) => {
+    const id = idParam ?? Number(buscaId);
     if (!id) { setErro('Informe o número do pedido.'); return; }
-    setCarregando(true); setErro('');
+    setCarregando(true); setErro(''); setCandidatos([]);
     try {
       const r = await getSlaTrajetoria(id);
       setTrajetoria(r.data);
     } catch {
       setErro(`Pedido ${id} não encontrado.`);
       setTrajetoria(null);
+    } finally { setCarregando(false); }
+  };
+
+  const buscarPorNome = async () => {
+    const termo = buscaNome.trim().toLowerCase();
+    if (termo.length < 3) { setErro('Digite ao menos 3 letras do nome.'); return; }
+    setCarregando(true); setErro(''); setTrajetoria(null);
+    try {
+      const r = await getOrders();
+      const achados = (r.data ?? [])
+        .filter((o: any) => (o.paciente ?? '').toLowerCase().includes(termo))
+        .slice(0, 15)
+        .map((o: any) => ({ id: o.id, paciente: o.paciente, statusProcesso: o.statusProcesso }));
+      setCandidatos(achados);
+      if (achados.length === 0) setErro(`Nenhum paciente encontrado com "${buscaNome}".`);
+    } catch {
+      setErro('Não foi possível buscar por nome.');
     } finally { setCarregando(false); }
   };
 
@@ -239,6 +264,30 @@ export function SlaPage() {
             ))}
             {carregando && <span className="sla__carregando">carregando…</span>}
           </div>
+
+          {periodo === 'custom' && (
+            <div className="sla__periodo-custom">
+              <label>
+                de
+                <input
+                  type="date"
+                  value={customInicio}
+                  onChange={(e) => { setCustomInicio(e.target.value); void carregarIndices('custom', e.target.value, customFim); }}
+                />
+              </label>
+              <label>
+                até
+                <input
+                  type="date"
+                  value={customFim}
+                  onChange={(e) => { setCustomFim(e.target.value); void carregarIndices('custom', customInicio, e.target.value); }}
+                />
+              </label>
+              {(!customInicio || !customFim) && (
+                <span className="sla__nota">escolha as duas datas para calcular</span>
+              )}
+            </div>
+          )}
 
           {indices && (
             <>
@@ -419,7 +468,28 @@ export function SlaPage() {
               onKeyDown={(e) => { if (e.key === 'Enter') void buscarTrajetoria(); }}
             />
             <button type="button" onClick={() => void buscarTrajetoria()}>Ver trajetória</button>
+            <span className="sla__busca-ou">ou</span>
+            <input
+              type="text"
+              placeholder="nome do paciente"
+              value={buscaNome}
+              onChange={(e) => setBuscaNome(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') void buscarPorNome(); }}
+            />
+            <button type="button" onClick={() => void buscarPorNome()}>Buscar por nome</button>
           </div>
+
+          {candidatos.length > 0 && (
+            <ul className="sla__candidatos">
+              {candidatos.map((c) => (
+                <li key={c.id}>
+                  <button type="button" onClick={() => { setBuscaId(String(c.id)); void buscarTrajetoria(c.id); }}>
+                    <b>#{c.id}</b> {c.paciente} <em>{c.statusProcesso}</em>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
 
           {trajetoria && (
             <>

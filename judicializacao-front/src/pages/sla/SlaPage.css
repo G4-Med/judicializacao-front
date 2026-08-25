@@ -43,6 +43,9 @@
 
 /* ── período ──────────────────────────────────────────── */
 .sla__periodo { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.sla__periodo-custom { display: flex; align-items: center; gap: 1rem; margin: -.4rem 0 1.1rem; flex-wrap: wrap; }
+.sla__periodo-custom label { display: flex; align-items: center; gap: .4rem; font-size: .85rem; color: #64748b; }
+.sla__periodo-custom input[type="date"] { border: 1px solid #cbd5e1; border-radius: 6px; padding: .3rem .5rem; font-size: .85rem; }
 .sla__pill {
   border: 1px solid var(--surface-border, #e5e7eb); background: transparent; color: inherit;
   border-radius: 999px; padding: .32rem .8rem; font-size: .82rem; cursor: pointer;
@@ -118,6 +121,19 @@ tr.is-poucos td { opacity: .72; }
   border: 0; background: #0F766E; color: #fff; border-radius: 8px;
   padding: .45rem 1rem; font-size: .86rem; font-weight: 600; cursor: pointer;
 }
+.sla__busca-ou { align-self: center; color: var(--text-color-secondary, #6b7280); font-size: .82rem; }
+
+.sla__candidatos {
+  list-style: none; margin: -.6rem 0 1.2rem; padding: 0;
+  display: flex; flex-direction: column; gap: .3rem;
+}
+.sla__candidatos button {
+  width: 100%; text-align: left; border: 1px solid var(--surface-border, #e5e7eb);
+  background: var(--surface-card, #fff); border-radius: 8px; padding: .5rem .8rem;
+  cursor: pointer; font: inherit;
+}
+.sla__candidatos button:hover { background: #f8fafc; }
+.sla__candidatos em { color: var(--text-color-secondary, #6b7280); font-style: normal; margin-left: .4rem; }
 
 .sla__ficha {
   display: flex; flex-direction: column; gap: .2rem;
