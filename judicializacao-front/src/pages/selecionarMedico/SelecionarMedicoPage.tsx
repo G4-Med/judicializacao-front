@@ -33,6 +33,8 @@ interface ProcessoResumo {
   refPreco: number;
   idMedico: number | null;
   medico: string;
+  slaMedicoEstourado: boolean | null;
+  slaMedicoHoras: number | null;
 }
 
 interface ProcessoResumoTableRow extends ProcessoResumo {
@@ -384,6 +386,9 @@ export function SelecionarMedicoPage() {
         <DataTable
           value={dataComCamposCalculados}
           onValueChange={(value) => setVisibleProcessos(value as ProcessoResumoTableRow[])}
+          rowClassName={(rowData: ProcessoResumoTableRow) =>
+            rowData.slaMedicoEstourado ? 'linha-fora-sla' : ''
+          }
           dataKey="id"
           paginator
           rows={rows}
