@@ -12,6 +12,7 @@ import { FilterMatchMode } from 'primereact/api';
 import { getPerdas, getOrders, getMedicosCompleto } from '../../services/api/orders';
 import { getStatusTagStyle } from '../../utils/statusTag';
 import './PerdasPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 
 interface PerdaProcesso {
   id: number;
@@ -205,6 +206,7 @@ export function PerdasPage() {
         </div>
       </div>
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid kpi-grid-5">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -246,6 +248,7 @@ export function PerdasPage() {
           <div className="kpi-value">{formatarMoeda(kpis.valorTotal)}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
         <DataTable

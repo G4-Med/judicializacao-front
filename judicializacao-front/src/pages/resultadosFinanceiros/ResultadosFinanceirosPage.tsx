@@ -19,6 +19,7 @@ import type {
   FinanceiroDetalhe,
 } from '../../services/api/financeiro';
 import './ResultadosFinanceirosPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 
 interface Anexo {
   id: number;
@@ -201,6 +202,7 @@ export function ResultadosFinanceirosPage() {
         </div>
       </div>
 
+      <PainelKpis titulo="Cirurgias">
       <div className="kpi-grid kpi-grid-3">
         <div className="kpi-card kpi-card--ok">
           <div className="kpi-header">
@@ -224,7 +226,9 @@ export function ResultadosFinanceirosPage() {
           <div className="kpi-value">{kpis.qtdPerdas}</div>
         </div>
       </div>
+      </PainelKpis>
 
+      <PainelKpis titulo="Valores">
       <div className="kpi-grid kpi-grid-3">
         <div className="kpi-card kpi-card--ok">
           <div className="kpi-header">
@@ -248,6 +252,7 @@ export function ResultadosFinanceirosPage() {
           <div className="kpi-value">{formatarMoeda(kpis.valorPerdaCirurgia)}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
         <DataTable

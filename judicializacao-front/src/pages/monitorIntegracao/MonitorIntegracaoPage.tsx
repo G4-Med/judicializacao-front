@@ -21,6 +21,7 @@ import type {
   MonitorEmailConfig,
 } from '../../services/api/integracoes';
 import './MonitorIntegracaoPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 
 type StatusUI = 'Aguardando' | 'Em processamento' | 'Sucesso' | 'Erro' | 'Pausado';
 
@@ -248,6 +249,7 @@ export function MonitorIntegracaoPage() {
         </div>
       </div>
 
+      <PainelKpis titulo="Indicadores">
       <div className="monitor-kpi-grid">
         <div className="monitor-kpi-card monitor-kpi-card--total">
           <div className="monitor-kpi-card__label">TOTAL</div>
@@ -270,6 +272,7 @@ export function MonitorIntegracaoPage() {
           <i className="pi pi-exclamation-triangle monitor-kpi-card__icon" />
         </div>
       </div>
+      </PainelKpis>
 
       <div className="monitor-card">
         <div className="monitor-card__header">

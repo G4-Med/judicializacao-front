@@ -24,6 +24,7 @@ import {
 } from '../../services/api/usuarios';
 import { getMedicosCompleto } from '../../services/api/orders';
 import './UsuariosPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 
 interface ApiUsuario {
   id: number;
@@ -449,6 +450,7 @@ export function UsuariosPage() {
         </div>
       </div>
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -482,6 +484,7 @@ export function UsuariosPage() {
           <div className="kpi-value">{kpis.semLogin}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
         <DataTable

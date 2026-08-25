@@ -26,6 +26,7 @@ import {
 import { getStatusTagStyle } from '../../utils/statusTag';
 import { useAccess } from '../../access/AccessContext';
 import './ResultadosPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 // Reaproveita estilos do dialog Atualizar (timeline, update-section, anexo, etc).
 import '../protocolados/ProtocoladosPage.css';
 
@@ -471,6 +472,7 @@ const kpis = useMemo(() => {
         </div>
       </div>
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid kpi-grid-5">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -514,6 +516,7 @@ const kpis = useMemo(() => {
           <div className="kpi-subvalue">{formatarPercentual(kpis.perdasPercentual)}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
         <DataTable

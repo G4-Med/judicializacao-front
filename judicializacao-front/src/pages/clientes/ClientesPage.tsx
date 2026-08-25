@@ -28,6 +28,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { useAccess } from '../../access/AccessContext';
 import './ClientesPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 
 interface Cliente {
   id: number;
@@ -1385,6 +1386,7 @@ const handleSalvarEdicao = async () => {
         </div>}
       </div>
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid kpi-grid-4">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -1418,6 +1420,7 @@ const handleSalvarEdicao = async () => {
           <div className="kpi-value">{kpis.faltaDocumentacao}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
         <DataTable

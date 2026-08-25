@@ -23,6 +23,7 @@ import {
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './EmailsPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 
 type TipoEmail = 'ENVIAR_ORCAMENTO' | 'PEDIR_EXAMES' | 'DAR_PERDA';
 
@@ -570,6 +571,7 @@ export function EmailsPage() {
 
       {readOnly && <ReadOnlyBanner />}
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid kpi-grid-5">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -613,6 +615,7 @@ export function EmailsPage() {
           </div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
         <DataTable

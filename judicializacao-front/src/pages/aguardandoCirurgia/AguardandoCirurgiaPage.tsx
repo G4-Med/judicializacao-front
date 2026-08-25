@@ -20,6 +20,7 @@ import type {
   AguardandoCirurgiaKpis,
 } from '../../services/api/financeiro';
 import './AguardandoCirurgiaPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 
 interface Anexo {
   id: number;
@@ -487,6 +488,7 @@ export function AguardandoCirurgiaPage() {
         />
       </div>
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid kpi-grid-3">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -510,6 +512,7 @@ export function AguardandoCirurgiaPage() {
           <div className="kpi-value">{formatarMoeda(kpis.comissaoEsperada)}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
         <DataTable

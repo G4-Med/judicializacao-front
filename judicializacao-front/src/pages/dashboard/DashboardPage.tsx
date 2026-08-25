@@ -4,6 +4,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { DatePickerPeriodo, type PeriodoSelecionado } from '../../components/DatePicker/DatePicker';
 import { getMedicosCompleto, getOrders, getPerdas, getResultados } from '../../services/api/orders';
 import './DashboardPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 
 interface MedicoOption {
   label: string;
@@ -642,6 +643,7 @@ export function DashboardPage() {
         </div>
       )}
 
+      <PainelKpis titulo="Indicadores">
       <div className="dashboard-kpi-grid">
         {cards.map((card) => (
           <div className="kpi-card" key={card.titulo}>
@@ -651,6 +653,7 @@ export function DashboardPage() {
           </div>
         ))}
       </div>
+      </PainelKpis>
 
       <div className="dashboard-section-title">Análises operacionais</div>
       <div className="dashboard-section-subtitle">Status, distribuição por médico e ticket médio do período.</div>
