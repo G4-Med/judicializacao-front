@@ -69,6 +69,28 @@ const STATUS_PROCESSOS_BAIXADOS = [
   'Perda',
 ];
 
+// Quem é dono de cada status — espelha backend/funil.py FASES (em_curso_status
+// → dono), a fonte oficial do processo. Se o funil mudar de dono numa fase,
+// atualizar aqui junto (mesmo padrão já usado em SlaPage.tsx/DONO_COR).
+// EXCEÇÃO deliberada: o funil chama a fase 'recebido' de dono 'sistema'
+// (ninguém agiu ainda), mas 'Aguardando Juridico' é literalmente a fila de
+// trabalho da tela /juridico — mostrar 'Instituto Mateus' aqui é mais útil
+// para quem olha esta tabela do que o dono filosófico da fase.
+const STATUS_DONO: Record<string, string> = {
+  'Aguardando Juridico': 'Instituto Mateus',
+  'Aguardando Orçamento': 'G4MED + médico',
+  'Aguardando Protocolar': 'Instituto Mateus',
+  'Aguardando Resposta': 'Judiciário',
+  'Aguardando Resposta - Segredo de Justiça': 'Judiciário',
+};
+
+const DONO_COR: Record<string, string> = {
+  'Instituto Mateus': '#0F766E',
+  'G4MED': '#7C3AED',
+  'G4MED + médico': '#7C3AED',
+  'Judiciário': '#B45309',
+};
+
 interface Processo {
   id: number;
   paciente: string;
@@ -796,7 +818,19 @@ ${linhasAnexos}
 
 
   const statusBodyTemplate = (rowData: ProcessoTableRow, field: 'status' | 'statusJuridico' | 'statusMedico') => {
-    return <Tag value={rowData[field]} style={getStatusTagStyle(rowData[field])} className="status-tag-custom" />;
+    const dono = field === 'status' ? STATUS_DONO[rowData[field]] : undefined;
+    return (
+      <span className="processos-status-cell">
+        <Tag value={rowData[field]} style={getStatusTagStyle(rowData[field])} className="status-tag-custom" />
+        {dono && (
+          <span
+            className="processos-dono-dot"
+            style={{ background: DONO_COR[dono] ?? '#94a3b8' }}
+            title={`Dono desta fase: ${dono}`}
+          />
+        )}
+      </span>
+    );
   };
 
   const precoBodyTemplate = (rowData: ProcessoTableRow) => {
@@ -1936,6 +1970,16 @@ ${linhasAnexos}
           </div>
           <div className="kpi-value">{kpis.aguardandoRespostas}</div>
         </div>
+      </div>
+
+      <div className="processos-dono-legenda">
+        <span>quem é dono de cada status:</span>
+        {Object.entries(DONO_COR).filter(([nome]) => nome !== 'G4MED').map(([nome, cor]) => (
+          <span key={nome} className="processos-dono-legenda__item">
+            <span className="processos-dono-dot" style={{ background: cor }} />
+            {nome}
+          </span>
+        ))}
       </div>
 
       <TieredMenu
