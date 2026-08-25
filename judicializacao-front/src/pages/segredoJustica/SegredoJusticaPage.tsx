@@ -76,6 +76,8 @@ export function SegredoJusticaPage() {
     resultado: { value: '', matchMode: FilterMatchMode.CONTAINS }
   });
 
+  const [visibleProcessos, setVisibleProcessos] = useState<SegredoJusticaTableRow[]>([]);
+
   const [updateDialogVisible, setUpdateDialogVisible] = useState(false);
   const [registroAtualizando, setRegistroAtualizando] = useState<SegredoJusticaTableRow | null>(null);
 
@@ -124,6 +126,8 @@ useEffect(() => { carregarDados(); }, []);
   const dataComCamposCalculados = useMemo<SegredoJusticaTableRow[]>(() => {
     const hoje = new Date();
 
+  useEffect(() => { setVisibleProcessos(dataComCamposCalculados); }, [dataComCamposCalculados]);
+
     return registros.map((item, index) => {
       const dataBase = new Date(`${item.dataEnvioOrcamento}T00:00:00`);
       const diferencaMs = hoje.getTime() - dataBase.getTime();
@@ -138,14 +142,14 @@ useEffect(() => { carregarDados(); }, []);
   }, [registros]);
 
   const kpis = useMemo(() => {
-    const totalProcessos = dataComCamposCalculados.length;
+    const totalProcessos = visibleProcessos.length;
     const mediaProcessos = totalProcessos
       ? Math.round(
-          dataComCamposCalculados.reduce((acc, item) => acc + item.dias, 0) / totalProcessos
+          visibleProcessos.reduce((acc, item) => acc + item.dias, 0) / totalProcessos
         )
       : 0;
 
-    const valorTotal = dataComCamposCalculados.reduce((acc, item) => acc + item.valor, 0);
+    const valorTotal = visibleProcessos.reduce((acc, item) => acc + item.valor, 0);
     const mediaValorProcessos = totalProcessos ? valorTotal / totalProcessos : 0;
 
     return {
@@ -154,7 +158,7 @@ useEffect(() => { carregarDados(); }, []);
       valorTotal,
       mediaValorProcessos,
     };
-  }, [dataComCamposCalculados]);
+  }, [visibleProcessos]);
 
   const onPage = (event: DataTablePageEvent) => {
     setFirst(event.first);
@@ -342,6 +346,7 @@ useEffect(() => { carregarDados(); }, []);
       <div className="card">
         <DataTable
           value={dataComCamposCalculados}
+          onValueChange={(value) => setVisibleProcessos(value as SegredoJusticaTableRow[])}
           dataKey="id"
           paginator
           rows={rows}

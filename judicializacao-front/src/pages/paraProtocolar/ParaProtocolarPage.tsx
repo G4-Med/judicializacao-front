@@ -83,6 +83,8 @@ export function ParaProtocolarPage() {
     status: { value: '', matchMode: FilterMatchMode.CONTAINS }
   });
 
+  const [visibleProcessos, setVisibleProcessos] = useState<ParaProtocolarTableRow[]>([]);
+
   const [editDialogVisible, setEditDialogVisible] = useState(false);
   const [protocolarDialogVisible, setProtocolarDialogVisible] = useState(false);
   const [naoProtocolarDialogVisible, setNaoProtocolarDialogVisible] = useState(false);
@@ -144,6 +146,8 @@ export function ParaProtocolarPage() {
   const dataComCamposCalculados = useMemo<ParaProtocolarTableRow[]>(() => {
     const hoje = new Date();
 
+  useEffect(() => { setVisibleProcessos(dataComCamposCalculados); }, [dataComCamposCalculados]);
+
     return registros.map((item, index) => {
       const dataBase = item.dataEnvioOrcamento
         ? new Date(`${item.dataEnvioOrcamento}T00:00:00`)
@@ -161,10 +165,10 @@ export function ParaProtocolarPage() {
   }, [registros]);
 
   const kpis = useMemo(() => {
-    const quantidade = dataComCamposCalculados.length;
-    const valor = dataComCamposCalculados.reduce((acc, item) => acc + item.valor, 0);
-    const processoMaisAntigo = dataComCamposCalculados.length
-      ? Math.max(...dataComCamposCalculados.map((item) => item.dias))
+    const quantidade = visibleProcessos.length;
+    const valor = visibleProcessos.reduce((acc, item) => acc + item.valor, 0);
+    const processoMaisAntigo = visibleProcessos.length
+      ? Math.max(...visibleProcessos.map((item) => item.dias))
       : 0;
 
     return {
@@ -172,7 +176,7 @@ export function ParaProtocolarPage() {
       valor,
       processoMaisAntigo
     };
-  }, [dataComCamposCalculados]);
+  }, [visibleProcessos]);
 
   const onPage = (event: DataTablePageEvent) => {
     setFirst(event.first);
@@ -565,6 +569,7 @@ const handleConfirmarProtocolacao = async () => {
       <div className="card">
         <DataTable
           value={dataComCamposCalculados}
+          onValueChange={(value) => setVisibleProcessos(value as ParaProtocolarTableRow[])}
           dataKey="id"
           paginator
           rows={rows}

@@ -111,6 +111,8 @@ export function OrcamentoMedicoPage() {
     statusOrcamento: { value: null, matchMode: FilterMatchMode.EQUALS },
   });
 
+  const [visibleProcessos, setVisibleProcessos] = useState<typeof dataComMedico>([]);
+
   const carregarDados = () => {
     setLoading(true);
     Promise.all([getOrcamentoMedico(), getOrders(), getMedicosCompleto()])
@@ -144,6 +146,8 @@ export function OrcamentoMedicoPage() {
       const orderLookup = ordersLookup[item.id];
       const medicoId = item.idMedico ?? item.medicoId ?? item.medico_id ?? orderLookup?.idMedico ?? orderLookup?.medicoId ?? null;
       const medicoSelecionado = medicos.find((medico: any) => medico.id === medicoId);
+
+  useEffect(() => { setVisibleProcessos(dataComMedico); }, [dataComMedico]);
       const medicoNome = medicoSelecionado?.nomeSistema ?? '';
       return {
         ...item,
@@ -189,12 +193,12 @@ export function OrcamentoMedicoPage() {
   }, [dataComMedico]);
 
   const kpis = useMemo(() => {
-    const total = dataComSequencial.length;
-    const soma = dataComSequencial.reduce((acc, p) => acc + (p.refPreco ?? 0), 0);
+    const total = visibleProcessos.length;
+    const soma = visibleProcessos.reduce((acc, p) => acc + (p.refPreco ?? 0), 0);
     const valorMedio = total > 0 ? soma / total : 0;
-    const maisAntigo = total > 0 ? Math.max(...dataComSequencial.map(p => p.dias)) : 0;
+    const maisAntigo = total > 0 ? Math.max(...visibleProcessos.map(p => p.dias)) : 0;
     return { total, valorMedio, maisAntigo };
-  }, [dataComSequencial]);
+  }, [visibleProcessos]);
 
   const formatarData = (data: string | null) => {
     if (!data) return '-';
@@ -439,6 +443,7 @@ ${blocos}
       <div className="card">
         <DataTable
           value={dataComMedico} dataKey="id" paginator rows={rows} first={first}
+          onValueChange={(value) => setVisibleProcessos(value as typeof dataComMedico)}
           onPage={(e: DataTablePageEvent) => { setFirst(e.first); setRows(e.rows); }}
           sortField={sortField} sortOrder={sortOrder}
           onSort={(e: DataTableSortEvent) => { setSortField(e.sortField); setSortOrder(e.sortOrder); }}

@@ -90,6 +90,8 @@ export function JuridicoPage() {
     dias: { value: '', matchMode: FilterMatchMode.CONTAINS },
   });
 
+  const [visibleProcessos, setVisibleProcessos] = useState<ProcessoJuridicoRow[]>([]);
+
   const carregarDados = () => {
     setLoading(true);
     getJuridico()
@@ -121,15 +123,17 @@ export function JuridicoPage() {
 
   const dataComSequencial = useMemo<ProcessoJuridicoRow[]>(() => {
     return processos.map((item, index) => ({ ...item, sequencial: index + 1 }));
+
+  useEffect(() => { setVisibleProcessos(dataComSequencial); }, [dataComSequencial]);
   }, [processos]);
 
   const kpis = useMemo(() => {
-    const total = dataComSequencial.length;
-    const somaRefPreco = dataComSequencial.reduce((acc, p) => acc + (p.refPreco ?? 0), 0);
+    const total = visibleProcessos.length;
+    const somaRefPreco = visibleProcessos.reduce((acc, p) => acc + (p.refPreco ?? 0), 0);
     const valorMedio = total > 0 ? somaRefPreco / total : 0;
-    const maisAntigo = total > 0 ? Math.max(...dataComSequencial.map(p => p.dias)) : 0;
+    const maisAntigo = total > 0 ? Math.max(...visibleProcessos.map(p => p.dias)) : 0;
     return { total, valorMedio, maisAntigo };
-  }, [dataComSequencial]);
+  }, [visibleProcessos]);
 
 const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
   setProcessoEditando(rowData);
@@ -251,6 +255,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
       <div className="card">
         <DataTable
           value={dataComSequencial}
+          onValueChange={(value) => setVisibleProcessos(value as ProcessoJuridicoRow[])}
           dataKey="id"
           paginator
           rows={rows}

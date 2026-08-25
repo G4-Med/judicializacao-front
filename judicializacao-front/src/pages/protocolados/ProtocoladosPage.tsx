@@ -88,6 +88,8 @@ export function ProtocoladosPage() {
     resultado: { value: '', matchMode: FilterMatchMode.CONTAINS }
   });
 
+  const [visibleProcessos, setVisibleProcessos] = useState<ProtocoladoTableRow[]>([]);
+
   const [updateDialogVisible, setUpdateDialogVisible] = useState(false);
   const [registroAtualizando, setRegistroAtualizando] = useState<ProtocoladoTableRow | null>(null);
 
@@ -263,6 +265,8 @@ export function ProtocoladosPage() {
   const dataComCamposCalculados = useMemo<ProtocoladoTableRow[]>(() => {
     const hoje = new Date();
 
+  useEffect(() => { setVisibleProcessos(dataComCamposCalculados); }, [dataComCamposCalculados]);
+
     return registros.map((item, index) => {
       const dataBase = new Date(`${item.dataProtocolo}T00:00:00`);
       const diferencaMs = hoje.getTime() - dataBase.getTime();
@@ -277,14 +281,14 @@ export function ProtocoladosPage() {
   }, [registros]);
 
   const kpis = useMemo(() => {
-    const totalProcessos = dataComCamposCalculados.length;
+    const totalProcessos = visibleProcessos.length;
     const mediaProcessos = totalProcessos
       ? Math.round(
-          dataComCamposCalculados.reduce((acc, item) => acc + item.dias, 0) / totalProcessos
+          visibleProcessos.reduce((acc, item) => acc + item.dias, 0) / totalProcessos
         )
       : 0;
 
-    const valorTotal = dataComCamposCalculados.reduce((acc, item) => acc + item.valor, 0);
+    const valorTotal = visibleProcessos.reduce((acc, item) => acc + item.valor, 0);
     const mediaValorProcessos = totalProcessos ? valorTotal / totalProcessos : 0;
 
     return {
@@ -293,7 +297,7 @@ export function ProtocoladosPage() {
       valorTotal,
       mediaValorProcessos,
     };
-  }, [dataComCamposCalculados]);
+  }, [visibleProcessos]);
 
   const onPage = (event: DataTablePageEvent) => {
     setFirst(event.first);
@@ -488,6 +492,7 @@ export function ProtocoladosPage() {
       <div className="card">
         <DataTable
           value={dataComCamposCalculados}
+          onValueChange={(value) => setVisibleProcessos(value as ProtocoladoTableRow[])}
           dataKey="id"
           paginator
           rows={rows}

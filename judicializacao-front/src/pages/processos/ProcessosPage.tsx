@@ -1396,8 +1396,11 @@ ${linhasAnexos}
 
 
 
-  const kpis = useMemo(() => calcularKpis(dataComCamposCalculados), [dataComCamposCalculados]);
-  const kpisExportacao = useMemo(() => calcularKpis(visibleProcessos), [visibleProcessos]);
+  // Os cards devem refletir o que está FILTRADO na tabela, não a base inteira —
+  // visibleProcessos é o conjunto pós-filtro que a DataTable já mantém via
+  // onValueChange (era usado só na exportação; os cards liam a base crua).
+  const kpis = useMemo(() => calcularKpis(visibleProcessos), [visibleProcessos]);
+  const kpisExportacao = kpis;
 
 
 

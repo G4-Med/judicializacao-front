@@ -78,6 +78,8 @@ export function SelecionarMedicoPage() {
     dias: { value: '', matchMode: FilterMatchMode.CONTAINS },
   });
 
+  const [visibleProcessos, setVisibleProcessos] = useState<ProcessoResumoTableRow[]>([]);
+
   const carregarDados = async () => {
     setLoading(true);
     try {
@@ -137,23 +139,25 @@ export function SelecionarMedicoPage() {
         dias: Number(item.diasSolicitados ?? 0),
       };
     });
+
+  useEffect(() => { setVisibleProcessos(dataComCamposCalculados); }, [dataComCamposCalculados]);
   }, [processos]);
 
   const kpis = useMemo(() => {
-    const total = dataComCamposCalculados.length;
-    const somaRefPreco = dataComCamposCalculados.reduce(
+    const total = visibleProcessos.length;
+    const somaRefPreco = visibleProcessos.reduce(
       (acc, item) => acc + (item.refPreco ?? 0),
       0,
     );
     const valorMedio = total > 0 ? somaRefPreco / total : 0;
-    const maisAntigo = total > 0 ? Math.max(...dataComCamposCalculados.map((p) => p.dias)) : 0;
+    const maisAntigo = total > 0 ? Math.max(...visibleProcessos.map((p) => p.dias)) : 0;
 
     return {
       total,
       valorMedio,
       maisAntigo,
     };
-  }, [dataComCamposCalculados]);
+  }, [visibleProcessos]);
 
   const formatarMoeda = (valor: number) =>
     valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -379,6 +383,7 @@ export function SelecionarMedicoPage() {
       <div className="card">
         <DataTable
           value={dataComCamposCalculados}
+          onValueChange={(value) => setVisibleProcessos(value as ProcessoResumoTableRow[])}
           dataKey="id"
           paginator
           rows={rows}
