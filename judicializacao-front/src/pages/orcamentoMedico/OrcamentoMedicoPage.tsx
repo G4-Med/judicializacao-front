@@ -21,6 +21,10 @@ import { useAccess } from '../../access/AccessContext';
 import './OrcamentoMedicoPage.css';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
+// Meta desta fase (orçamento) — espelha backend/funil.py FASES['orcamento'].meta_dias.
+// "96 horas — é o prazo que sustenta o contrato com o Estado".
+const SLA_META_DIAS_ORCAMENTO = 4;
+
 GlobalWorkerOptions.workerSrc = pdfWorker;
 void useRef;
 void InputNumber;
@@ -444,6 +448,9 @@ ${blocos}
         <DataTable
           value={dataComMedico} dataKey="id" paginator rows={rows} first={first}
           onValueChange={(value) => setVisibleProcessos(value as typeof dataComMedico)}
+          rowClassName={(rowData: { dias: number }) =>
+            rowData.dias > SLA_META_DIAS_ORCAMENTO ? 'linha-fora-sla' : ''
+          }
           onPage={(e: DataTablePageEvent) => { setFirst(e.first); setRows(e.rows); }}
           sortField={sortField} sortOrder={sortOrder}
           onSort={(e: DataTableSortEvent) => { setSortField(e.sortField); setSortOrder(e.sortOrder); }}

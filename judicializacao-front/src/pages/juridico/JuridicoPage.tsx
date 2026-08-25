@@ -14,6 +14,10 @@ import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './JuridicoPage.css';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
+// Meta desta fase (triagem jurídica) — espelha backend/funil.py FASES['triagem'].meta_dias.
+// "a análise sai no dia seguinte — libera para mim até meio-dia" (fala do @R na reunião).
+const SLA_META_DIAS_TRIAGEM = 1;
+
 interface ProcessoJuridico {
   id: number;
   paciente: string;
@@ -256,6 +260,9 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
         <DataTable
           value={dataComSequencial}
           onValueChange={(value) => setVisibleProcessos(value as ProcessoJuridicoRow[])}
+          rowClassName={(rowData: ProcessoJuridicoRow) =>
+            rowData.dias > SLA_META_DIAS_TRIAGEM ? 'linha-fora-sla' : ''
+          }
           dataKey="id"
           paginator
           rows={rows}
