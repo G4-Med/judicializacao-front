@@ -179,6 +179,8 @@ export const getSlaPorMedico = () => api.get('/sla/por-medico/');
 
 export const getSlaEstourados = () => api.get('/sla/estourados/');
 
+export const getNotificacoesCentral = () => api.get('/notificacoes/central/');
+
 export const getSlaTrajetoria = (orderId: number) =>
   api.get(`/orders/${orderId}/trajetoria/`);
 
