@@ -19,6 +19,7 @@ import { getStatusTagStyle } from '../../utils/statusTag';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import { useAccess } from '../../access/AccessContext';
 import './ProtocoladosPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
 interface HistoricoAcompanhamento {
@@ -265,8 +266,6 @@ export function ProtocoladosPage() {
   const dataComCamposCalculados = useMemo<ProtocoladoTableRow[]>(() => {
     const hoje = new Date();
 
-  useEffect(() => { setVisibleProcessos(dataComCamposCalculados); }, [dataComCamposCalculados]);
-
     return registros.map((item, index) => {
       const dataBase = new Date(`${item.dataProtocolo}T00:00:00`);
       const diferencaMs = hoje.getTime() - dataBase.getTime();
@@ -279,6 +278,8 @@ export function ProtocoladosPage() {
       };
     });
   }, [registros]);
+
+  useEffect(() => { setVisibleProcessos(dataComCamposCalculados); }, [dataComCamposCalculados]);
 
   const kpis = useMemo(() => {
     const totalProcessos = visibleProcessos.length;
@@ -454,6 +455,7 @@ export function ProtocoladosPage() {
 
       {readOnly && <ReadOnlyBanner />}
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -488,6 +490,7 @@ export function ProtocoladosPage() {
         </div>
 
       </div>
+      </PainelKpis>
 
       <div className="card">
         <DataTable

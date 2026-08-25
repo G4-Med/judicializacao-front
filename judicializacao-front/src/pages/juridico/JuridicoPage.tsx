@@ -12,6 +12,7 @@ import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder } from '..
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './JuridicoPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
 // Meta desta fase (triagem jurídica) — espelha backend/funil.py FASES['triagem'].meta_dias.
@@ -127,9 +128,9 @@ export function JuridicoPage() {
 
   const dataComSequencial = useMemo<ProcessoJuridicoRow[]>(() => {
     return processos.map((item, index) => ({ ...item, sequencial: index + 1 }));
+  }, [processos]);
 
   useEffect(() => { setVisibleProcessos(dataComSequencial); }, [dataComSequencial]);
-  }, [processos]);
 
   const kpis = useMemo(() => {
     const total = visibleProcessos.length;
@@ -241,6 +242,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
 
       {readOnly && <ReadOnlyBanner />}
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-header"><span>Quantidade de Processos</span><i className="pi pi-list" /></div>
@@ -255,6 +257,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           <div className="kpi-value">{kpis.maisAntigo}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
         <DataTable

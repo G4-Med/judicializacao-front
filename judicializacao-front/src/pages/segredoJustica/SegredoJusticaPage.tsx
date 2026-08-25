@@ -18,6 +18,7 @@ import { getStatusTagStyle } from '../../utils/statusTag';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import { useAccess } from '../../access/AccessContext';
 import './SegredoJusticaPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
 interface DocumentoProcesso {
@@ -126,8 +127,6 @@ useEffect(() => { carregarDados(); }, []);
   const dataComCamposCalculados = useMemo<SegredoJusticaTableRow[]>(() => {
     const hoje = new Date();
 
-  useEffect(() => { setVisibleProcessos(dataComCamposCalculados); }, [dataComCamposCalculados]);
-
     return registros.map((item, index) => {
       const dataBase = new Date(`${item.dataEnvioOrcamento}T00:00:00`);
       const diferencaMs = hoje.getTime() - dataBase.getTime();
@@ -140,6 +139,8 @@ useEffect(() => { carregarDados(); }, []);
       };
     });
   }, [registros]);
+
+  useEffect(() => { setVisibleProcessos(dataComCamposCalculados); }, [dataComCamposCalculados]);
 
   const kpis = useMemo(() => {
     const totalProcessos = visibleProcessos.length;
@@ -308,6 +309,7 @@ useEffect(() => { carregarDados(); }, []);
 
       {readOnly && <ReadOnlyBanner />}
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -342,6 +344,7 @@ useEffect(() => { carregarDados(); }, []);
         </div>
 
       </div>
+      </PainelKpis>
 
       <div className="card">
         <DataTable

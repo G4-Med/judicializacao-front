@@ -20,6 +20,7 @@ import { getStatusTagStyle } from '../../utils/statusTag';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import { useAccess } from '../../access/AccessContext';
 import './ParaProtocolarPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
 interface ParaProtocolar {
@@ -146,8 +147,6 @@ export function ParaProtocolarPage() {
   const dataComCamposCalculados = useMemo<ParaProtocolarTableRow[]>(() => {
     const hoje = new Date();
 
-  useEffect(() => { setVisibleProcessos(dataComCamposCalculados); }, [dataComCamposCalculados]);
-
     return registros.map((item, index) => {
       const dataBase = item.dataEnvioOrcamento
         ? new Date(`${item.dataEnvioOrcamento}T00:00:00`)
@@ -163,6 +162,8 @@ export function ParaProtocolarPage() {
       };
     });
   }, [registros]);
+
+  useEffect(() => { setVisibleProcessos(dataComCamposCalculados); }, [dataComCamposCalculados]);
 
   const kpis = useMemo(() => {
     const quantidade = visibleProcessos.length;
@@ -540,6 +541,7 @@ const handleConfirmarProtocolacao = async () => {
 
       {readOnly && <ReadOnlyBanner />}
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid kpi-grid-3">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -565,6 +567,7 @@ const handleConfirmarProtocolacao = async () => {
           <div className="kpi-value">{kpis.processoMaisAntigo}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
         <DataTable

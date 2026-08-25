@@ -19,6 +19,7 @@ import { getStatusTagStyle } from '../../utils/statusTag';
 import { EnviarOrcamentoDialog } from './EnviarOrcamentoDialog';
 import { useAccess } from '../../access/AccessContext';
 import './OrcamentoMedicoPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
 // Meta desta fase (orçamento) — espelha backend/funil.py FASES['orcamento'].meta_dias.
@@ -150,8 +151,6 @@ export function OrcamentoMedicoPage() {
       const orderLookup = ordersLookup[item.id];
       const medicoId = item.idMedico ?? item.medicoId ?? item.medico_id ?? orderLookup?.idMedico ?? orderLookup?.medicoId ?? null;
       const medicoSelecionado = medicos.find((medico: any) => medico.id === medicoId);
-
-  useEffect(() => { setVisibleProcessos(dataComMedico); }, [dataComMedico]);
       const medicoNome = medicoSelecionado?.nomeSistema ?? '';
       return {
         ...item,
@@ -161,6 +160,8 @@ export function OrcamentoMedicoPage() {
       };
     });
   }, [dataComSequencial, ordersLookup, medicos]);
+
+  useEffect(() => { setVisibleProcessos(dataComMedico); }, [dataComMedico]);
 
   const statusOrcamentoOptions = useMemo(() => {
     return Array.from(new Set(processos.map((item) => item.statusOrcamento).filter(Boolean)))
@@ -429,6 +430,7 @@ ${blocos}
         </div>
       </div>
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-header"><span>Quantidade de Processos</span><i className="pi pi-list" /></div>
@@ -443,6 +445,7 @@ ${blocos}
           <div className="kpi-value">{kpis.maisAntigo}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
         <DataTable

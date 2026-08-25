@@ -20,6 +20,7 @@ import {
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './SelecionarMedicoPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
 interface ProcessoResumo {
@@ -141,9 +142,9 @@ export function SelecionarMedicoPage() {
         dias: Number(item.diasSolicitados ?? 0),
       };
     });
+  }, [processos]);
 
   useEffect(() => { setVisibleProcessos(dataComCamposCalculados); }, [dataComCamposCalculados]);
-  }, [processos]);
 
   const kpis = useMemo(() => {
     const total = visibleProcessos.length;
@@ -356,6 +357,7 @@ export function SelecionarMedicoPage() {
 
       {readOnly && <ReadOnlyBanner />}
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -381,6 +383,7 @@ export function SelecionarMedicoPage() {
           <div className="kpi-value">{kpis.maisAntigo}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
         <DataTable
