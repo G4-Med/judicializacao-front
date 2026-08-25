@@ -24,6 +24,7 @@ import { EnviarOrcamentoDialog } from '../orcamentoMedico/EnviarOrcamentoDialog'
 import { useAccess } from '../../access/AccessContext';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import './ProcessosPage.css';
 
 const STATUS_PROCESSO_FALLBACK = [
@@ -1906,6 +1907,7 @@ ${linhasAnexos}
         </div>
       </div>
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -1971,6 +1973,7 @@ ${linhasAnexos}
           <div className="kpi-value">{kpis.aguardandoRespostas}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="processos-dono-legenda">
         <span>quem é dono de cada status:</span>
