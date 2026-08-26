@@ -489,7 +489,10 @@ export function ClientesPage() {
     { label: 'Não enviado', value: false, icon: 'pi pi-times-circle', cor: '#dc2626' }
   ];
 
-  const booleanFilterElement = (options: any, opcoes: typeof BOOLEAN_FILTRO_OPCOES) => {
+  const booleanFilterElement = (
+    options: any,
+    opcoes: { label: string; value: string | boolean | null; icon: string; cor: string }[]
+  ) => {
     return (
       <Dropdown
         value={options.value ?? null}

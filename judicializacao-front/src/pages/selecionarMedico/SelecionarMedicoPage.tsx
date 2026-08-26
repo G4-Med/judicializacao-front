@@ -121,6 +121,8 @@ export function SelecionarMedicoPage() {
           medico:
             item.medico ??
             (item.idMedico ? medicosLookup.get(item.idMedico) ?? '' : ''),
+          slaMedicoEstourado: item.slaMedicoEstourado ?? null,
+          slaMedicoHoras: item.slaMedicoHoras ?? null,
         }))
       );
     } catch (error) {
