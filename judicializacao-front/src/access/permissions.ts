@@ -120,7 +120,12 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'relatorioResumido',
       'relatorioConsolidado',
     ],
-    edit: [],
+    // Gerente era 100% somente-leitura por padrão — mas na prática precisa agir na
+    // tela de orçamento médico (enviar orçamento, solicitar exames, recusar o
+    // procedimento), em para protocolar (editar/protocolar/não protocolar) e em
+    // protocolados (acompanhamento + decisão ganho/perda), achado 26/08 ao vivo
+    // em produção (modal/tela sem nenhum botão de ação).
+    edit: ['orcamentoMedico', 'paraProtocolar', 'protocolados'],
     exportReports: ['relatorioResumido', 'relatorioConsolidado'],
     allMedicos: true,
   },
@@ -142,7 +147,7 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'relatorioResumido',
       'relatorioConsolidado',
     ],
-    edit: ['juridico', 'paraProtocolar', 'protocolados', 'segredoJustica'],
+    edit: ['clientes', 'juridico', 'paraProtocolar', 'protocolados', 'segredoJustica'],
     exportReports: ['relatorioResumido', 'relatorioConsolidado'],
     allMedicos: true,
   },

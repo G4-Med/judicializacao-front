@@ -65,9 +65,9 @@ export function JuridicoPage() {
   const [loading, setLoading] = useState(false);
   const [processos, setProcessos] = useState<ProcessoJuridico[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(10);
-  const [sortField, setSortField] = useState<string | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [rows, setRows] = useState(100);
+  const [sortField, setSortField] = useState<string | undefined>('dias');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const [editDialogVisible, setEditDialogVisible] = useState(false);
   const [processoEditando, setProcessoEditando] = useState<ProcessoJuridicoRow | null>(null);
   const [obsObrigatorio, setObsObrigatorio] = useState(false);
@@ -260,7 +260,9 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
       </PainelKpis>
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos aguardando triagem jurídica</h2>
         <DataTable
+          aria-label="Pedidos aguardando triagem jurídica"
           value={dataComSequencial}
           onValueChange={(value) => setVisibleProcessos(value as ProcessoJuridicoRow[])}
           rowClassName={(rowData: ProcessoJuridicoRow) =>
@@ -268,6 +270,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           }
           dataKey="id"
           paginator
+          rowsPerPageOptions={[10, 20, 50, 100]}
           rows={rows}
           first={first}
           onPage={(e: DataTablePageEvent) => { setFirst(e.first); setRows(e.rows); }}

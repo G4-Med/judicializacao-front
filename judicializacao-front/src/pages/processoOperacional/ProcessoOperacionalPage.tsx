@@ -1,0 +1,202 @@
+import { useState } from 'react';
+import { ETAPAS, DONOS, PRAZOS, REGRAS, PORQUE, FONTE } from './conteudo';
+import type { Etapa } from './conteudo';
+import './ProcessoOperacionalPage.css';
+
+/**
+ * PROCESSO OPERACIONAL — o manual dentro do próprio sistema.
+ *
+ * POR QUE ESTA TELA EXISTE:
+ *   A equipe do Instituto Mateus recebeu o treinamento numa reunião de 1h50. O @R
+ *   prometeu "uma ajuda para cada telinha". Mas o problema medido não é falta de
+ *   informação — é informação ENTERRADA: o próprio autor do sistema não achou um
+ *   campo que estava dois cliques para dentro. Um manual que ninguém abre repete
+ *   esse defeito num arquivo maior.
+ *
+ *   Por isso o desenho: PORQUÊ primeiro (a tese que faz a regra parar de soar
+ *   arbitrária), depois as etapas com o DONO de cada uma, e a fala do @R AO LADO
+ *   de cada passo — não num apêndice. Quem lê "prazo de 96 horas" lê junto o
+ *   motivo, e é o motivo que faz cumprir sem fiscal.
+ */
+export function ProcessoOperacionalPage() {
+  // `abertas` é um CONJUNTO, não um id só: o "abrir todas" é o modo de leitura
+  // corrida (e o que o PDF precisa — seção fechada não sai impressa).
+  const [abertas, setAbertas] = useState<Set<string>>(new Set(['juridico']));
+  const [filtroDono, setFiltroDono] = useState<'TODOS' | 'INSTITUTO' | 'G4MED'>('TODOS');
+
+  const etapasVisiveis = ETAPAS.filter(
+    (e) => filtroDono === 'TODOS' || e.dono === filtroDono
+  );
+
+  const todasAbertas =
+    etapasVisiveis.length > 0 && etapasVisiveis.every((e) => abertas.has(e.id));
+
+  const alternarTodas = () => {
+    setAbertas(todasAbertas ? new Set() : new Set(etapasVisiveis.map((e) => e.id)));
+  };
+
+  const alternarUma = (id: string) => {
+    setAbertas((atual) => {
+      const proximo = new Set(atual);
+      if (proximo.has(id)) proximo.delete(id);
+      else proximo.add(id);
+      return proximo;
+    });
+  };
+
+  /**
+   * PDF pela impressão do navegador — de propósito.
+   * Gerar PDF no servidor exigiria um motor de render (weasyprint/wkhtmltopdf) e
+   * uma segunda versão do layout que envelhece separada da tela. Imprimir a
+   * própria página garante que o PDF é SEMPRE o que está na tela hoje.
+   * O que muda é só: abre tudo (senão sai vazio) e espera o React pintar.
+   */
+  const baixarPdf = () => {
+    setAbertas(new Set(etapasVisiveis.map((e) => e.id)));
+    setTimeout(() => window.print(), 250);
+  };
+
+  return (
+    <div className="proc-op">
+      <header className="proc-op__topo">
+        <h1>Processo operacional</h1>
+        <p className="proc-op__sub">
+          Como o trabalho anda do pedido até a decisão — com as regras, os prazos e o motivo de
+          cada um.
+        </p>
+        <button type="button" className="proc-op__pdf" onClick={baixarPdf}>
+          <i className="pi pi-file-pdf" /> Baixar em PDF
+        </button>
+      </header>
+
+      {/* O PORQUÊ vem antes do COMO: sem ele, o prazo vira regra arbitrária. */}
+      <section className="proc-op__porque">
+        <h2>{PORQUE.titulo}</h2>
+        {PORQUE.paragrafos.map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
+        <blockquote className="proc-op__fechamento">{PORQUE.fechamento}</blockquote>
+        <div className="proc-op__proposito">
+          <span className="proc-op__proposito-rotulo">O propósito, nas palavras do Rapha</span>
+          <p>{PORQUE.proposito}</p>
+        </div>
+      </section>
+
+      <section className="proc-op__prazos">
+        <h2>Os prazos</h2>
+        <div className="proc-op__prazos-grade">
+          {PRAZOS.map((p) => (
+            <div key={p.prazo} className="proc-op__prazo-card">
+              <strong>{p.prazo}</strong>
+              <span>{p.oQue}</span>
+              <em>{p.deQuem}</em>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="proc-op__etapas">
+        <div className="proc-op__etapas-topo">
+          <h2>As 6 etapas</h2>
+          <div className="proc-op__filtros">
+            <button type="button" className="proc-op__filtro" onClick={alternarTodas}>
+              {todasAbertas ? 'Fechar todas' : 'Abrir todas'}
+            </button>
+            {(['TODOS', 'INSTITUTO', 'G4MED'] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                className={`proc-op__filtro ${filtroDono === f ? 'is-ativo' : ''}`}
+                onClick={() => setFiltroDono(f)}
+              >
+                {f === 'TODOS' ? 'Todas' : DONOS[f].rotulo}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {etapasVisiveis.map((etapa: Etapa) => {
+          const dono = DONOS[etapa.dono];
+          const estaAberta = abertas.has(etapa.id);
+          return (
+            <article
+              key={etapa.id}
+              className={`proc-op__etapa ${estaAberta ? 'is-aberta' : ''}`}
+              style={{ borderLeftColor: dono.cor }}
+            >
+              <button
+                type="button"
+                className="proc-op__etapa-cabeca"
+                onClick={() => alternarUma(etapa.id)}
+                aria-expanded={estaAberta}
+              >
+                <span className="proc-op__etapa-numero" style={{ background: dono.cor }}>
+                  {etapa.numero}
+                </span>
+                <span className="proc-op__etapa-titulo">{etapa.titulo}</span>
+                <span className="proc-op__etapa-dono" style={{ color: dono.cor }}>
+                  {dono.rotulo}
+                </span>
+                <i className={`pi ${estaAberta ? 'pi-chevron-up' : 'pi-chevron-down'}`} />
+              </button>
+
+              {estaAberta && (
+                <div className="proc-op__etapa-corpo">
+                  <p className="proc-op__etapa-oque">{etapa.oQueFaz}</p>
+
+                  {etapa.prazo && (
+                    <div className="proc-op__etapa-prazo">
+                      <i className="pi pi-clock" /> {etapa.prazo}
+                    </div>
+                  )}
+
+                  <h4>Passo a passo</h4>
+                  <ol className="proc-op__passos">
+                    {etapa.comoFazer.map((passo, i) => (
+                      <li key={i}>{passo}</li>
+                    ))}
+                  </ol>
+
+                  {etapa.falaDoRapha && (
+                    <blockquote className="proc-op__fala">
+                      <span className="proc-op__fala-rotulo">Rapha, na reunião</span>
+                      {etapa.falaDoRapha}
+                    </blockquote>
+                  )}
+
+                  {etapa.atencao && (
+                    <div className="proc-op__atencao">
+                      <i className="pi pi-exclamation-triangle" />
+                      <span>{etapa.atencao}</span>
+                    </div>
+                  )}
+
+                  {etapa.rota && (
+                    <a className="proc-op__ir" href={etapa.rota}>
+                      Ir para a tela <i className="pi pi-arrow-right" />
+                    </a>
+                  )}
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </section>
+
+      <section className="proc-op__regras">
+        <h2>Regras que valem sempre</h2>
+        {REGRAS.map((r) => (
+          <div key={r.titulo} className="proc-op__regra">
+            <h3>{r.titulo}</h3>
+            <p>{r.texto}</p>
+            {r.fala && <blockquote className="proc-op__fala proc-op__fala--curta">{r.fala}</blockquote>}
+          </div>
+        ))}
+      </section>
+
+      <footer className="proc-op__fonte">{FONTE}</footer>
+    </div>
+  );
+}
+
+export default ProcessoOperacionalPage;

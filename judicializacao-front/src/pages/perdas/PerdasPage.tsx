@@ -45,9 +45,9 @@ export function PerdasPage() {
   const [registros, setRegistros] = useState<PerdaProcesso[]>([]);
   const [selectedRegistros, setSelectedRegistros] = useState<PerdaProcessoTableRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(10);
-  const [sortField, setSortField] = useState<string | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [rows, setRows] = useState(100);
+  const [sortField, setSortField] = useState<string | undefined>('dias');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -251,10 +251,13 @@ export function PerdasPage() {
       </PainelKpis>
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos perdidos — motivo e fase em que a perda ocorreu</h2>
         <DataTable
+          aria-label="Pedidos perdidos — motivo e fase em que a perda ocorreu"
           value={dataComCamposCalculados}
           dataKey="id"
           paginator
+          rowsPerPageOptions={[10, 20, 50, 100]}
           rows={rows}
           first={first}
           totalRecords={dataComCamposCalculados.length}

@@ -218,9 +218,9 @@ export function ProcessosPage() {
   const [visibleProcessos, setVisibleProcessos] = useState<ProcessoTableRow[]>([]);
   const [selectedProcessos, setSelectedProcessos] = useState<ProcessoTableRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(10);
-  const [sortField, setSortField] = useState<string | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [rows, setRows] = useState(100);
+  const [sortField, setSortField] = useState<string | undefined>('dias');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const massActionMenuRef = useRef<TieredMenu>(null);
   const [processoMenuSelecionado, setProcessoMenuSelecionado] = useState<ProcessoTableRow | null>(null);
   const rowActionMenuRef = useRef<TieredMenu>(null);
@@ -2007,10 +2007,13 @@ ${linhasAnexos}
       />
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Todos os processos — status, valor de referência e responsável por cada etapa</h2>
         <DataTable
+          aria-label="Todos os processos — status, valor de referência e responsável por cada etapa"
           value={dataComCamposCalculados}
           dataKey="id"
           paginator
+          rowsPerPageOptions={[10, 20, 50, 100]}
           lazy={false}
           rows={rows}
           first={first}

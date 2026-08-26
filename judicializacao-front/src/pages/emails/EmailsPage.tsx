@@ -125,9 +125,9 @@ export function EmailsPage() {
     darPerda: 0,
   });
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(10);
-  const [sortField, setSortField] = useState<string | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [rows, setRows] = useState(100);
+  const [sortField, setSortField] = useState<string | undefined>('dias');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const [enviandoId, setEnviandoId] = useState<number | null>(null);
   const [selectedEmails, setSelectedEmails] = useState<EmailPendenteTableRow[]>([]);
   const [enviandoMassa, setEnviandoMassa] = useState(false);
@@ -618,10 +618,13 @@ export function EmailsPage() {
       </PainelKpis>
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />E-mails pendentes de envio</h2>
         <DataTable
+          aria-label="E-mails pendentes de envio"
           value={dataComSequencial}
           dataKey="id"
           paginator
+          rowsPerPageOptions={[10, 20, 50, 100]}
           rows={rows}
           first={first}
           totalRecords={dataComSequencial.length}

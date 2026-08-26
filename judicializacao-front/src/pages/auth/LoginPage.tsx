@@ -89,8 +89,18 @@ const LoginForms = ({ view, toggleView }: LoginFormsProps) => {
       const data = await login(username, password);
       const profile = persistAuthProfile(data);
       navigate(getDefaultRouteForGroup(profile.group));
-    } catch {
-      setError('Usuário ou senha incorretos.');
+    } catch (err: any) {
+      // "Usuário ou senha incorretos" só é verdade no 401 — antes disto, qualquer
+      // falha (servidor fora, rede, timeout) mostrava a MESMA mensagem, escondendo
+      // a causa real (achado 26/08: tentativa de login bateu no backend subindo,
+      // a tela disse "senha errada" quando a senha nunca chegou a ser checada).
+      if (err?.response?.status === 401) {
+        setError('Usuário ou senha incorretos.');
+      } else if (!err?.response) {
+        setError('Não foi possível falar com o servidor. Verifique sua conexão e tente novamente.');
+      } else {
+        setError('Erro ao entrar. Tente novamente em instantes.');
+      }
     } finally {
       setLoading(false);
     }

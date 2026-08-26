@@ -96,3 +96,14 @@
 @media (max-width: 600px) {
   .pvi__rodape { flex-direction: column; align-items: flex-start; }
 }
+
+/* .pvi__sla usava --mc-muted-2 como fundo — no claro isso é quase-branco
+   (bom fundo p/ texto escuro), mas no escuro o MESMO token vira um
+   cinza-azulado médio (#64748b): texto claro em cima ficava com contraste
+   baixo (~3.8:1, abaixo do mínimo de leitura confortável). Fundo mais
+   escuro + texto claro reforçado resolve nos dois temas. */
+body.dark-theme .pvi__sla {
+  background: var(--mc-surface-2, #0d1b2a);
+  border: 1px solid var(--mc-border, #1e2d42);
+  color: var(--mc-ink, #e6eef6);
+}

@@ -655,7 +655,7 @@ export function DashboardPage() {
       </div>
       </PainelKpis>
 
-      <div className="dashboard-section-title">Análises operacionais</div>
+      <PainelKpis titulo="Análises operacionais">
       <div className="dashboard-section-subtitle">Status, distribuição por médico e ticket médio do período.</div>
       <div className="dashboard-chart-grid dashboard-chart-grid--3">
         <div className="card chart-card">
@@ -708,30 +708,30 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
+      </PainelKpis>
 
-      <div className="dashboard-section-title">Evolução diária</div>
-      <div className="dashboard-section-subtitle">Volume de pedidos por dia.</div>
+      <PainelKpis titulo="Evolução de pedidos">
+      <div className="dashboard-section-subtitle">Volume por dia e por mês, lado a lado para comparar o ritmo.</div>
       <div className="dashboard-chart-grid">
-        <div className="card chart-card chart-card-full">
-          <div className="chart-title">Dia × qtde de pedidos</div>
-          <div className="chart-wrapper">
+        <div className="card chart-card">
+          <div className="chart-title">Por dia</div>
+          <div className="chart-subtitle">Dias com pedido no período.</div>
+          <div className="chart-wrapper chart-wrapper--tall">
             <Chart type="bar" data={charts.pedidosDia} options={columnOptions} />
           </div>
         </div>
-      </div>
 
-      <div className="dashboard-section-title">Evolução mensal</div>
-      <div className="dashboard-section-subtitle">Volume de pedidos dos últimos 12 meses ({charts.pedidosMesPeriodoLabel}).</div>
-      <div className="dashboard-chart-grid">
-        <div className="card chart-card chart-card-full">
-          <div className="chart-title">Mês × qtde de pedidos</div>
-          <div className="chart-wrapper">
+        <div className="card chart-card">
+          <div className="chart-title">Por mês</div>
+          <div className="chart-subtitle">Últimos 12 meses ({charts.pedidosMesPeriodoLabel}).</div>
+          <div className="chart-wrapper chart-wrapper--tall">
             <Chart type="bar" data={charts.pedidosMes} options={columnOptions} />
           </div>
         </div>
       </div>
+      </PainelKpis>
 
-      <div className="dashboard-section-title">Análise de perdas</div>
+      <PainelKpis titulo="Análise de perdas">
       <div className="dashboard-section-subtitle">Status da perda e composição percentual.</div>
       <div className="dashboard-chart-grid">
         <div className="card chart-card">
@@ -764,8 +764,9 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
+      </PainelKpis>
 
-      <div className="dashboard-section-title">Performance por médico</div>
+      <PainelKpis titulo="Performance por médico">
       <div className="dashboard-section-subtitle">Comparativo ganho × perda por profissional.</div>
       <div className="dashboard-chart-grid">
         <div className="card chart-card chart-card-full">
@@ -817,6 +818,7 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
+      </PainelKpis>
     </div>
   );
 }

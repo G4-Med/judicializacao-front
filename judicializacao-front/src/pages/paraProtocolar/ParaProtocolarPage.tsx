@@ -6,7 +6,7 @@ import type {
   DataTableSortEvent
 } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { getParaProtocolar, salvarProtocolar, uploadAnexoOrder, getOrders, getMedicosCompleto, getAnexosOrder, getOrcamentoConsolidado } from '../../services/api/orders';
+import { getParaProtocolar, salvarProtocolar, uploadAnexoOrder, getOrders, getMedicosCompleto, getAnexosOrder, getOrcamentoConsolidado, getEmailRecebimentoPdf } from '../../services/api/orders';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -58,9 +58,9 @@ export function ParaProtocolarPage() {
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<ParaProtocolar[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(10);
-  const [sortField, setSortField] = useState<string | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [rows, setRows] = useState(100);
+  const [sortField, setSortField] = useState<string | undefined>('dias');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const [dataProtocolo, setDataProtocolo] = useState('');
   const [arquivoPeticao, setArquivoPeticao] = useState<File | null>(null)
   const [arquivoExtra1, setArquivoExtra1] = useState<File | null>(null)
@@ -201,6 +201,15 @@ export function ParaProtocolarPage() {
     return `${dia}/${mes}/${ano}`;
   };
 
+  // O corpo do e-mail extraído traz "[cid:xxxx]" — referência à imagem embutida
+  // (ex: assinatura) que não existe fora do e-mail. Não é conteúdo pra ler; suja
+  // a leitura de quem só quer o texto da solicitação.
+  const formatarObservacoes = (texto: string) =>
+    (texto || '')
+      .replace(/\[cid:[^\]]+\]/gi, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim() || '(sem observações)';
+
   const precoBodyTemplate = (rowData: ParaProtocolarTableRow) => formatarMoeda(rowData.valor);
   const dataBodyTemplate = (rowData: ParaProtocolarTableRow) => formatarData(rowData.dataEnvioOrcamento);
   const diasBodyTemplate = (rowData: ParaProtocolarTableRow) => <span className="dias-cell">{rowData.dias}</span>;
@@ -309,6 +318,41 @@ export function ParaProtocolarPage() {
       />
     );
   };
+
+  // Comprovante do recebimento: o .eml original (data/hora + anexos embutidos)
+  // que o email_monitor arquiva desde 25/08. Pedido anterior a essa data não tem.
+  const [baixandoEmailId, setBaixandoEmailId] = useState<number | null>(null);
+
+  const baixarEmailRecebimento = async (rowData: ParaProtocolarTableRow) => {
+    setBaixandoEmailId(rowData.id);
+    try {
+      const resp = await getEmailRecebimentoPdf(rowData.id);
+      const url = window.URL.createObjectURL(new Blob([resp.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `email-recebimento-${(rowData.nprocesso || rowData.id).toString().replace(/\//g, '-')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert('Erro ao gerar o PDF do e-mail de recebimento deste pedido.');
+    } finally {
+      setBaixandoEmailId(null);
+    }
+  };
+
+  const emailRecebimentoBodyTemplate = (rowData: ParaProtocolarTableRow) => (
+    <Button
+      icon="pi pi-envelope"
+      rounded
+      outlined
+      severity="help"
+      loading={baixandoEmailId === rowData.id}
+      aria-label={`Baixar e-mail de recebimento do pedido ${rowData.id}`}
+      onClick={() => baixarEmailRecebimento(rowData)}
+    />
+  );
 
   const handleCopiar = async (rowData: ParaProtocolarTableRow) => {
     setCopiandoId(rowData.id);
@@ -570,11 +614,14 @@ const handleConfirmarProtocolacao = async () => {
       </PainelKpis>
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos para protocolar</h2>
         <DataTable
+          aria-label="Pedidos para protocolar"
           value={dataComCamposCalculados}
           onValueChange={(value) => setVisibleProcessos(value as ParaProtocolarTableRow[])}
           dataKey="id"
           paginator
+          rowsPerPageOptions={[10, 20, 50, 100]}
           rows={rows}
           first={first}
           totalRecords={dataComCamposCalculados.length}
@@ -654,6 +701,13 @@ const handleConfirmarProtocolacao = async () => {
             header="Orçamento"
             body={anexoBodyTemplate}
             style={{ minWidth: '7rem' }}
+            bodyStyle={{ textAlign: 'center' }}
+          />
+
+          <Column
+            header="Baixar Email Recebimento"
+            body={emailRecebimentoBodyTemplate}
+            style={{ minWidth: '9rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
 
@@ -822,7 +876,8 @@ const handleConfirmarProtocolacao = async () => {
               <InputTextarea
                 value={registroEditando.observacoes}
                 onChange={(e) => updateRegistroEditando('observacoes', e.target.value)}
-                rows={4}
+                rows={14}
+                style={{ width: '100%', fontSize: '0.95rem', lineHeight: 1.5 }}
               />
             </div>
 
@@ -892,7 +947,24 @@ const handleConfirmarProtocolacao = async () => {
 
             <div className="field field-span-4">
               <label>Observações</label>
-              <InputTextarea value={registroProtocolando.observacoes} rows={4} disabled />
+              <div
+                style={{
+                  width: '100%',
+                  maxHeight: '360px',
+                  overflowY: 'auto',
+                  border: '1px solid var(--mc-border, #e5e7eb)',
+                  borderRadius: '8px',
+                  padding: '14px 16px',
+                  background: 'var(--mc-surface-2, #fafafa)',
+                  fontSize: '0.95rem',
+                  lineHeight: 1.6,
+                  color: 'var(--mc-ink, #1f2937)',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {formatarObservacoes(registroProtocolando.observacoes)}
+              </div>
             </div>
 
 <div className="field field-span-4">
@@ -1125,7 +1197,24 @@ const handleConfirmarProtocolacao = async () => {
 
             <div className="field field-span-4">
               <label>Observações</label>
-              <InputTextarea value={registroNaoProtocolar.observacoes} rows={4} disabled />
+              <div
+                style={{
+                  width: '100%',
+                  maxHeight: '360px',
+                  overflowY: 'auto',
+                  border: '1px solid var(--mc-border, #e5e7eb)',
+                  borderRadius: '8px',
+                  padding: '14px 16px',
+                  background: 'var(--mc-surface-2, #fafafa)',
+                  fontSize: '0.95rem',
+                  lineHeight: 1.6,
+                  color: 'var(--mc-ink, #1f2937)',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {formatarObservacoes(registroNaoProtocolar.observacoes)}
+              </div>
             </div>
 
             <div className="field field-span-4">

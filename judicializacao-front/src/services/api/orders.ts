@@ -11,6 +11,10 @@ export const salvarJuridico = (id: number, data: any) => api.post(`/orders/jurid
 export const getOrcamentoMedico = () => api.get('/orders/orcamento-medico/');
 export const salvarOrcamentoMedico = (id: number, data: any) => api.post(`/orders/orcamento-medico/${id}/salvar/`, data);
 export const marcarSemProfissional = (id: number) => api.post(`/orders/orcamento-medico/${id}/sem-profissional/`);
+export const aplicarStatusOrcamentoManual = (id: number, status: string) =>
+  api.post(`/orders/orcamento-medico/${id}/status-manual/`, { status });
+export const trocarMedicoOrcamento = (id: number, idMedico: number) =>
+  api.post(`/orders/orcamento-medico/${id}/trocar-medico/`, { idMedico });
 export const getParaProtocolar = () => api.get('/orders/para-protocolar/');
 export const salvarProtocolar = (id: number, data: any) => api.post(`/orders/para-protocolar/${id}/salvar/`, data);
 export const getSegredoJustica = () => api.get('/orders/segredo-justica/');
@@ -159,6 +163,14 @@ export const extrairEmail = (corpoEmail: string) =>
  */
 export const getOrcamentoConsolidado = (orderId: number) =>
   api.get(`/orders/${orderId}/orcamento-consolidado/`, { responseType: 'blob' });
+
+/**
+ * PDF-comprovante do e-mail de recebimento da solicitação (De/Para/Cc/Data/
+ * Assunto/corpo/anexos). Se o pedido é anterior a 25/08/2026 (sem .eml
+ * arquivado), o backend reconstrói com os dados que tinha e rotula como tal.
+ */
+export const getEmailRecebimentoPdf = (orderId: number) =>
+  api.get(`/orders/${orderId}/email-recebimento-pdf/`, { responseType: 'blob' });
 
 /**
  * O funil: cada fase medida, onde o pedido morre e por quê.

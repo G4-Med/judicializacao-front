@@ -87,9 +87,9 @@ export function ResultadosPage() {
   const [registros, setRegistros] = useState<ResultadoProcesso[]>([]);
   const [selectedRegistros, setSelectedRegistros] = useState<ResultadoProcessoTableRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(10);
-  const [sortField, setSortField] = useState<string | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [rows, setRows] = useState(100);
+  const [sortField, setSortField] = useState<string | undefined>('dias');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -519,10 +519,13 @@ const kpis = useMemo(() => {
       </PainelKpis>
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Processos finalizados — resultado (ganho ou perda), valor e tempo de tramitação</h2>
         <DataTable
+          aria-label="Processos finalizados — resultado (ganho ou perda), valor e tempo de tramitação"
           value={dataComCamposCalculados}
           dataKey="id"
           paginator
+          rowsPerPageOptions={[10, 20, 50, 100]}
           rows={rows}
           first={first}
           totalRecords={dataComCamposCalculados.length}

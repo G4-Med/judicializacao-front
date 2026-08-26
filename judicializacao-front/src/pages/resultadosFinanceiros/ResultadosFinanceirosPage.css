@@ -129,7 +129,7 @@
   white-space: nowrap;
 }
 .rf-table .p-datatable-tbody > tr {
-  background: #fff;
+  background: var(--mc-surface, #fff);
   transition: background .12s ease;
 }
 .rf-table .p-datatable-tbody > tr:hover { background: var(--mc-surface-2, #f9fbfc); }
@@ -171,7 +171,7 @@
 .rf-table .p-button.p-button-info.p-button-outlined {
   border-color: var(--mc-border-2, #d6e0e6);
   color: var(--mc-navy-700, #0a3d62);
-  background: #fff;
+  background: var(--mc-surface, #fff);
   border-radius: 8px;
   font-weight: 600;
   height: 36px;
@@ -257,9 +257,9 @@
   gap: 8px;
   padding: 8px 12px;
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  color: #374151;
+  border: 1px solid var(--mc-border, #e5e7eb);
+  background: var(--mc-surface, #fff);
+  color: var(--mc-ink, #374151);
   font-size: 0.85rem;
   width: 100%;
   cursor: pointer;
@@ -267,8 +267,8 @@
   transition: background .12s ease, border-color .12s ease;
 }
 .rf-anexo-item:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: var(--mc-surface-2, #f3f4f6);
+  border-color: var(--mc-border-2, #d1d5db);
 }
 .rf-anexo-item__icon {
   font-size: 1.1rem;

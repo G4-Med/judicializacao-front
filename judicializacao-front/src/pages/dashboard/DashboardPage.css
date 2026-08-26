@@ -94,7 +94,7 @@
   border-radius: var(--mc-radius-lg);
   border: 1px solid var(--mc-border-2);
   background: var(--mc-green-50, #eefaf3);
-  border-left: 4px solid var(--mc-green-500);
+  border-left: 1px solid var(--mc-green-500);
 }
 .dashboard-medico-info__nome {
   font-family: var(--mc-font-heading);

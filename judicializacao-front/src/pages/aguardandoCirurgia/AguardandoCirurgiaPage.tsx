@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
-import type { DataTableFilterMeta } from 'primereact/datatable';
+import type { DataTableFilterMeta, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
@@ -246,6 +246,8 @@ export function AguardandoCirurgiaPage() {
   const [anexosOrcamento, setAnexosOrcamento] = useState<Anexo[]>([]);
   const [anexosProtocolo, setAnexosProtocolo] = useState<Anexo[]>([]);
   const [carregandoAnexos, setCarregandoAnexos] = useState(false);
+  const [sortField, setSortField] = useState<string | undefined>('dias');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -515,13 +517,18 @@ export function AguardandoCirurgiaPage() {
       </PainelKpis>
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos aguardando confirmação de cirurgia</h2>
         <DataTable
+          aria-label="Pedidos aguardando confirmação de cirurgia"
           value={linhas}
           loading={loading}
           dataKey="id"
           paginator
-          rows={10}
-          rowsPerPageOptions={[10, 20, 50]}
+          rows={100}
+          rowsPerPageOptions={[10, 20, 50, 100]}
+          sortField={sortField}
+          sortOrder={sortOrder}
+          onSort={(e: DataTableSortEvent) => { setSortField(e.sortField); setSortOrder(e.sortOrder); }}
           filters={filters}
           onFilter={(e) => setFilters(e.filters)}
           filterDisplay="row"

@@ -56,9 +56,9 @@ export function SelecionarMedicoPage() {
   const [selectedProcessos, setSelectedProcessos] = useState<ProcessoResumoTableRow[]>([]);
   const [medicosOptions, setMedicosOptions] = useState<MedicoOption[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(10);
-  const [sortField, setSortField] = useState<string | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [rows, setRows] = useState(100);
+  const [sortField, setSortField] = useState<string | undefined>('dias');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [dialogMassaVisible, setDialogMassaVisible] = useState(false);
   const [processoSelecionado, setProcessoSelecionado] = useState<ProcessoResumoTableRow | null>(null);
@@ -386,7 +386,9 @@ export function SelecionarMedicoPage() {
       </PainelKpis>
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos aguardando seleção de médico</h2>
         <DataTable
+          aria-label="Pedidos aguardando seleção de médico"
           value={dataComCamposCalculados}
           onValueChange={(value) => setVisibleProcessos(value as ProcessoResumoTableRow[])}
           rowClassName={(rowData: ProcessoResumoTableRow) =>
@@ -394,6 +396,7 @@ export function SelecionarMedicoPage() {
           }
           dataKey="id"
           paginator
+          rowsPerPageOptions={[10, 20, 50, 100]}
           rows={rows}
           first={first}
           totalRecords={dataComCamposCalculados.length}

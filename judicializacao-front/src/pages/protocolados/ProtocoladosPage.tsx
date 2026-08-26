@@ -75,9 +75,9 @@ export function ProtocoladosPage() {
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<Protocolado[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(10);
-  const [sortField, setSortField] = useState<string | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [rows, setRows] = useState(100);
+  const [sortField, setSortField] = useState<string | undefined>('dias');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -100,6 +100,10 @@ export function ProtocoladosPage() {
   const [salvandoAcompanhamento, setSalvandoAcompanhamento] = useState(false);
   const [parecerJuridico, setParecerJuridico] = useState('');
   const [resultadoSelecionado, setResultadoSelecionado] = useState<ResultadoType>('');
+  // Peça de inteiro teor (sentença/acórdão) — obrigatória pra registrar ganho ou
+  // perda: sem o documento, a decisão fica sem prova documental no processo.
+  const [pecaInteiroTeor, setPecaInteiroTeor] = useState<File | null>(null);
+  const [salvandoDecisao, setSalvandoDecisao] = useState(false);
 
   // 'Anotação do jurídico' vem PRIMEIRO e é o default: os outros três são EVENTOS
   // (algo aconteceu), mas o uso mais comum é a nota de andamento — "acompanhei hoje,
@@ -133,6 +137,7 @@ export function ProtocoladosPage() {
     setParecerJuridico('');
     setResultadoSelecionado('');
     setValorGanho(null);
+    setPecaInteiroTeor(null);
   };
 
   const carregarDados = async () => {
@@ -246,7 +251,13 @@ export function ProtocoladosPage() {
       alert(resultadoSelecionado === 'ganho' ? 'Informe o valor ganho.' : 'Informe o valor da causa.');
       return;
     }
+    if (!pecaInteiroTeor) {
+      alert('Anexe a peça de inteiro teor (sentença/acórdão) — é obrigatória para registrar a decisão.');
+      return;
+    }
+    setSalvandoDecisao(true);
     try {
+      await uploadAnexoOrder(registroAtualizando.id, pecaInteiroTeor, 'DECISAO_INTEIRO_TEOR');
       await salvarResultadoProtocolado(registroAtualizando.id, {
         acao: resultadoSelecionado,
         analise: parecerJuridico,
@@ -257,6 +268,8 @@ export function ProtocoladosPage() {
       fecharDialogAtualizacao();
     } catch (err) {
       alert('Erro ao salvar decisão.');
+    } finally {
+      setSalvandoDecisao(false);
     }
   };
 
@@ -493,11 +506,14 @@ export function ProtocoladosPage() {
       </PainelKpis>
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos protocolados</h2>
         <DataTable
+          aria-label="Pedidos protocolados"
           value={dataComCamposCalculados}
           onValueChange={(value) => setVisibleProcessos(value as ProtocoladoTableRow[])}
           dataKey="id"
           paginator
+          rowsPerPageOptions={[10, 20, 50, 100]}
           rows={rows}
           first={first}
           totalRecords={dataComCamposCalculados.length}
@@ -838,6 +854,39 @@ export function ProtocoladosPage() {
                       />
                     </div>
                   )}
+
+                  {resultadoSelecionado !== '' && (
+                    <div className="field field-span-2">
+                      <label>
+                        Peça de Inteiro Teor (sentença/acórdão)
+                        <span style={{ color: '#ef4444', marginLeft: '4px' }}>*obrigatório</span>
+                      </label>
+                      <label
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '10px 14px',
+                          borderRadius: '8px',
+                          border: `2px dashed ${pecaInteiroTeor ? '#f97316' : '#d1d5db'}`,
+                          background: pecaInteiroTeor ? '#fff7ed' : 'var(--mc-surface-2, #f9fafb)',
+                          cursor: 'pointer',
+                          fontSize: '0.9rem',
+                          color: pecaInteiroTeor ? '#f97316' : 'var(--mc-ink-2, #6b7280)',
+                        }}
+                      >
+                        <i className={pecaInteiroTeor ? 'pi pi-file-check' : 'pi pi-upload'} />
+                        <span>{pecaInteiroTeor ? pecaInteiroTeor.name : 'Selecionar peça...'}</span>
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          style={{ display: 'none' }}
+                          onChange={(e) => setPecaInteiroTeor(e.target.files?.[0] ?? null)}
+                        />
+                      </label>
+                    </div>
+                  )}
+
                   <div className="field field-span-4">
                     <label>Análise Jurídica Final</label>
                     <InputTextarea
@@ -849,9 +898,14 @@ export function ProtocoladosPage() {
                   </div>
 
                   <div className="field field-span-4" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button label="Salvar Decisão" icon="pi pi-check"
+                    <Button
+                      label={salvandoDecisao ? 'Salvando...' : 'Salvar Decisão'}
+                      icon="pi pi-check"
                       severity={resultadoSelecionado === 'ganho' ? 'success' : 'danger'}
-                      onClick={handleSalvarDecisao} />
+                      loading={salvandoDecisao}
+                      disabled={salvandoDecisao}
+                      onClick={handleSalvarDecisao}
+                    />
                   </div>
                 </div>
               )}

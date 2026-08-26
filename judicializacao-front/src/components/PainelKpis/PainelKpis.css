@@ -64,3 +64,17 @@
      o que já é o fallback correto (aria-expanded cobre o acesso). */
   .painel-kpis__corpo { padding-left: 12px; padding-right: 12px; }
 }
+
+/* Este componente é usado em ~17 páginas ("Indicadores" no topo de cada
+   tela) e nunca teve versão escura — ficava uma faixa branca fixa cruando
+   com o resto da tela escura em toda página do sistema. */
+body.dark-theme .painel-kpis {
+  background: var(--mc-surface, #0f1f33);
+  border-color: var(--mc-border, #1e2d42);
+}
+body.dark-theme .painel-kpis__cabecalho:hover {
+  background: var(--mc-surface-2, #0d1b2a);
+}
+body.dark-theme .painel-kpis__titulo {
+  color: var(--mc-ink, #e6eef6);
+}

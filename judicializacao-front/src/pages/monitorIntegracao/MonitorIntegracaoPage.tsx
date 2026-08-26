@@ -288,13 +288,14 @@ export function MonitorIntegracaoPage() {
         </div>
 
         <DataTable
+          aria-label="Processos de integração"
           value={integracoesFiltradas}
           loading={carregando}
           dataKey="id"
           rowHover
           paginator
-          rows={10}
-          rowsPerPageOptions={[10, 20, 50]}
+          rows={100}
+          rowsPerPageOptions={[10, 20, 50, 100]}
           emptyMessage="Nenhuma integração cadastrada."
           onRowClick={(e) => abrirExecucoes(e.data as Integracao)}
           className="monitor-tabela"
@@ -316,12 +317,13 @@ export function MonitorIntegracaoPage() {
         onHide={() => setExecucoesVisible(false)}
       >
         <DataTable
+          aria-label="Execuções da integração selecionada"
           value={execucoes}
           loading={carregandoExecucoes}
           dataKey="id"
           paginator
-          rows={10}
-          rowsPerPageOptions={[10, 20, 50]}
+          rows={100}
+          rowsPerPageOptions={[10, 20, 50, 100]}
           emptyMessage="Nenhuma execução registrada."
         >
           <Column field="id" header="Id" style={{ width: '6rem' }} />

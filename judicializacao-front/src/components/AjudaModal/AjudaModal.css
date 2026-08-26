@@ -24,3 +24,8 @@
   font-size: 0.9rem;
 }
 .ajuda-modal__vazio a { color: #0F766E; }
+
+body.dark-theme .ajuda-modal__oquee { color: var(--mc-ink-2, #c6d2df); }
+body.dark-theme .ajuda-modal h4 { color: var(--mc-muted, #94a3b8); }
+body.dark-theme .ajuda-modal ul { color: var(--mc-ink, #e6eef6); }
+body.dark-theme .ajuda-modal__vazio { color: var(--mc-muted, #94a3b8); }
