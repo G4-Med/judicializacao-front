@@ -239,6 +239,7 @@ export function ConfiguracoesPage() {
 
       <div className="card">
         <DataTable
+          aria-label="Especialidades cadastradas"
           value={especialidadesExibidas}
           header={headerTabela('especialidade')}
           loading={loading}
@@ -252,6 +253,7 @@ export function ConfiguracoesPage() {
 
       <div className="card">
         <DataTable
+          aria-label="Subespecialidades cadastradas"
           value={subespecialidadesExibidas}
           header={headerTabela('subespecialidade')}
           loading={loading}
@@ -265,6 +267,7 @@ export function ConfiguracoesPage() {
 
       <div className="card">
         <DataTable
+          aria-label="Hospitais cadastrados"
           value={hospitaisExibidos}
           header={headerTabela('hospital')}
           loading={loading}
@@ -278,6 +281,7 @@ export function ConfiguracoesPage() {
 
       <div className="card">
         <DataTable
+          aria-label="Bancos cadastrados"
           value={bancosExibidos}
           header={headerTabela('banco')}
           loading={loading}

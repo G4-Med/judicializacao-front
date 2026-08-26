@@ -20,6 +20,8 @@ import {
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './SelecionarMedicoPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
 interface ProcessoResumo {
   id: number;
@@ -32,6 +34,8 @@ interface ProcessoResumo {
   refPreco: number;
   idMedico: number | null;
   medico: string;
+  slaMedicoEstourado: boolean | null;
+  slaMedicoHoras: number | null;
 }
 
 interface ProcessoResumoTableRow extends ProcessoResumo {
@@ -52,9 +56,9 @@ export function SelecionarMedicoPage() {
   const [selectedProcessos, setSelectedProcessos] = useState<ProcessoResumoTableRow[]>([]);
   const [medicosOptions, setMedicosOptions] = useState<MedicoOption[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(10);
-  const [sortField, setSortField] = useState<string | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [rows, setRows] = useState(100);
+  const [sortField, setSortField] = useState<string | undefined>('dias');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [dialogMassaVisible, setDialogMassaVisible] = useState(false);
   const [processoSelecionado, setProcessoSelecionado] = useState<ProcessoResumoTableRow | null>(null);
@@ -76,6 +80,8 @@ export function SelecionarMedicoPage() {
     medico: { value: '', matchMode: FilterMatchMode.CONTAINS },
     dias: { value: '', matchMode: FilterMatchMode.CONTAINS },
   });
+
+  const [visibleProcessos, setVisibleProcessos] = useState<ProcessoResumoTableRow[]>([]);
 
   const carregarDados = async () => {
     setLoading(true);
@@ -115,6 +121,8 @@ export function SelecionarMedicoPage() {
           medico:
             item.medico ??
             (item.idMedico ? medicosLookup.get(item.idMedico) ?? '' : ''),
+          slaMedicoEstourado: item.slaMedicoEstourado ?? null,
+          slaMedicoHoras: item.slaMedicoHoras ?? null,
         }))
       );
     } catch (error) {
@@ -138,21 +146,23 @@ export function SelecionarMedicoPage() {
     });
   }, [processos]);
 
+  useEffect(() => { setVisibleProcessos(dataComCamposCalculados); }, [dataComCamposCalculados]);
+
   const kpis = useMemo(() => {
-    const total = dataComCamposCalculados.length;
-    const somaRefPreco = dataComCamposCalculados.reduce(
+    const total = visibleProcessos.length;
+    const somaRefPreco = visibleProcessos.reduce(
       (acc, item) => acc + (item.refPreco ?? 0),
       0,
     );
     const valorMedio = total > 0 ? somaRefPreco / total : 0;
-    const maisAntigo = total > 0 ? Math.max(...dataComCamposCalculados.map((p) => p.dias)) : 0;
+    const maisAntigo = total > 0 ? Math.max(...visibleProcessos.map((p) => p.dias)) : 0;
 
     return {
       total,
       valorMedio,
       maisAntigo,
     };
-  }, [dataComCamposCalculados]);
+  }, [visibleProcessos]);
 
   const formatarMoeda = (valor: number) =>
     valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -308,6 +318,7 @@ export function SelecionarMedicoPage() {
 
   return (
     <div className="selecionar-medico-page">
+      <PrimeiraVisitaInfo etapaId="selecionar-medico" />
       <div className="page-header">
         <div>
           <h1>Selecionar Médico</h1>
@@ -348,6 +359,7 @@ export function SelecionarMedicoPage() {
 
       {readOnly && <ReadOnlyBanner />}
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -373,12 +385,20 @@ export function SelecionarMedicoPage() {
           <div className="kpi-value">{kpis.maisAntigo}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos aguardando seleção de médico</h2>
         <DataTable
+          aria-label="Pedidos aguardando seleção de médico"
           value={dataComCamposCalculados}
+          onValueChange={(value) => setVisibleProcessos(value as ProcessoResumoTableRow[])}
+          rowClassName={(rowData: ProcessoResumoTableRow) =>
+            rowData.slaMedicoEstourado ? 'linha-fora-sla' : ''
+          }
           dataKey="id"
           paginator
+          rowsPerPageOptions={[10, 20, 50, 100]}
           rows={rows}
           first={first}
           totalRecords={dataComCamposCalculados.length}

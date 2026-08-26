@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
-import type { DataTableFilterMeta } from 'primereact/datatable';
+import type { DataTableFilterMeta, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
@@ -19,6 +19,7 @@ import type {
   FinanceiroDetalhe,
 } from '../../services/api/financeiro';
 import './ResultadosFinanceirosPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 
 interface Anexo {
   id: number;
@@ -58,6 +59,9 @@ export function ResultadosFinanceirosPage() {
   const [anexosOrcamento, setAnexosOrcamento] = useState<Anexo[]>([]);
   const [anexosProtocolo, setAnexosProtocolo] = useState<Anexo[]>([]);
   const [carregandoAnexos, setCarregandoAnexos] = useState(false);
+
+  const [sortField, setSortField] = useState<string | undefined>('createDate');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(-1);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -201,6 +205,7 @@ export function ResultadosFinanceirosPage() {
         </div>
       </div>
 
+      <PainelKpis titulo="Cirurgias">
       <div className="kpi-grid kpi-grid-3">
         <div className="kpi-card kpi-card--ok">
           <div className="kpi-header">
@@ -224,7 +229,9 @@ export function ResultadosFinanceirosPage() {
           <div className="kpi-value">{kpis.qtdPerdas}</div>
         </div>
       </div>
+      </PainelKpis>
 
+      <PainelKpis titulo="Valores">
       <div className="kpi-grid kpi-grid-3">
         <div className="kpi-card kpi-card--ok">
           <div className="kpi-header">
@@ -248,15 +255,21 @@ export function ResultadosFinanceirosPage() {
           <div className="kpi-value">{formatarMoeda(kpis.valorPerdaCirurgia)}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Resultados financeiros</h2>
         <DataTable
+          aria-label="Resultados financeiros"
           value={linhas}
           loading={loading}
           dataKey="id"
           paginator
-          rows={10}
-          rowsPerPageOptions={[10, 20, 50]}
+          rows={100}
+          rowsPerPageOptions={[10, 20, 50, 100]}
+          sortField={sortField}
+          sortOrder={sortOrder}
+          onSort={(e: DataTableSortEvent) => { setSortField(e.sortField); setSortOrder(e.sortOrder); }}
           filters={filters}
           onFilter={(e) => setFilters(e.filters)}
           filterDisplay="row"

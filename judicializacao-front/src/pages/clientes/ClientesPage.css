@@ -591,7 +591,7 @@ body.dark-theme .assinatura-canvas {
   line-height: 1.5;
   padding: 10px 14px;
   background: var(--mc-surface-2, #f9fbfc);
-  border-left: 3px solid var(--mc-navy-700, #0a3d62);
+  border-left: 1px solid var(--mc-navy-700, #0a3d62);
   border-radius: 6px;
 }
 
@@ -749,4 +749,44 @@ body.dark-theme .assinatura-canvas {
 }
 .base-orcamento-pdf__upload-btn i {
   font-size: 0.95rem;
+}
+
+/* ---------- Status tags (ícone + cor padronizados) ---------- */
+.clientes-page .mc-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.clientes-page .mc-status-tag .p-tag-icon {
+  font-size: 0.85rem;
+}
+
+/* ---------- Filtro de coluna booleana (dropdown colorido) ---------- */
+.clientes-page .mc-status-filtro.p-dropdown {
+  min-width: 9rem;
+}
+.clientes-page .mc-status-filtro__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+/* ---------- Coluna "Dono" (G4MED vs Instituto Mateus) ---------- */
+.clientes-page .mc-origem-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.clientes-page .mc-origem-tag .pi-circle-fill {
+  font-size: 0.6rem;
+}
+.clientes-page .mc-origem-vazio {
+  color: var(--mc-muted, #5b6b7a);
+  font-size: 0.85rem;
+  font-style: italic;
 }

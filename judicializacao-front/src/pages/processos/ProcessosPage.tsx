@@ -24,6 +24,7 @@ import { EnviarOrcamentoDialog } from '../orcamentoMedico/EnviarOrcamentoDialog'
 import { useAccess } from '../../access/AccessContext';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import './ProcessosPage.css';
 
 const STATUS_PROCESSO_FALLBACK = [
@@ -68,6 +69,28 @@ const STATUS_PROCESSOS_BAIXADOS = [
   'Ganho',
   'Perda',
 ];
+
+// Quem é dono de cada status — espelha backend/funil.py FASES (em_curso_status
+// → dono), a fonte oficial do processo. Se o funil mudar de dono numa fase,
+// atualizar aqui junto (mesmo padrão já usado em SlaPage.tsx/DONO_COR).
+// EXCEÇÃO deliberada: o funil chama a fase 'recebido' de dono 'sistema'
+// (ninguém agiu ainda), mas 'Aguardando Juridico' é literalmente a fila de
+// trabalho da tela /juridico — mostrar 'Instituto Mateus' aqui é mais útil
+// para quem olha esta tabela do que o dono filosófico da fase.
+const STATUS_DONO: Record<string, string> = {
+  'Aguardando Juridico': 'Instituto Mateus',
+  'Aguardando Orçamento': 'G4MED + médico',
+  'Aguardando Protocolar': 'Instituto Mateus',
+  'Aguardando Resposta': 'Judiciário',
+  'Aguardando Resposta - Segredo de Justiça': 'Judiciário',
+};
+
+const DONO_COR: Record<string, string> = {
+  'Instituto Mateus': '#0F766E',
+  'G4MED': '#7C3AED',
+  'G4MED + médico': '#7C3AED',
+  'Judiciário': '#B45309',
+};
 
 interface Processo {
   id: number;
@@ -195,9 +218,9 @@ export function ProcessosPage() {
   const [visibleProcessos, setVisibleProcessos] = useState<ProcessoTableRow[]>([]);
   const [selectedProcessos, setSelectedProcessos] = useState<ProcessoTableRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(10);
-  const [sortField, setSortField] = useState<string | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [rows, setRows] = useState(100);
+  const [sortField, setSortField] = useState<string | undefined>('dias');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const massActionMenuRef = useRef<TieredMenu>(null);
   const [processoMenuSelecionado, setProcessoMenuSelecionado] = useState<ProcessoTableRow | null>(null);
   const rowActionMenuRef = useRef<TieredMenu>(null);
@@ -335,11 +358,24 @@ export function ProcessosPage() {
 
     try {
       if (action === 'juridico' && typeof extraValue === 'string') {
+        // Recusa exige o motivo REAL (não frase-carimbo): 100/100 recusas históricas
+        // tinham o mesmo texto hardcoded = zero informação. O texto alimenta a análise.
+        let obsRecusa: string | null = null;
+        if (extraValue === 'Não Cotar') {
+          const motivo = window.prompt(
+            'Descreva o motivo da recusa jurídica com suas palavras (mínimo 20 caracteres):'
+          );
+          if (!motivo || motivo.trim().length < 20) {
+            alert('Recusa não registrada: o motivo precisa ter pelo menos 20 caracteres.');
+            return;
+          }
+          obsRecusa = motivo.trim();
+        }
         await salvarJuridico(rowData.id, {
           nprocesso: rowData.nprocesso || null,
           statusJuridico: extraValue,
           orcamentos: null,
-          obs: extraValue === 'Não Cotar' ? 'Juridico falou para nao cotar' : null,
+          obs: obsRecusa,
         });
         setProcessoMenuSelecionado(null);
         await carregarDados();
@@ -596,13 +632,28 @@ ${linhasAnexos}
     setExecutandoAcaoMassa(true);
     try {
       if (tipo === 'juridico') {
+        // Recusa em LOTE também exige motivo real (nunca frase-carimbo) — 1 motivo
+        // declarado vale para todos os selecionados, e o operador sabe disso.
+        let obsRecusaLote: string | null = null;
+        if (valor === 'Não Cotar') {
+          const motivo = window.prompt(
+            `Motivo da recusa jurídica (mínimo 20 caracteres) — será aplicado aos ` +
+            `${selectedProcessos.length} processos selecionados:`
+          );
+          if (!motivo || motivo.trim().length < 20) {
+            alert('Recusa não registrada: o motivo precisa ter pelo menos 20 caracteres.');
+            setExecutandoAcaoMassa(false);
+            return;
+          }
+          obsRecusaLote = motivo.trim();
+        }
         await Promise.all(
           selectedProcessos.map((processo) =>
             salvarJuridico(processo.id, {
               nprocesso: processo.nprocesso || null,
               statusJuridico: valor,
               orcamentos: null,
-              obs: valor === 'Não Cotar' ? 'Juridico falou para nao cotar' : null,
+              obs: obsRecusaLote,
             })
           )
         );
@@ -768,7 +819,19 @@ ${linhasAnexos}
 
 
   const statusBodyTemplate = (rowData: ProcessoTableRow, field: 'status' | 'statusJuridico' | 'statusMedico') => {
-    return <Tag value={rowData[field]} style={getStatusTagStyle(rowData[field])} className="status-tag-custom" />;
+    const dono = field === 'status' ? STATUS_DONO[rowData[field]] : undefined;
+    return (
+      <span className="processos-status-cell">
+        <Tag value={rowData[field]} style={getStatusTagStyle(rowData[field])} className="status-tag-custom" />
+        {dono && (
+          <span
+            className="processos-dono-dot"
+            style={{ background: DONO_COR[dono] ?? '#94a3b8' }}
+            title={`Dono desta fase: ${dono}`}
+          />
+        )}
+      </span>
+    );
   };
 
   const precoBodyTemplate = (rowData: ProcessoTableRow) => {
@@ -1368,8 +1431,11 @@ ${linhasAnexos}
 
 
 
-  const kpis = useMemo(() => calcularKpis(dataComCamposCalculados), [dataComCamposCalculados]);
-  const kpisExportacao = useMemo(() => calcularKpis(visibleProcessos), [visibleProcessos]);
+  // Os cards devem refletir o que está FILTRADO na tabela, não a base inteira —
+  // visibleProcessos é o conjunto pós-filtro que a DataTable já mantém via
+  // onValueChange (era usado só na exportação; os cards liam a base crua).
+  const kpis = useMemo(() => calcularKpis(visibleProcessos), [visibleProcessos]);
+  const kpisExportacao = kpis;
 
 
 
@@ -1841,6 +1907,7 @@ ${linhasAnexos}
         </div>
       </div>
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -1906,6 +1973,17 @@ ${linhasAnexos}
           <div className="kpi-value">{kpis.aguardandoRespostas}</div>
         </div>
       </div>
+      </PainelKpis>
+
+      <div className="processos-dono-legenda">
+        <span>quem é dono de cada status:</span>
+        {Object.entries(DONO_COR).filter(([nome]) => nome !== 'G4MED').map(([nome, cor]) => (
+          <span key={nome} className="processos-dono-legenda__item">
+            <span className="processos-dono-dot" style={{ background: cor }} />
+            {nome}
+          </span>
+        ))}
+      </div>
 
       <TieredMenu
         model={rowActionItems}
@@ -1929,10 +2007,13 @@ ${linhasAnexos}
       />
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Todos os processos — status, valor de referência e responsável por cada etapa</h2>
         <DataTable
+          aria-label="Todos os processos — status, valor de referência e responsável por cada etapa"
           value={dataComCamposCalculados}
           dataKey="id"
           paginator
+          rowsPerPageOptions={[10, 20, 50, 100]}
           lazy={false}
           rows={rows}
           first={first}

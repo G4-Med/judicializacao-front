@@ -11,6 +11,9 @@ export const getEspecialidades = () => api.get('/client/especialidades/');
 export const getSubespecialidades = () => api.get('/client/subespecialidades/');
 export const getHospitais = () => api.get('/client/hospitais/');
 export const getBancos = () => api.get('/client/bancos/');
+export const getStatusOrcamentoPersonalizado = () => api.get('/client/status-orcamento-personalizado/');
+export const criarStatusOrcamentoPersonalizado = (nome: string) =>
+  api.post('/client/status-orcamento-personalizado/', { nome });
 
 // ── DadosMedico ─────────────────────────────────────────
 export const getDadosMedico = (idMedico: number) => api.get(`/client/dados-medico/?idMedico=${idMedico}`);

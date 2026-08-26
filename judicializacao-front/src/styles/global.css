@@ -45,3 +45,114 @@ body,
 
 /* Padronização: nomes de procedimento sempre em CAIXA ALTA nas tabelas. */
 .col-procedimento-upper, .col-procedimento-upper * { text-transform: uppercase; }
+
+/* Linha fora do prazo (SLA) — reutilizado nas telas de Protocolos (Juridico,
+   Orcamento Medico) que destacam quando um item passou da meta de dias
+   daquela fase. Ver backend/funil.py FASES para a meta de cada fase. */
+.p-datatable .linha-fora-sla > td {
+  background: #fef2f2 !important;
+  border-left: 3px solid #dc2626;
+  color: #7f1d1d;
+}
+.p-datatable .linha-fora-sla:hover > td {
+  background: #fee2e2 !important;
+}
+/* No claro o fundo é rosa-claro + texto escuro (contraste ok). No escuro
+   o MESMO rosa-claro ficava fixo (nunca tinha override) com o texto claro
+   herdado do tema — texto claro sobre fundo claro no meio de uma tela
+   escura, quase ilegível. Aqui o fundo vira um vermelho translúcido sobre
+   a superfície escura normal, com texto claro — mesma semântica (linha em
+   alerta), contraste correto nos dois temas. */
+body.dark-theme .p-datatable .linha-fora-sla > td {
+  background: rgba(220, 38, 38, 0.18) !important;
+  color: var(--mc-ink, #e6eef6);
+}
+body.dark-theme .p-datatable .linha-fora-sla:hover > td {
+  background: rgba(220, 38, 38, 0.26) !important;
+}
+
+/* Legenda visível acima de cada tabela de dados — identifica o que ela lista.
+   Mesmo padrão de faixa-de-cabeçalho já usado em Configurações (.table-header):
+   fundo mc-surface-2 + borda inferior, encostada nas bordas do .card (que já
+   tem overflow:hidden e zero padding — a faixa "cola" nos cantos arredondados). */
+.mc-tabela-titulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 16px 20px;
+  background: var(--mc-surface-2, #f9fbfc);
+  border-bottom: 1px solid var(--mc-border, #e3eaef);
+  font-family: var(--mc-font-heading, "Poppins", sans-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--mc-navy-900, #062a45);
+}
+.mc-tabela-titulo .pi {
+  font-size: 1rem;
+  color: var(--mc-green-500, #00a651);
+}
+body.dark-theme .mc-tabela-titulo {
+  background: #0b1826;
+  color: #e2e8f0;
+  border-bottom-color: #1e293b;
+}
+
+/* ---------- Dark mode GLOBAL para componentes PrimeReact ----------
+   Cobertura de base p/ toda tabela/paginador/dropdown/dialog do app —
+   várias páginas (SLA, Funil, Aguardando Cirurgia, Monitor Integração,
+   Resultados Financeiros, Relatório Resumido, Processo Operacional)
+   não tinham NENHUM override próprio de dark-theme: o tema Lara-light
+   do PrimeReact ficava fixo (fundo branco) mesmo com o resto da tela
+   escura — cabeçalho de tabela/paginador virava um retângulo branco
+   cru no meio da página escura. Especificidade baixa de propósito:
+   um override por-página (ex: `.processos-table .p-datatable-thead`)
+   continua vencendo esta regra genérica quando existir. */
+body.dark-theme .p-datatable .p-datatable-thead > tr > th,
+body.dark-theme .p-datatable .p-datatable-header,
+body.dark-theme .p-paginator {
+  background: var(--mc-surface-2, #0d1b2a);
+  color: var(--mc-ink, #e6eef6);
+  border-color: var(--mc-border, #1e2d42);
+}
+body.dark-theme .p-datatable .p-datatable-tbody > tr {
+  background: var(--mc-surface, #0f1f33);
+  color: var(--mc-ink, #e6eef6);
+}
+body.dark-theme .p-datatable .p-datatable-tbody > tr:hover {
+  background: var(--mc-surface-2, #142841);
+}
+body.dark-theme .p-datatable .p-datatable-tbody > tr > td {
+  border-color: var(--mc-border, #1e2d42);
+  color: var(--mc-ink-2, #c6d2df);
+}
+body.dark-theme .p-paginator .p-paginator-page,
+body.dark-theme .p-paginator .p-paginator-first,
+body.dark-theme .p-paginator .p-paginator-prev,
+body.dark-theme .p-paginator .p-paginator-next,
+body.dark-theme .p-paginator .p-paginator-last,
+body.dark-theme .p-paginator .p-dropdown {
+  background: transparent;
+  color: var(--mc-ink, #e6eef6);
+  border-color: var(--mc-border, #1e2d42);
+}
+body.dark-theme .p-dropdown-panel,
+body.dark-theme .p-dialog,
+body.dark-theme .p-dialog-header,
+body.dark-theme .p-dialog-content,
+body.dark-theme .p-dialog-footer {
+  background: var(--mc-surface, #0f1f33);
+  color: var(--mc-ink, #e6eef6);
+  border-color: var(--mc-border, #1e2d42);
+}
+body.dark-theme .p-dropdown-item:hover {
+  background: var(--mc-surface-2, #142841);
+}
+body.dark-theme .p-inputtext,
+body.dark-theme .p-dropdown,
+body.dark-theme .p-multiselect {
+  background: var(--mc-surface, #0f1f33);
+  color: var(--mc-ink, #e6eef6);
+  border-color: var(--mc-border, #1e2d42);
+}

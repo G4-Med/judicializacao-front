@@ -40,6 +40,51 @@ interface PerdaResumo {
   refPreco?: number | null;
 }
 
+// Painel colapsável da home (mandato @R 22/08): painéis nascem FECHADOS — o hover
+// destaca o cabeçalho e o clique abre/fecha. `extras` (busca/badge) só aparecem
+// abertos e não disparam o toggle (stopPropagation).
+function PainelColapsavel({
+  titulo,
+  sub,
+  extras,
+  className,
+  children,
+}: {
+  titulo: string;
+  sub?: string;
+  extras?: React.ReactNode;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const [aberto, setAberto] = useState(false);
+  return (
+    <section className={`home-collapse ${aberto ? 'home-collapse--open' : ''} ${className ?? ''}`}>
+      <div className="home-collapse__head">
+        <button
+          type="button"
+          className="home-collapse__toggle"
+          onClick={() => setAberto((v) => !v)}
+          aria-expanded={aberto}
+        >
+          <span className="home-collapse__chevron">
+            <i className={`pi ${aberto ? 'pi-chevron-down' : 'pi-chevron-right'}`} />
+          </span>
+          <span className="home-collapse__titles">
+            <span className="home-panel__title">{titulo}</span>
+            {sub && <span className="home-panel__sub">{sub}</span>}
+          </span>
+        </button>
+        {aberto && extras && (
+          <div className="home-collapse__extras" onClick={(e) => e.stopPropagation()}>
+            {extras}
+          </div>
+        )}
+      </div>
+      {aberto && <div className="home-collapse__body">{children}</div>}
+    </section>
+  );
+}
+
 interface CardMesVida {
   titulo: string;
   icone: string;
@@ -553,12 +598,11 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="home-block">
-        <div className="home-block__header">
-          <h2>Visão mensal x histórico</h2>
-          <p>Valor principal do mês atual com apoio do número acumulado de toda a base.</p>
-        </div>
-
+      <PainelColapsavel
+        titulo="Visão mensal x histórico"
+        sub="Valor principal do mês atual com apoio do número acumulado de toda a base."
+        className="home-block"
+      >
         <div className="home-grid home-grid--four">
           {indicadores.cardsMesVida.map((card, index) => (
             <article key={card.titulo} className={`home-card home-card--metric home-card--count ${metricCardVariants[index] ?? 'home-card--navy'}`}>
@@ -568,6 +612,7 @@ export function HomePage() {
                   <i className={card.icone} />
                 </div>
               </div>
+              <span className="home-card__period">Mês atual</span>
               <div className="home-card__metric">{loading ? '--' : card.valorMes}</div>
               <div className="home-card__meta">
                 <span>Vida toda:</span>
@@ -576,14 +621,15 @@ export function HomePage() {
             </article>
           ))}
         </div>
-      </section>
+      </PainelColapsavel>
 
-      <section className="home-block">
-        <div className="home-block__header">
-          <h2>Valores e conversão</h2>
-          <p>Valor financeiro em destaque com a quantidade de processos correspondente embaixo.</p>
-        </div>
-
+      <PainelColapsavel
+        titulo="Valores e conversão"
+        sub="Vida toda (não é o mês). Ganho/Perda/Conversão conta só quem chegou a disputar preço com o
+        Estado — os pedidos recusados antes de orçar (jurídico/médico/especialista) ficam no painel acima,
+        em 'QTDE Pedidos Recusados', e não entram aqui."
+        className="home-block"
+      >
         <div className="home-grid home-grid--four">
           {indicadores.cardsValorQuantidade.map((card, index) => (
             <article key={card.titulo} className={`home-card home-card--metric ${valueCardVariants[index] ?? 'home-card--navy'}`}>
@@ -593,6 +639,7 @@ export function HomePage() {
                   <i className={card.icone} />
                 </div>
               </div>
+              <span className="home-card__period">Vida toda (acumulado)</span>
               <div className="home-card__metric">
                 {loading
                   ? '--'
@@ -600,10 +647,13 @@ export function HomePage() {
                     ? formatPercent(card.valorPrincipal)
                     : formatCurrency(card.valorPrincipal)}
               </div>
+              {card.percentual && (
+                <div className="home-card__submeta">por valor (R$ ganho ÷ R$ ganho+perdido)</div>
+              )}
               <div className="home-card__meta">
                 {card.percentual ? (
                   <>
-                    <span>ganho / (ganho + perda)</span>
+                    <span>por quantidade de processos</span>
                     <strong>{loading ? '--' : `${card.quantidade}%`}</strong>
                   </>
                 ) : (
@@ -616,17 +666,13 @@ export function HomePage() {
             </article>
           ))}
         </div>
-      </section>
+      </PainelColapsavel>
 
-      <section className="home-panel home-panel--chart">
-        <div className="home-panel__head">
-          <div>
-            <div className="home-panel__title">Perdas ao longo do tempo</div>
-            <div className="home-panel__sub">
-              Valor perdido e quantidade de processos por {serieTemporal.granularidade}. Use a busca
-              para focar um procedimento específico.
-            </div>
-          </div>
+      <PainelColapsavel
+        titulo="Perdas ao longo do tempo"
+        sub={`Valor perdido e quantidade de processos por ${serieTemporal.granularidade}. Use a busca para focar um procedimento específico.`}
+        className="home-panel home-panel--chart"
+        extras={
           <span className="home-search">
             <i className="pi pi-search" />
             <InputText
@@ -646,8 +692,8 @@ export function HomePage() {
               </button>
             )}
           </span>
-        </div>
-
+        }
+      >
         {serieTemporal.labels.length === 0 ? (
           <div className="home-empty-state">
             {buscaProcedimento
@@ -667,19 +713,14 @@ export function HomePage() {
             </div>
           </>
         )}
-      </section>
+      </PainelColapsavel>
 
-      <section className="home-panel home-panel--chart">
-        <div className="home-panel__head">
-          <div>
-            <div className="home-panel__title">Análise de perdas por procedimento</div>
-            <div className="home-panel__sub">
-              Orçamento enviado x orçamento ganho nos procedimentos perdidos mais recentes.
-            </div>
-          </div>
-          <div className="home-panel__badge">Top 10 recentes</div>
-        </div>
-
+      <PainelColapsavel
+        titulo="Análise de perdas por procedimento"
+        sub="Orçamento enviado x orçamento ganho nos procedimentos perdidos mais recentes."
+        className="home-panel home-panel--chart"
+        extras={<div className="home-panel__badge">Top 10 recentes</div>}
+      >
         <div className="home-chart-legend">
           <span><i className="home-chart-legend__dot home-chart-legend__dot--orcamento" /> Orçamento enviado</span>
           <span><i className="home-chart-legend__dot home-chart-legend__dot--ganho" /> Orçamento ganho</span>
@@ -727,7 +768,7 @@ export function HomePage() {
             </div>
           </div>
         )}
-      </section>
+      </PainelColapsavel>
     </div>
   );
 }

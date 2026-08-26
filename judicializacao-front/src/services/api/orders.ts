@@ -11,6 +11,10 @@ export const salvarJuridico = (id: number, data: any) => api.post(`/orders/jurid
 export const getOrcamentoMedico = () => api.get('/orders/orcamento-medico/');
 export const salvarOrcamentoMedico = (id: number, data: any) => api.post(`/orders/orcamento-medico/${id}/salvar/`, data);
 export const marcarSemProfissional = (id: number) => api.post(`/orders/orcamento-medico/${id}/sem-profissional/`);
+export const aplicarStatusOrcamentoManual = (id: number, status: string) =>
+  api.post(`/orders/orcamento-medico/${id}/status-manual/`, { status });
+export const trocarMedicoOrcamento = (id: number, idMedico: number) =>
+  api.post(`/orders/orcamento-medico/${id}/trocar-medico/`, { idMedico });
 export const getParaProtocolar = () => api.get('/orders/para-protocolar/');
 export const salvarProtocolar = (id: number, data: any) => api.post(`/orders/para-protocolar/${id}/salvar/`, data);
 export const getSegredoJustica = () => api.get('/orders/segredo-justica/');
@@ -21,6 +25,9 @@ export const adicionarAcompanhamento = (id: number, data: any) => api.post(`/ord
 export const getResultados = () => api.get('/orders/resultados/');
 export const getPerdas = () => api.get('/orders/perdas/');
 export const getMedicosCompleto = () => api.get('client/medico-completo/lista/');
+export const getRelatorioResumido = (medicoId: number) => api.get(`/relatorios/resumido/${medicoId}/`);
+export const enviarRelatorioResumido = (medicoId: number, destinatario?: string) =>
+  api.post(`/relatorios/resumido/${medicoId}/enviar/`, destinatario ? { destinatario } : {});
 export const getEmailsPendentes = (params?: { status?: string; tipoEmail?: string }) =>
   api.get('/orders/emails/', { params });
 export const getEmailsPendentesKpis = () => api.get('/orders/emails/kpis/');
@@ -147,3 +154,55 @@ export interface ExtrairEmailResposta {
 
 export const extrairEmail = (corpoEmail: string) =>
   api.post<ExtrairEmailResposta>('/ia/extrair-email/', { corpo_email: corpoEmail });
+
+/**
+ * Baixa o orçamento CONSOLIDADO: o backend junta todos os anexos do tipo
+ * ORCAMENTO num único PDF (e comprime se estourar o limite do e-mail).
+ * `responseType: 'blob'` é obrigatório — sem ele o axios trata o PDF como
+ * texto e o arquivo chega corrompido.
+ */
+export const getOrcamentoConsolidado = (orderId: number) =>
+  api.get(`/orders/${orderId}/orcamento-consolidado/`, { responseType: 'blob' });
+
+/**
+ * PDF-comprovante do e-mail de recebimento da solicitação (De/Para/Cc/Data/
+ * Assunto/corpo/anexos). Se o pedido é anterior a 25/08/2026 (sem .eml
+ * arquivado), o backend reconstrói com os dados que tinha e rotula como tal.
+ */
+export const getEmailRecebimentoPdf = (orderId: number) =>
+  api.get(`/orders/${orderId}/email-recebimento-pdf/`, { responseType: 'blob' });
+
+/**
+ * O funil: cada fase medida, onde o pedido morre e por quê.
+ * `periodo` ∈ mensal | trimestral | semestral | anual | custom
+ * (custom exige inicio e fim em AAAA-MM-DD).
+ */
+export const getFunil = (params: {
+  periodo?: string; janelas?: number; inicio?: string; fim?: string;
+} = {}) => api.get('/funil/', { params });
+
+// SLA — os 4 endpoints. Índices/por-médico/estourados são agregados; a
+// trajetória é por pedido (o "o que aconteceu com ESTE processo").
+export const getSlaIndices = (params: {
+  periodo?: string; janelas?: number; inicio?: string; fim?: string;
+} = {}) => api.get('/sla/indices/', { params });
+
+export const getSlaPorMedico = () => api.get('/sla/por-medico/');
+
+export const getSlaEstourados = () => api.get('/sla/estourados/');
+
+export const getNotificacoesCentral = () => api.get('/notificacoes/central/');
+
+export const getSlaTrajetoria = (orderId: number) =>
+  api.get(`/orders/${orderId}/trajetoria/`);
+
+// Detalhe do funil — a lista por trás de cada número, com filtros.
+// `formato: 'csv'` NÃO passa por aqui: o download usa a URL direta com o
+// token, porque o navegador precisa receber o arquivo como anexo.
+export const getFunilDetalhe = (params: Record<string, string | number> = {}) =>
+  api.get('/funil/detalhe/', { params });
+
+// Download do CSV: precisa do cabeçalho de autenticação, então NÃO dá para
+// usar um <a href> simples — busca como blob e o componente entrega ao usuário.
+export const baixarFunilCsv = (params: Record<string, string | number> = {}) =>
+  api.get('/funil/detalhe/', { params: { ...params, formato: 'csv' }, responseType: 'blob' });

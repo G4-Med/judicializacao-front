@@ -28,6 +28,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { useAccess } from '../../access/AccessContext';
 import './ClientesPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 
 interface Cliente {
   id: number;
@@ -46,6 +47,7 @@ interface Cliente {
   grupoWhatsapp: string;
   takeRate: number | null;
   modoValidacao: string;
+  origemCliente: string;
   status: boolean;
   emailAcesso: string;
   contrato: boolean;
@@ -152,6 +154,7 @@ const clienteInicial: ClienteTableRow = {
   grupoWhatsapp: '',
   takeRate: null,
   modoValidacao: '',
+  origemCliente: '',
   status: true,
   emailAcesso: '',
   contrato: false,
@@ -203,9 +206,9 @@ export function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [selectedClientes, setSelectedClientes] = useState<ClienteTableRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(10);
-  const [sortField, setSortField] = useState<string | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [rows, setRows] = useState(100);
+  const [sortField, setSortField] = useState<string | undefined>('createDate');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(-1);
   const [createDialogVisible, setCreateDialogVisible] = useState(false);
   const [novoCliente, setNovoCliente] = useState<ClienteTableRow>(clienteInicial);
   const [usuarioCadastrado, setUsuarioCadastrado] = useState(false);
@@ -259,9 +262,10 @@ export function ClientesPage() {
     nomeSistema: { value: '', matchMode: FilterMatchMode.CONTAINS },
     crm: { value: '', matchMode: FilterMatchMode.CONTAINS },
     especialidade: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    status: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    contrato: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    procuracao: { value: '', matchMode: FilterMatchMode.CONTAINS }
+    status: { value: '', matchMode: FilterMatchMode.EQUALS },
+    contrato: { value: '', matchMode: FilterMatchMode.EQUALS },
+    procuracao: { value: '', matchMode: FilterMatchMode.EQUALS },
+    origemCliente: { value: '', matchMode: FilterMatchMode.EQUALS }
   });
 
 
@@ -284,6 +288,36 @@ export function ClientesPage() {
     { label: 'Ativo', value: true },
     { label: 'Inativo', value: false }
   ];
+
+  // Mesmo padrão de cores já usado em Processos/SLA (STATUS_DONO/DONO_COR).
+  const ORIGEM_COR: Record<string, string> = {
+    INSTITUTO_MATEUS: '#0F766E',
+    G4MED: '#7C3AED'
+  };
+
+  const origemOptions = [
+    { label: 'Instituto Mateus', value: 'INSTITUTO_MATEUS' },
+    { label: 'G4MED', value: 'G4MED' }
+  ];
+
+  const origemFiltroOpcoes = [
+    { label: 'Todos', value: null, icon: 'pi pi-list', cor: '#5b6b7a' },
+    { label: 'Instituto Mateus', value: 'INSTITUTO_MATEUS', icon: 'pi pi-circle-fill', cor: '#0F766E' },
+    { label: 'G4MED', value: 'G4MED', icon: 'pi pi-circle-fill', cor: '#7C3AED' }
+  ];
+
+  const getOrigemTag = (value: string) => {
+    if (!value || !ORIGEM_COR[value]) {
+      return <span className="mc-origem-vazio">— não definido</span>;
+    }
+    const label = value === 'INSTITUTO_MATEUS' ? 'Instituto Mateus' : 'G4MED';
+    return (
+      <span className="mc-origem-tag">
+        <i className="pi pi-circle-fill" style={{ color: ORIGEM_COR[value] }} />
+        {label}
+      </span>
+    );
+  };
 
   const tipoContaOptions = [
     { label: 'Conta Corrente', value: 'Conta Corrente' },
@@ -321,6 +355,7 @@ export function ClientesPage() {
       keywords: m.keywords ?? '',
       grupoWhatsapp: m.grupoWhatsapp ?? '',
       takeRate: m.takeRate !== null && m.takeRate !== undefined ? Number(m.takeRate) : null,
+      origemCliente: m.origemCliente ?? '',
       status: m.status,
       createDate: m.createDate?.split('T')[0] ?? '',
       updateDate: m.updateDate?.split('T')[0] ?? '',
@@ -421,11 +456,65 @@ export function ClientesPage() {
   };
 
   const getBooleanTag = (value: boolean) => {
-    return <Tag value={value ? 'Ativo' : 'Inativo'} severity={value ? 'success' : 'danger'} />;
+    return (
+      <Tag
+        value={value ? 'Ativo' : 'Inativo'}
+        icon={value ? 'pi pi-check-circle' : 'pi pi-times-circle'}
+        severity={value ? 'success' : 'danger'}
+        className="mc-status-tag"
+      />
+    );
   };
 
   const getDocumentoTag = (value: boolean) => {
-    return <Tag value={value ? 'Enviado' : 'Não enviado'} severity={value ? 'success' : 'danger'} />;
+    return (
+      <Tag
+        value={value ? 'Enviado' : 'Não enviado'}
+        icon={value ? 'pi pi-check-circle' : 'pi pi-times-circle'}
+        severity={value ? 'success' : 'danger'}
+        className="mc-status-tag"
+      />
+    );
+  };
+
+  const BOOLEAN_FILTRO_OPCOES = [
+    { label: 'Todos', value: null, icon: 'pi pi-list', cor: '#5b6b7a' },
+    { label: 'Ativo', value: true, icon: 'pi pi-check-circle', cor: '#16a34a' },
+    { label: 'Inativo', value: false, icon: 'pi pi-times-circle', cor: '#dc2626' }
+  ];
+
+  const DOCUMENTO_FILTRO_OPCOES = [
+    { label: 'Todos', value: null, icon: 'pi pi-list', cor: '#5b6b7a' },
+    { label: 'Enviado', value: true, icon: 'pi pi-check-circle', cor: '#16a34a' },
+    { label: 'Não enviado', value: false, icon: 'pi pi-times-circle', cor: '#dc2626' }
+  ];
+
+  const booleanFilterElement = (
+    options: any,
+    opcoes: { label: string; value: string | boolean | null; icon: string; cor: string }[]
+  ) => {
+    return (
+      <Dropdown
+        value={options.value ?? null}
+        options={opcoes}
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Todos"
+        showClear={false}
+        className="mc-status-filtro"
+        onChange={(e) => options.filterApplyCallback(e.value === null ? '' : e.value)}
+        itemTemplate={(opt) => (
+          <span className="mc-status-filtro__item" style={{ color: opt.cor }}>
+            <i className={opt.icon} /> {opt.label}
+          </span>
+        )}
+        valueTemplate={(opt) => (
+          <span className="mc-status-filtro__item" style={{ color: opt ? opt.cor : '#5b6b7a' }}>
+            <i className={opt ? opt.icon : 'pi pi-list'} /> {opt ? opt.label : 'Todos'}
+          </span>
+        )}
+      />
+    );
   };
 
 const editarBodyTemplate = (rowData: ClienteTableRow) => {
@@ -778,6 +867,11 @@ const handleSalvarCadastro = async () => {
       return;
     }
 
+    if (!novoCliente.origemCliente) {
+      alert('Selecione o Dono do cliente (G4MED ou Instituto Mateus).');
+      return;
+    }
+
     const { data: medico } = await createMedico({
       nomeCompleto: nomeCompletoMedico,
       nomeSistema: novoCliente.nomeSistema,
@@ -787,6 +881,7 @@ const handleSalvarCadastro = async () => {
       grupoWhatsapp: novoCliente.grupoWhatsapp,
       takeRate: novoCliente.takeRate,
       status: novoCliente.status,
+      origemCliente: novoCliente.origemCliente || null,
     });
 
     const idMedico = medico.id;
@@ -894,6 +989,7 @@ const handleSalvarEdicao = async () => {
       grupoWhatsapp: clienteEditando.grupoWhatsapp,
       takeRate: clienteEditando.takeRate,
       status: clienteEditando.status,
+      origemCliente: clienteEditando.origemCliente || null,
     });
 
     const [dadosMed, empresa, pessoais, bancarios] = await Promise.all([
@@ -1385,6 +1481,7 @@ const handleSalvarEdicao = async () => {
         </div>}
       </div>
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid kpi-grid-4">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -1418,12 +1515,16 @@ const handleSalvarEdicao = async () => {
           <div className="kpi-value">{kpis.faltaDocumentacao}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Médicos cadastrados como cliente — dados, contrato e procuração</h2>
         <DataTable
+          aria-label="Médicos cadastrados como cliente — dados, contrato e procuração"
           value={dataComSequencial}
           dataKey="id"
           paginator
+          rowsPerPageOptions={[10, 20, 50, 100]}
           rows={rows}
           first={first}
           totalRecords={dataComSequencial.length}
@@ -1489,13 +1590,25 @@ const handleSalvarEdicao = async () => {
           />
 
           <Column
+            field="origemCliente"
+            header="Dono"
+            sortable
+            filter
+            showFilterMenu={false}
+            filterElement={(options) => booleanFilterElement(options, origemFiltroOpcoes)}
+            body={(rowData: ClienteTableRow) => getOrigemTag(rowData.origemCliente)}
+            style={{ minWidth: '11rem' }}
+          />
+
+          <Column
             field="status"
             header="Status"
             sortable
             filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
+            showFilterMenu={false}
+            filterElement={(options) => booleanFilterElement(options, BOOLEAN_FILTRO_OPCOES)}
             body={(rowData: ClienteTableRow) => getBooleanTag(rowData.status)}
-            style={{ minWidth: '6rem' }}
+            style={{ minWidth: '9rem' }}
           />
 
           <Column
@@ -1503,9 +1616,10 @@ const handleSalvarEdicao = async () => {
             header="Contrato"
             sortable
             filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
+            showFilterMenu={false}
+            filterElement={(options) => booleanFilterElement(options, DOCUMENTO_FILTRO_OPCOES)}
             body={(rowData: ClienteTableRow) => getDocumentoTag(rowData.contrato)}
-            style={{ minWidth: '6 rem' }}
+            style={{ minWidth: '10rem' }}
           />
 
           <Column
@@ -1513,9 +1627,10 @@ const handleSalvarEdicao = async () => {
             header="Procuração"
             sortable
             filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
+            showFilterMenu={false}
+            filterElement={(options) => booleanFilterElement(options, DOCUMENTO_FILTRO_OPCOES)}
             body={(rowData: ClienteTableRow) => getDocumentoTag(rowData.procuracao)}
-            style={{ minWidth: '6rem' }}
+            style={{ minWidth: '10rem' }}
           />
 
           <Column
@@ -1581,6 +1696,10 @@ const handleSalvarEdicao = async () => {
               <div className="field">
                 <label>Status</label>
                 <Dropdown value={novoCliente.status} options={statusOptions} optionLabel="label" onChange={(e) => updateNovoCliente('status', e.value)} itemTemplate={statusTemplate} valueTemplate={statusTemplate} placeholder="Selecione" />
+              </div>
+              <div className="field">
+                <label>Dono do cliente</label>
+                <Dropdown value={novoCliente.origemCliente} options={origemOptions} optionLabel="label" onChange={(e) => updateNovoCliente('origemCliente', e.value)} placeholder="Selecione" />
               </div>
 
               <div className="field field-span-4 cadastrar-usuario-row">
@@ -1749,6 +1868,7 @@ const handleSalvarEdicao = async () => {
                     />
                   </div>
                   <div className="field"><label>Status</label><Dropdown value={clienteEditando.status} options={statusOptions} optionLabel="label" onChange={(e) => updateClienteEditando('status', e.value)} itemTemplate={statusTemplate} valueTemplate={statusTemplate} placeholder="Selecione" /></div>
+                  <div className="field"><label>Dono do cliente</label><Dropdown value={clienteEditando.origemCliente} options={origemOptions} optionLabel="label" onChange={(e) => updateClienteEditando('origemCliente', e.value)} placeholder="Selecione" /></div>
 
                   <div className="field field-span-4 cadastrar-usuario-row">
                     <Button

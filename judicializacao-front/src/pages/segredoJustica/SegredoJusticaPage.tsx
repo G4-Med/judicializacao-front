@@ -18,6 +18,8 @@ import { getStatusTagStyle } from '../../utils/statusTag';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import { useAccess } from '../../access/AccessContext';
 import './SegredoJusticaPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
 interface DocumentoProcesso {
   label: string;
@@ -53,7 +55,7 @@ interface SegredoJusticaTableRow extends SegredoJustica {
   dias: number;
 }
 
-type ResultadoType = 'ganho' | 'perda' | '';
+type ResultadoType = 'ganho' | 'perda' | 'habilitacao' | '';
 
 export function SegredoJusticaPage() {
   const { isReadOnly } = useAccess();
@@ -61,9 +63,9 @@ export function SegredoJusticaPage() {
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<SegredoJustica[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(10);
-  const [sortField, setSortField] = useState<string | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [rows, setRows] = useState(100);
+  const [sortField, setSortField] = useState<string | undefined>('dias');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -74,6 +76,8 @@ export function SegredoJusticaPage() {
     status: { value: '', matchMode: FilterMatchMode.CONTAINS },
     resultado: { value: '', matchMode: FilterMatchMode.CONTAINS }
   });
+
+  const [visibleProcessos, setVisibleProcessos] = useState<SegredoJusticaTableRow[]>([]);
 
   const [updateDialogVisible, setUpdateDialogVisible] = useState(false);
   const [registroAtualizando, setRegistroAtualizando] = useState<SegredoJusticaTableRow | null>(null);
@@ -136,15 +140,17 @@ useEffect(() => { carregarDados(); }, []);
     });
   }, [registros]);
 
+  useEffect(() => { setVisibleProcessos(dataComCamposCalculados); }, [dataComCamposCalculados]);
+
   const kpis = useMemo(() => {
-    const totalProcessos = dataComCamposCalculados.length;
+    const totalProcessos = visibleProcessos.length;
     const mediaProcessos = totalProcessos
       ? Math.round(
-          dataComCamposCalculados.reduce((acc, item) => acc + item.dias, 0) / totalProcessos
+          visibleProcessos.reduce((acc, item) => acc + item.dias, 0) / totalProcessos
         )
       : 0;
 
-    const valorTotal = dataComCamposCalculados.reduce((acc, item) => acc + item.valor, 0);
+    const valorTotal = visibleProcessos.reduce((acc, item) => acc + item.valor, 0);
     const mediaValorProcessos = totalProcessos ? valorTotal / totalProcessos : 0;
 
     return {
@@ -153,7 +159,7 @@ useEffect(() => { carregarDados(); }, []);
       valorTotal,
       mediaValorProcessos,
     };
-  }, [dataComCamposCalculados]);
+  }, [visibleProcessos]);
 
   const onPage = (event: DataTablePageEvent) => {
     setFirst(event.first);
@@ -258,8 +264,15 @@ useEffect(() => { carregarDados(); }, []);
       alert('Selecione um resultado antes de salvar.');
       return;
     }
-    if (valorGanho === null || valorGanho <= 0) {
+    // Habilitação não é desfecho financeiro — é o processo saindo do escuro e
+    // voltando para o acompanhamento normal. Exigir valor aqui obrigaria a
+    // inventar um número, e número inventado contamina o indicador.
+    if (resultadoSelecionado !== 'habilitacao' && (valorGanho === null || valorGanho <= 0)) {
       alert(resultadoSelecionado === 'ganho' ? 'Informe o valor ganho.' : 'Informe o valor da causa.');
+      return;
+    }
+    if (resultadoSelecionado === 'habilitacao' && !parecerJuridico.trim()) {
+      alert('Escreva no parecer como a habilitação foi obtida.');
       return;
     }
 
@@ -279,6 +292,7 @@ useEffect(() => { carregarDados(); }, []);
 
   return (
     <div className="segredo-justica-page">
+      <PrimeiraVisitaInfo etapaId="segredo-justica" />
       <div className="page-header">
         <div>
           <h1>Segredos de Justiça</h1>
@@ -295,6 +309,7 @@ useEffect(() => { carregarDados(); }, []);
 
       {readOnly && <ReadOnlyBanner />}
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -329,12 +344,17 @@ useEffect(() => { carregarDados(); }, []);
         </div>
 
       </div>
+      </PainelKpis>
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos em segredo de justiça</h2>
         <DataTable
+          aria-label="Pedidos em segredo de justiça"
           value={dataComCamposCalculados}
+          onValueChange={(value) => setVisibleProcessos(value as SegredoJusticaTableRow[])}
           dataKey="id"
           paginator
+          rowsPerPageOptions={[10, 20, 50, 100]}
           rows={rows}
           first={first}
           totalRecords={dataComCamposCalculados.length}
@@ -525,9 +545,21 @@ useEffect(() => { carregarDados(); }, []);
                       setValorGanho(null);
                     }}
                   />
+                  {/* F4 · Habilitação: o processo deixa de ser cego e vai para
+                      Protocolados, onde é acompanhado como qualquer outro. */}
+                  <Button
+                    label="Habilitação obtida"
+                    icon="pi pi-unlock"
+                    severity={resultadoSelecionado === 'habilitacao' ? 'info' : 'secondary'}
+                    outlined={resultadoSelecionado !== 'habilitacao'}
+                    onClick={() => {
+                      setResultadoSelecionado('habilitacao');
+                      setValorGanho(null);
+                    }}
+                  />
                 </div>}
 
-                {resultadoSelecionado !== '' && (
+                {resultadoSelecionado !== '' && resultadoSelecionado !== 'habilitacao' && (
                   <div className="field">
                     <label>{resultadoSelecionado === 'ganho' ? 'Valor Ganho' : 'Valor da Causa'}</label>
                     <InputNumber

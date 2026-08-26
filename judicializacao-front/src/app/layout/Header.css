@@ -106,6 +106,9 @@ body.dark-theme .mc-iconbtn__dot { border-color: #0d1b2a; }
   transition: background .15s ease;
 }
 .mc-notif__item:hover { background: #e6f7ef; border-color: #c2ecd7; }
+.mc-notif__item--grave { background: #fef2f2; border-color: #fecaca; }
+.mc-notif__item--grave:hover { background: #fee2e2; border-color: #fca5a5; }
+.mc-notif__item--grave strong { color: #b91c1c; }
 .mc-notif__item strong { color: #0f2236; font-size: 13.5px; }
 .mc-notif__item span { color: #5b6b7a; font-size: 12.5px; }
 .mc-notif__empty {

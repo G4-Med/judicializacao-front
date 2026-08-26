@@ -14,8 +14,29 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Padronização app-wide (#80, mandato @R): nomes de procedimento SEMPRE em CAIXA ALTA.
+// Normalizar na FONTE (interceptor) cobre as 12 páginas que exibem o campo de uma vez —
+// componente novo já nasce padronizado, sem depender de alguém lembrar do util.
+const upperProcedimento = (data: unknown): unknown => {
+  if (Array.isArray(data)) return data.map(upperProcedimento);
+  if (data && typeof data === 'object') {
+    const obj = data as Record<string, unknown>;
+    for (const key of Object.keys(obj)) {
+      if (key === 'procedimento' && typeof obj[key] === 'string') {
+        obj[key] = (obj[key] as string).toUpperCase();
+      } else if (obj[key] && typeof obj[key] === 'object') {
+        upperProcedimento(obj[key]);
+      }
+    }
+  }
+  return data;
+};
+
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    upperProcedimento(response.data);
+    return response;
+  },
   async (error) => {
     const original = error.config;
     if (error.response?.status === 401 && !original._retry) {

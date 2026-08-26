@@ -4,6 +4,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { DatePickerPeriodo, type PeriodoSelecionado } from '../../components/DatePicker/DatePicker';
 import { getMedicosCompleto, getOrders, getPerdas, getResultados } from '../../services/api/orders';
 import './DashboardPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 
 interface MedicoOption {
   label: string;
@@ -109,6 +110,31 @@ function withinPeriodo(value: string | null | undefined, periodo: PeriodoSelecio
 
 function toNumber(value?: number | null): number {
   return typeof value === 'number' && !Number.isNaN(value) ? value : 0;
+}
+
+function formatDateBR(date: Date): string {
+  return date.toLocaleDateString('pt-BR');
+}
+
+/* "2 anos e 3 meses" / "5 meses" / "12 dias" — arredonda pra baixo em cada
+   unidade (2 anos e 11 meses ¬vira "3 anos"), porque o objetivo é responder
+   "desde quando" com precisão, ¬impressionar com o número redondo maior. */
+function tempoDecorridoTexto(inicio: Date, fim: Date): string {
+  let anos = fim.getFullYear() - inicio.getFullYear();
+  let meses = fim.getMonth() - inicio.getMonth();
+  if (fim.getDate() < inicio.getDate()) meses -= 1;
+  if (meses < 0) { anos -= 1; meses += 12; }
+
+  if (anos <= 0 && meses <= 0) {
+    const dias = Math.max(0, Math.round((fim.getTime() - inicio.getTime()) / 86_400_000));
+    if (dias <= 0) return 'hoje';
+    return dias === 1 ? '1 dia' : `${dias} dias`;
+  }
+
+  const partes: string[] = [];
+  if (anos > 0) partes.push(`${anos} ${anos === 1 ? 'ano' : 'anos'}`);
+  if (meses > 0) partes.push(`${meses} ${meses === 1 ? 'mês' : 'meses'}`);
+  return partes.join(' e ');
 }
 
 function formatCurrency(value: number): string {
@@ -256,6 +282,38 @@ export function DashboardPage() {
   };
 
   const periodOrders = useMemo(() => baseOrders.filter((item) => withinPeriodo(item.dataPedido, periodoSelecionado)), [baseOrders, periodoSelecionado]);
+
+  /* Período completo do médico — DE PROPÓSITO ignora periodoSelecionado (usa
+     baseOrders, ¬periodOrders): o filtro de data recorta a ANÁLISE, mas "desde
+     quando ele atua" é uma pergunta sobre a RELAÇÃO inteira, não sobre o
+     recorte. Filtrar um médico em "este mês" e ver "atua há 2 anos" é o
+     ponto — mostra o histórico por trás do recorte que está na tela. */
+  const medicoInfo = useMemo(() => {
+    if (medicoSelecionado === null) return null;
+
+    const datas = baseOrders
+      .map((item) => parseApiDate(item.dataPedido))
+      .filter((d): d is Date => d !== null)
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    if (datas.length === 0) return null;
+
+    const primeiro = datas[0];
+    const ultimo = datas[datas.length - 1];
+    const hoje = new Date();
+    const diasSemAtividade = Math.round((hoje.getTime() - ultimo.getTime()) / 86_400_000);
+
+    return {
+      nome: medicosLookup[medicoSelecionado] || `Médico ${medicoSelecionado}`,
+      desde: formatDateBR(primeiro),
+      ultimoPedido: formatDateBR(ultimo),
+      tempoAtuacao: tempoDecorridoTexto(primeiro, hoje),
+      totalPedidosVida: baseOrders.length,
+      // >45 dias sem pedido novo = sinal de baixa atividade recente, ¬"inativo"
+      // (não temos como saber a razão — só o dado observável).
+      semAtividadeRecente: diasSemAtividade > 45,
+    };
+  }, [baseOrders, medicoSelecionado, medicosLookup]);
 
   const baseResultados = useMemo(() => {
     if (medicoSelecionado === null) return resultados;
@@ -553,6 +611,39 @@ export function DashboardPage() {
         </div>
       </div>
 
+      {medicoInfo && (
+        <div className="dashboard-medico-info">
+          <div className="dashboard-medico-info__nome">{medicoInfo.nome}</div>
+          <div className="dashboard-medico-info__grid">
+            <div className="dashboard-medico-info__item">
+              <span>Atuando desde</span>
+              <strong>{medicoInfo.desde}</strong>
+            </div>
+            <div className="dashboard-medico-info__item">
+              <span>Tempo total de atuação</span>
+              <strong>{medicoInfo.tempoAtuacao}</strong>
+            </div>
+            <div className="dashboard-medico-info__item">
+              <span>Último pedido</span>
+              <strong className={medicoInfo.semAtividadeRecente ? 'dashboard-medico-info__alerta' : ''}>
+                {medicoInfo.ultimoPedido}
+                {medicoInfo.semAtividadeRecente && ' ⚠'}
+              </strong>
+            </div>
+            <div className="dashboard-medico-info__item">
+              <span>Pedidos (vida toda)</span>
+              <strong>{medicoInfo.totalPedidosVida}</strong>
+            </div>
+          </div>
+          {medicoInfo.semAtividadeRecente && (
+            <div className="dashboard-medico-info__nota">
+              Mais de 45 dias sem pedido novo — não sabemos o motivo, só que a atividade caiu.
+            </div>
+          )}
+        </div>
+      )}
+
+      <PainelKpis titulo="Indicadores">
       <div className="dashboard-kpi-grid">
         {cards.map((card) => (
           <div className="kpi-card" key={card.titulo}>
@@ -562,8 +653,9 @@ export function DashboardPage() {
           </div>
         ))}
       </div>
+      </PainelKpis>
 
-      <div className="dashboard-section-title">Análises operacionais</div>
+      <PainelKpis titulo="Análises operacionais">
       <div className="dashboard-section-subtitle">Status, distribuição por médico e ticket médio do período.</div>
       <div className="dashboard-chart-grid dashboard-chart-grid--3">
         <div className="card chart-card">
@@ -616,30 +708,30 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
+      </PainelKpis>
 
-      <div className="dashboard-section-title">Evolução diária</div>
-      <div className="dashboard-section-subtitle">Volume de pedidos por dia.</div>
+      <PainelKpis titulo="Evolução de pedidos">
+      <div className="dashboard-section-subtitle">Volume por dia e por mês, lado a lado para comparar o ritmo.</div>
       <div className="dashboard-chart-grid">
-        <div className="card chart-card chart-card-full">
-          <div className="chart-title">Dia × qtde de pedidos</div>
-          <div className="chart-wrapper">
+        <div className="card chart-card">
+          <div className="chart-title">Por dia</div>
+          <div className="chart-subtitle">Dias com pedido no período.</div>
+          <div className="chart-wrapper chart-wrapper--tall">
             <Chart type="bar" data={charts.pedidosDia} options={columnOptions} />
           </div>
         </div>
-      </div>
 
-      <div className="dashboard-section-title">Evolução mensal</div>
-      <div className="dashboard-section-subtitle">Volume de pedidos dos últimos 12 meses ({charts.pedidosMesPeriodoLabel}).</div>
-      <div className="dashboard-chart-grid">
-        <div className="card chart-card chart-card-full">
-          <div className="chart-title">Mês × qtde de pedidos</div>
-          <div className="chart-wrapper">
+        <div className="card chart-card">
+          <div className="chart-title">Por mês</div>
+          <div className="chart-subtitle">Últimos 12 meses ({charts.pedidosMesPeriodoLabel}).</div>
+          <div className="chart-wrapper chart-wrapper--tall">
             <Chart type="bar" data={charts.pedidosMes} options={columnOptions} />
           </div>
         </div>
       </div>
+      </PainelKpis>
 
-      <div className="dashboard-section-title">Análise de perdas</div>
+      <PainelKpis titulo="Análise de perdas">
       <div className="dashboard-section-subtitle">Status da perda e composição percentual.</div>
       <div className="dashboard-chart-grid">
         <div className="card chart-card">
@@ -672,8 +764,9 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
+      </PainelKpis>
 
-      <div className="dashboard-section-title">Performance por médico</div>
+      <PainelKpis titulo="Performance por médico">
       <div className="dashboard-section-subtitle">Comparativo ganho × perda por profissional.</div>
       <div className="dashboard-chart-grid">
         <div className="card chart-card chart-card-full">
@@ -725,6 +818,7 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
+      </PainelKpis>
     </div>
   );
 }

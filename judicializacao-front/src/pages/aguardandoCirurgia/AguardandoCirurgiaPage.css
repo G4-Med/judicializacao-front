@@ -139,7 +139,7 @@
   white-space: nowrap;
 }
 .ag-cir-table .p-datatable-tbody > tr {
-  background: #fff;
+  background: var(--mc-surface, #fff);
   transition: background .12s ease;
 }
 .ag-cir-table .p-datatable-tbody > tr:hover { background: var(--mc-surface-2, #f9fbfc); }
@@ -256,9 +256,9 @@
   gap: 8px;
   padding: 8px 12px;
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  color: #374151;
+  border: 1px solid var(--mc-border, #e5e7eb);
+  background: var(--mc-surface, #fff);
+  color: var(--mc-ink, #374151);
   font-size: 0.85rem;
   width: 100%;
   cursor: pointer;
@@ -266,8 +266,8 @@
   transition: background .12s ease, border-color .12s ease;
 }
 .ag-cir-anexo-item:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: var(--mc-surface-2, #f3f4f6);
+  border-color: var(--mc-border-2, #d1d5db);
 }
 .ag-cir-anexo-item__icon {
   font-size: 1.1rem;

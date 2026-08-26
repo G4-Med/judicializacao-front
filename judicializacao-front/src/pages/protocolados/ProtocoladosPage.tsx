@@ -19,6 +19,8 @@ import { getStatusTagStyle } from '../../utils/statusTag';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import { useAccess } from '../../access/AccessContext';
 import './ProtocoladosPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -73,9 +75,9 @@ export function ProtocoladosPage() {
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<Protocolado[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(10);
-  const [sortField, setSortField] = useState<string | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [rows, setRows] = useState(100);
+  const [sortField, setSortField] = useState<string | undefined>('dias');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -87,6 +89,8 @@ export function ProtocoladosPage() {
     resultado: { value: '', matchMode: FilterMatchMode.CONTAINS }
   });
 
+  const [visibleProcessos, setVisibleProcessos] = useState<ProtocoladoTableRow[]>([]);
+
   const [updateDialogVisible, setUpdateDialogVisible] = useState(false);
   const [registroAtualizando, setRegistroAtualizando] = useState<ProtocoladoTableRow | null>(null);
 
@@ -96,8 +100,17 @@ export function ProtocoladosPage() {
   const [salvandoAcompanhamento, setSalvandoAcompanhamento] = useState(false);
   const [parecerJuridico, setParecerJuridico] = useState('');
   const [resultadoSelecionado, setResultadoSelecionado] = useState<ResultadoType>('');
+  // Peça de inteiro teor (sentença/acórdão) — obrigatória pra registrar ganho ou
+  // perda: sem o documento, a decisão fica sem prova documental no processo.
+  const [pecaInteiroTeor, setPecaInteiroTeor] = useState<File | null>(null);
+  const [salvandoDecisao, setSalvandoDecisao] = useState(false);
 
+  // 'Anotação do jurídico' vem PRIMEIRO e é o default: os outros três são EVENTOS
+  // (algo aconteceu), mas o uso mais comum é a nota de andamento — "acompanhei hoje,
+  // segue aguardando decisão". Sem esse tipo, quem só queria anotar não tinha onde.
+  const ANOTACAO_LIVRE = 'Anotação do jurídico';
   const TIPOS_ACOMPANHAMENTO = [
+    ANOTACAO_LIVRE,
     'Valor já depositado ao medico',
     'Cirurgia Marcada',
     'Contato realizado pelo Juridico',
@@ -124,6 +137,7 @@ export function ProtocoladosPage() {
     setParecerJuridico('');
     setResultadoSelecionado('');
     setValorGanho(null);
+    setPecaInteiroTeor(null);
   };
 
   const carregarDados = async () => {
@@ -184,8 +198,12 @@ export function ProtocoladosPage() {
 
   const handleSalvarAcompanhamento = async () => {
     if (!registroAtualizando) return;
-    if (!tipoAcompanhamento) {
-      alert('Selecione um tipo de acompanhamento.');
+    // Se a pessoa só escreveu a observação e não marcou tipo, isso é uma ANOTAÇÃO —
+    // ¬motivo para bloquear. Bloquear aqui era o que fazia a tela parecer que não
+    // aceitava texto (o campo ficava escondido até escolher tipo).
+    const tipoFinal = tipoAcompanhamento || (novoAcompanhamento.trim() ? ANOTACAO_LIVRE : '');
+    if (!tipoFinal) {
+      alert('Escreva uma observação ou selecione um tipo de acompanhamento.');
       return;
     }
     setSalvandoAcompanhamento(true);
@@ -200,7 +218,7 @@ export function ProtocoladosPage() {
         linkAnexo = resUpload?.data?.linkImagem ?? resUpload?.data?.url ?? null;
       }
       await adicionarAcompanhamento(registroAtualizando.id, {
-        acompanhamento: tipoAcompanhamento,
+        acompanhamento: tipoFinal,
         descricao: novoAcompanhamento,
         linkAnexo,
       });
@@ -233,7 +251,13 @@ export function ProtocoladosPage() {
       alert(resultadoSelecionado === 'ganho' ? 'Informe o valor ganho.' : 'Informe o valor da causa.');
       return;
     }
+    if (!pecaInteiroTeor) {
+      alert('Anexe a peça de inteiro teor (sentença/acórdão) — é obrigatória para registrar a decisão.');
+      return;
+    }
+    setSalvandoDecisao(true);
     try {
+      await uploadAnexoOrder(registroAtualizando.id, pecaInteiroTeor, 'DECISAO_INTEIRO_TEOR');
       await salvarResultadoProtocolado(registroAtualizando.id, {
         acao: resultadoSelecionado,
         analise: parecerJuridico,
@@ -244,6 +268,8 @@ export function ProtocoladosPage() {
       fecharDialogAtualizacao();
     } catch (err) {
       alert('Erro ao salvar decisão.');
+    } finally {
+      setSalvandoDecisao(false);
     }
   };
 
@@ -266,15 +292,17 @@ export function ProtocoladosPage() {
     });
   }, [registros]);
 
+  useEffect(() => { setVisibleProcessos(dataComCamposCalculados); }, [dataComCamposCalculados]);
+
   const kpis = useMemo(() => {
-    const totalProcessos = dataComCamposCalculados.length;
+    const totalProcessos = visibleProcessos.length;
     const mediaProcessos = totalProcessos
       ? Math.round(
-          dataComCamposCalculados.reduce((acc, item) => acc + item.dias, 0) / totalProcessos
+          visibleProcessos.reduce((acc, item) => acc + item.dias, 0) / totalProcessos
         )
       : 0;
 
-    const valorTotal = dataComCamposCalculados.reduce((acc, item) => acc + item.valor, 0);
+    const valorTotal = visibleProcessos.reduce((acc, item) => acc + item.valor, 0);
     const mediaValorProcessos = totalProcessos ? valorTotal / totalProcessos : 0;
 
     return {
@@ -283,7 +311,7 @@ export function ProtocoladosPage() {
       valorTotal,
       mediaValorProcessos,
     };
-  }, [dataComCamposCalculados]);
+  }, [visibleProcessos]);
 
   const onPage = (event: DataTablePageEvent) => {
     setFirst(event.first);
@@ -423,6 +451,7 @@ export function ProtocoladosPage() {
 
   return (
     <div className="protocolados-page">
+      <PrimeiraVisitaInfo etapaId="protocolados" />
       <div className="page-header">
         <div>
           <h1>Protocolados</h1>
@@ -439,6 +468,7 @@ export function ProtocoladosPage() {
 
       {readOnly && <ReadOnlyBanner />}
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -473,12 +503,17 @@ export function ProtocoladosPage() {
         </div>
 
       </div>
+      </PainelKpis>
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos protocolados</h2>
         <DataTable
+          aria-label="Pedidos protocolados"
           value={dataComCamposCalculados}
+          onValueChange={(value) => setVisibleProcessos(value as ProtocoladoTableRow[])}
           dataKey="id"
           paginator
+          rowsPerPageOptions={[10, 20, 50, 100]}
           rows={rows}
           first={first}
           totalRecords={dataComCamposCalculados.length}
@@ -729,17 +764,19 @@ export function ProtocoladosPage() {
                     </div>
                   </div>
 
+                  {/* SEMPRE visível: antes ficava escondido atrás da escolha de tipo, e
+                      quem só queria anotar concluía que a tela não aceitava texto. */}
+                  <div className="field field-span-4">
+                    <label>Observação</label>
+                    <InputTextarea
+                      value={novoAcompanhamento}
+                      onChange={(e) => setNovoAcompanhamento(e.target.value)}
+                      rows={4}
+                      placeholder="Ex: acompanhei hoje, processo segue aguardando decisão."
+                    />
+                  </div>
                   {tipoAcompanhamento && (
                     <>
-                      <div className="field field-span-4">
-                        <label>Descrição (opcional)</label>
-                        <InputTextarea
-                          value={novoAcompanhamento}
-                          onChange={(e) => setNovoAcompanhamento(e.target.value)}
-                          rows={4}
-                          placeholder="Detalhes do acompanhamento..."
-                        />
-                      </div>
                       <div className="field field-span-4">
                         <label>Anexo (opcional)</label>
                         <div className="acompanhamento-anexo-row">
@@ -817,6 +854,39 @@ export function ProtocoladosPage() {
                       />
                     </div>
                   )}
+
+                  {resultadoSelecionado !== '' && (
+                    <div className="field field-span-2">
+                      <label>
+                        Peça de Inteiro Teor (sentença/acórdão)
+                        <span style={{ color: '#ef4444', marginLeft: '4px' }}>*obrigatório</span>
+                      </label>
+                      <label
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '10px 14px',
+                          borderRadius: '8px',
+                          border: `2px dashed ${pecaInteiroTeor ? '#f97316' : '#d1d5db'}`,
+                          background: pecaInteiroTeor ? '#fff7ed' : 'var(--mc-surface-2, #f9fafb)',
+                          cursor: 'pointer',
+                          fontSize: '0.9rem',
+                          color: pecaInteiroTeor ? '#f97316' : 'var(--mc-ink-2, #6b7280)',
+                        }}
+                      >
+                        <i className={pecaInteiroTeor ? 'pi pi-file-check' : 'pi pi-upload'} />
+                        <span>{pecaInteiroTeor ? pecaInteiroTeor.name : 'Selecionar peça...'}</span>
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          style={{ display: 'none' }}
+                          onChange={(e) => setPecaInteiroTeor(e.target.files?.[0] ?? null)}
+                        />
+                      </label>
+                    </div>
+                  )}
+
                   <div className="field field-span-4">
                     <label>Análise Jurídica Final</label>
                     <InputTextarea
@@ -828,9 +898,14 @@ export function ProtocoladosPage() {
                   </div>
 
                   <div className="field field-span-4" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button label="Salvar Decisão" icon="pi pi-check"
+                    <Button
+                      label={salvandoDecisao ? 'Salvando...' : 'Salvar Decisão'}
+                      icon="pi pi-check"
                       severity={resultadoSelecionado === 'ganho' ? 'success' : 'danger'}
-                      onClick={handleSalvarDecisao} />
+                      loading={salvandoDecisao}
+                      disabled={salvandoDecisao}
+                      onClick={handleSalvarDecisao}
+                    />
                   </div>
                 </div>
               )}

@@ -13,12 +13,18 @@ import { FilterMatchMode } from 'primereact/api';
 import html2canvas from 'html2canvas';
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import { getOrcamentoMedico, getOrders, salvarOrcamentoMedico, getAnexosOrder, uploadAnexoOrder, getMedicosCompleto } from '../../services/api/orders';
-import { getBaseOrcamento } from '../../services/api/client';
+import { getOrcamentoMedico, getOrders, salvarOrcamentoMedico, getAnexosOrder, uploadAnexoOrder, getMedicosCompleto, aplicarStatusOrcamentoManual, trocarMedicoOrcamento } from '../../services/api/orders';
+import { getBaseOrcamento, getStatusOrcamentoPersonalizado, criarStatusOrcamentoPersonalizado } from '../../services/api/client';
 import { getStatusTagStyle } from '../../utils/statusTag';
 import { EnviarOrcamentoDialog } from './EnviarOrcamentoDialog';
 import { useAccess } from '../../access/AccessContext';
 import './OrcamentoMedicoPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
+
+// Meta desta fase (orçamento) — espelha backend/funil.py FASES['orcamento'].meta_dias.
+// "96 horas — é o prazo que sustenta o contrato com o Estado".
+const SLA_META_DIAS_ORCAMENTO = 4;
 
 GlobalWorkerOptions.workerSrc = pdfWorker;
 void useRef;
@@ -42,6 +48,9 @@ interface ProcessoOrcamento {
   statusJuridico: string | null;
   statusOrcamento: string;
   solicitacao: string;
+  emailRemetente?: string | null;
+  emailCopia?: string | null;
+  emailData?: string | null;
   orcamentosJuridico: string | null;
   medicoId?: number;
   idMedico?: number;
@@ -77,11 +86,12 @@ export function OrcamentoMedicoPage() {
   const [loading, setLoading] = useState(false);
   const [processos, setProcessos] = useState<ProcessoOrcamento[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(10);
-  const [sortField, setSortField] = useState<string | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [rows, setRows] = useState(100);
+  const [sortField, setSortField] = useState<string | undefined>('dias');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const [anexos, setAnexos] = useState<Anexo[]>([])
   const [loadingAnexos, setLoadingAnexos] = useState(false)
+  const [anexosEmail, setAnexosEmail] = useState<Anexo[]>([])
   const [escolhaVisible, setEscolhaVisible] = useState(false)
   const [medicos, setMedicos] = useState<any[]>([])
 
@@ -96,7 +106,24 @@ export function OrcamentoMedicoPage() {
   const [previewTipo, setPreviewTipo] = useState<'pdf' | 'imagem' | 'outro'>('outro');
   const [previewNome, setPreviewNome] = useState('');
   const [cobrancaVisible, setCobrancaVisible] = useState(false);
-  
+
+  // status manual (etiqueta livre) + troca de médico — 26/08
+  const [statusPersonalizados, setStatusPersonalizados] = useState<{ id: number; nome: string }[]>([]);
+  const [novoStatusVisible, setNovoStatusVisible] = useState(false);
+  const [novoStatusNome, setNovoStatusNome] = useState('');
+  const [statusManualSelecionado, setStatusManualSelecionado] = useState<string | null>(null);
+  const [aplicandoStatusManual, setAplicandoStatusManual] = useState(false);
+  const [trocarMedicoVisible, setTrocarMedicoVisible] = useState(false);
+  const [novoMedicoId, setNovoMedicoId] = useState<number | null>(null);
+  const [trocandoMedico, setTrocandoMedico] = useState(false);
+
+  const carregarStatusPersonalizados = () => {
+    getStatusOrcamentoPersonalizado()
+      .then((res: any) => setStatusPersonalizados(res.data))
+      .catch(() => setStatusPersonalizados([]));
+  };
+  useEffect(() => { carregarStatusPersonalizados(); }, []);
+
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -109,6 +136,8 @@ export function OrcamentoMedicoPage() {
     dias: { value: '', matchMode: FilterMatchMode.CONTAINS },
     statusOrcamento: { value: null, matchMode: FilterMatchMode.EQUALS },
   });
+
+  const [visibleProcessos, setVisibleProcessos] = useState<typeof dataComMedico>([]);
 
   const carregarDados = () => {
     setLoading(true);
@@ -153,10 +182,14 @@ export function OrcamentoMedicoPage() {
     });
   }, [dataComSequencial, ordersLookup, medicos]);
 
+  useEffect(() => { setVisibleProcessos(dataComMedico); }, [dataComMedico]);
+
   const statusOrcamentoOptions = useMemo(() => {
-    return Array.from(new Set(processos.map((item) => item.statusOrcamento).filter(Boolean)))
+    const doDado = processos.map((item) => item.statusOrcamento).filter(Boolean) as string[];
+    const cadastrados = statusPersonalizados.map((s) => s.nome);
+    return Array.from(new Set([...doDado, ...cadastrados]))
       .map((status) => ({ label: status, value: status }));
-  }, [processos]);
+  }, [processos, statusPersonalizados]);
 
   const medicosOptions = useMemo(() => {
     return Array.from(new Set(dataComMedico.map((item) => item.medico).filter(Boolean)))
@@ -188,17 +221,24 @@ export function OrcamentoMedicoPage() {
   }, [dataComMedico]);
 
   const kpis = useMemo(() => {
-    const total = dataComSequencial.length;
-    const soma = dataComSequencial.reduce((acc, p) => acc + (p.refPreco ?? 0), 0);
+    const total = visibleProcessos.length;
+    const soma = visibleProcessos.reduce((acc, p) => acc + (p.refPreco ?? 0), 0);
     const valorMedio = total > 0 ? soma / total : 0;
-    const maisAntigo = total > 0 ? Math.max(...dataComSequencial.map(p => p.dias)) : 0;
+    const maisAntigo = total > 0 ? Math.max(...visibleProcessos.map(p => p.dias)) : 0;
     return { total, valorMedio, maisAntigo };
-  }, [dataComSequencial]);
+  }, [visibleProcessos]);
 
   const formatarData = (data: string | null) => {
     if (!data) return '-';
     const [ano, mes, dia] = data.split('-');
     return `${dia}/${mes}/${ano}`;
+  };
+
+  const formatarDataHora = (isoStr?: string | null) => {
+    if (!isoStr) return 'Não capturado (pedido anterior a esta funcionalidade)';
+    const d = new Date(isoStr);
+    if (Number.isNaN(d.getTime())) return 'Não capturado (pedido anterior a esta funcionalidade)';
+    return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   const formatarMoeda = (valor: number) =>
@@ -221,6 +261,11 @@ const abrirDetalhe = (rowData: ProcessoOrcamentoRow) => {
     .then((res: any) => setAnexos(res.data.anexos))
     .catch(() => setAnexos([]))
     .finally(() => setLoadingAnexos(false))
+
+  setAnexosEmail([])
+  getAnexosOrder(rowData.id, 'EMAIL_ORIGINAL')
+    .then((res: any) => setAnexosEmail(res.data.anexos))
+    .catch(() => setAnexosEmail([]))
 };
 
   const handleSolicitarExames = async () => {
@@ -268,6 +313,62 @@ const abrirDetalhe = (rowData: ProcessoOrcamentoRow) => {
       className="p-column-filter"
     />
   );
+
+  // Status: mesmo dropdown + "+" pra cadastrar etiqueta nova sem sair da tabela
+  // (mandato @R 26/08 "cadastro rápido de novos status aqui para a fase").
+  const statusFilterElement = (options: any) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+      {dropdownFilterElement(options, statusOrcamentoOptions)}
+      <Button
+        type="button" icon="pi pi-plus" text rounded severity="secondary"
+        aria-label="Cadastrar novo status"
+        tooltip="Cadastrar novo status" tooltipOptions={{ position: 'top' }}
+        onClick={() => { setNovoStatusNome(''); setNovoStatusVisible(true); }}
+        style={{ width: '2.1rem', height: '2.1rem', flexShrink: 0 }}
+      />
+    </div>
+  );
+
+  const handleCriarStatusPersonalizado = async () => {
+    const nome = novoStatusNome.trim();
+    if (!nome) return;
+    try {
+      await criarStatusOrcamentoPersonalizado(nome);
+      setNovoStatusVisible(false);
+      carregarStatusPersonalizados();
+    } catch (err: any) {
+      alert(err?.response?.data?.nome?.[0] || err?.response?.data?.error || 'Erro ao cadastrar status.');
+    }
+  };
+
+  const handleAplicarStatusManual = async () => {
+    if (!processoSelecionado || !statusManualSelecionado) return;
+    setAplicandoStatusManual(true);
+    try {
+      await aplicarStatusOrcamentoManual(processoSelecionado.id, statusManualSelecionado);
+      setDetalheVisible(false);
+      await carregarDados();
+    } catch (err: any) {
+      alert(err?.response?.data?.error || 'Erro ao aplicar status.');
+    } finally {
+      setAplicandoStatusManual(false);
+    }
+  };
+
+  const handleTrocarMedico = async () => {
+    if (!processoSelecionado || !novoMedicoId) return;
+    setTrocandoMedico(true);
+    try {
+      await trocarMedicoOrcamento(processoSelecionado.id, novoMedicoId);
+      setTrocarMedicoVisible(false);
+      setDetalheVisible(false);
+      await carregarDados();
+    } catch (err: any) {
+      alert(err?.response?.data?.error || 'Erro ao trocar o médico.');
+    } finally {
+      setTrocandoMedico(false);
+    }
+  };
 
 
 const copiarParaWhatsapp = async (rowData: ProcessoOrcamentoRow) => {
@@ -404,6 +505,7 @@ ${blocos}
 
   return (
     <div className="orcamento-medico-page">
+      <PrimeiraVisitaInfo etapaId="orcamento-medico" />
       <div className="page-header">
         <div>
           <h1>Orçamento Médico</h1>
@@ -419,6 +521,7 @@ ${blocos}
         </div>
       </div>
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-header"><span>Quantidade de Processos</span><i className="pi pi-list" /></div>
@@ -433,10 +536,17 @@ ${blocos}
           <div className="kpi-value">{kpis.maisAntigo}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos aguardando orçamento médico</h2>
         <DataTable
-          value={dataComMedico} dataKey="id" paginator rows={rows} first={first}
+          aria-label="Pedidos aguardando orçamento médico"
+          value={dataComMedico} dataKey="id" paginator rowsPerPageOptions={[10, 20, 50, 100]} rows={rows} first={first}
+          onValueChange={(value) => setVisibleProcessos(value as typeof dataComMedico)}
+          rowClassName={(rowData: { dias: number }) =>
+            rowData.dias > SLA_META_DIAS_ORCAMENTO ? 'linha-fora-sla' : ''
+          }
           onPage={(e: DataTablePageEvent) => { setFirst(e.first); setRows(e.rows); }}
           sortField={sortField} sortOrder={sortOrder}
           onSort={(e: DataTableSortEvent) => { setSortField(e.sortField); setSortOrder(e.sortOrder); }}
@@ -464,8 +574,9 @@ ${blocos}
           <Column field="statusOrcamento" header="Status"
             body={(r) => <Tag value={r.statusOrcamento} style={getStatusTagStyle(r.statusOrcamento)} className="status-tag-custom" />}
             filter
-            filterElement={(o) => dropdownFilterElement(o, statusOrcamentoOptions)}
-            style={{ minWidth: '14rem' }} />
+            showFilterMenu={false}
+            filterElement={statusFilterElement}
+            style={{ minWidth: '15rem' }} />
           <Column header="Enviar Orçamento"
             body={(rowData) => (
               <Button label="Abrir" icon="pi pi-folder-open" outlined severity="secondary"
@@ -529,6 +640,55 @@ ${blocos}
               <div className="field field-span-4">
                 <label>Solicitação (corpo do e-mail)</label>
                 <InputTextarea value={processoSelecionado.solicitacao} rows={4} readOnly autoResize />
+              </div>
+            )}
+
+            {(processoSelecionado.emailRemetente || processoSelecionado.emailCopia || processoSelecionado.emailData) && (
+              <>
+                <div className="field field-span-2">
+                  <label>Remetente</label>
+                  <InputText value={processoSelecionado.emailRemetente || '-'} readOnly />
+                </div>
+                <div className="field field-span-2">
+                  <label>Recebido em</label>
+                  <InputText value={formatarDataHora(processoSelecionado.emailData)} readOnly />
+                </div>
+                {processoSelecionado.emailCopia && (
+                  <div className="field field-span-4">
+                    <label>Com cópia (CC)</label>
+                    <InputText value={processoSelecionado.emailCopia} readOnly />
+                  </div>
+                )}
+              </>
+            )}
+
+            {anexosEmail.length > 0 && (
+              <div className="field field-span-4">
+                <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>
+                  <i className="pi pi-envelope" style={{ marginRight: '6px' }} />
+                  E-mail original (com assinatura/imagens) — para anexar ao processo
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {anexosEmail.map((anexo) => {
+                    const ehHtml = anexo.linkImagem.toLowerCase().endsWith('.html');
+                    return (
+                      <button
+                        key={anexo.id}
+                        type="button"
+                        onClick={() => window.open(anexo.linkImagem, '_blank', 'noopener,noreferrer')}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '8px',
+                          padding: '8px 12px', borderRadius: '8px',
+                          border: '1px solid var(--mc-border, #e5e7eb)', background: 'transparent',
+                          color: 'var(--mc-ink, #374151)', fontSize: '0.9rem', width: '100%', cursor: 'pointer',
+                        }}
+                      >
+                        <i className={ehHtml ? 'pi pi-eye' : 'pi pi-download'} style={{ fontSize: '1.1rem', color: 'var(--mc-navy-700, #0a3d62)' }} />
+                        <span style={{ flex: 1 }}>{ehHtml ? 'Ver e-mail completo (com imagens)' : 'Baixar e-mail original (.eml)'}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -618,9 +778,71 @@ ${blocos}
               {!readOnly && <Button label="Não faço esse procedimento" icon="pi pi-times"
                 severity="danger" outlined onClick={handleNaoFaco} />
               }
+              {!readOnly && <Button label="Trocar médico" icon="pi pi-user-edit"
+                severity="secondary" outlined
+                onClick={() => { setNovoMedicoId(null); setTrocarMedicoVisible(true); }} />
+              }
             </div>
+
+            {!readOnly && (
+              <div className="field field-span-4" style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
+                <div style={{ flex: 1 }}>
+                  <label>Marcar status manual (etiqueta — não dispara ação)</label>
+                  <Dropdown
+                    value={statusManualSelecionado}
+                    options={statusOrcamentoOptions}
+                    onChange={(e) => setStatusManualSelecionado(e.value)}
+                    placeholder="Selecione um status cadastrado"
+                    showClear
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <Button
+                  label="Aplicar" icon="pi pi-tag" outlined
+                  disabled={!statusManualSelecionado} loading={aplicandoStatusManual}
+                  onClick={handleAplicarStatusManual}
+                />
+              </div>
+            )}
           </div>
         )}
+      </Dialog>
+
+      {/* Cadastro rápido de status personalizado */}
+      <Dialog header="Novo status" visible={novoStatusVisible} style={{ width: '28rem' }} onHide={() => setNovoStatusVisible(false)} modal>
+        <div className="field">
+          <label>Nome do status</label>
+          <InputText
+            value={novoStatusNome}
+            onChange={(e) => setNovoStatusNome(e.target.value)}
+            placeholder="Ex.: Aguardando retorno do médico"
+            autoFocus
+            onKeyDown={(e) => { if (e.key === 'Enter') handleCriarStatusPersonalizado(); }}
+          />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+          <Button label="Cancelar" text onClick={() => setNovoStatusVisible(false)} />
+          <Button label="Cadastrar" icon="pi pi-check" disabled={!novoStatusNome.trim()} onClick={handleCriarStatusPersonalizado} />
+        </div>
+      </Dialog>
+
+      {/* Trocar médico do pedido */}
+      <Dialog header="Trocar médico" visible={trocarMedicoVisible} style={{ width: '28rem' }} onHide={() => setTrocarMedicoVisible(false)} modal>
+        <div className="field">
+          <label>Novo médico</label>
+          <Dropdown
+            value={novoMedicoId}
+            options={medicos.map((m: any) => ({ label: m.nomeSistema || m.nomeCompleto, value: m.id }))}
+            onChange={(e) => setNovoMedicoId(e.value)}
+            placeholder="Selecione o médico"
+            filter
+            style={{ width: '100%' }}
+          />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+          <Button label="Cancelar" text onClick={() => setTrocarMedicoVisible(false)} />
+          <Button label="Confirmar" icon="pi pi-check" disabled={!novoMedicoId} loading={trocandoMedico} onClick={handleTrocarMedico} />
+        </div>
       </Dialog>
 
       <EnviarOrcamentoDialog

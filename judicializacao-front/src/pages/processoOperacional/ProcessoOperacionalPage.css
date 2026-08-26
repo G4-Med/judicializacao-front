@@ -1,0 +1,306 @@
+/* Processo Operacional — leitura longa, então o texto manda: medida de linha
+   controlada, hierarquia por peso e não por cor, e a fala do @R visualmente
+   distinta do texto do sistema (é voz de gente, não instrução de máquina). */
+
+.proc-op {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+  color: var(--mc-ink, #1f2937);
+}
+
+.proc-op__topo h1 {
+  font-size: 1.9rem;
+  font-weight: 700;
+  margin: 0 0 .35rem;
+  letter-spacing: -0.02em;
+}
+.proc-op__sub {
+  margin: 0 0 2rem;
+  color: var(--mc-muted, #6b7280);
+  font-size: 1.02rem;
+  line-height: 1.55;
+}
+
+.proc-op h2 {
+  font-size: 1.18rem;
+  font-weight: 700;
+  margin: 0 0 .9rem;
+  letter-spacing: -0.01em;
+}
+
+/* ── O porquê ─────────────────────────────────────────────── */
+.proc-op__porque {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border, #e5e7eb);
+  border-radius: 14px;
+  padding: 1.4rem 1.5rem;
+  margin-bottom: 1.75rem;
+}
+.proc-op__porque p {
+  margin: 0 0 .8rem;
+  line-height: 1.65;
+  font-size: .97rem;
+}
+.proc-op__fechamento {
+  margin: 1.1rem 0 0;
+  padding: .85rem 1.1rem;
+  border-left: 1px solid #0F766E;
+  background: rgba(15, 118, 110, .06);
+  border-radius: 0 8px 8px 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-style: italic;
+}
+.proc-op__proposito {
+  margin-top: 1.25rem;
+  padding-top: 1.1rem;
+  border-top: 1px dashed var(--mc-border, #e5e7eb);
+}
+.proc-op__proposito-rotulo {
+  display: block;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: var(--mc-muted, #6b7280);
+  margin-bottom: .45rem;
+}
+.proc-op__proposito p {
+  font-style: italic;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Prazos ───────────────────────────────────────────────── */
+.proc-op__prazos { margin-bottom: 1.75rem; }
+.proc-op__prazos-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: .75rem;
+}
+.proc-op__prazo-card {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border, #e5e7eb);
+  border-radius: 12px;
+  padding: .9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+}
+.proc-op__prazo-card strong { font-size: 1.22rem; letter-spacing: -0.02em; }
+.proc-op__prazo-card span { font-size: .88rem; line-height: 1.4; }
+.proc-op__prazo-card em {
+  font-size: .74rem;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--mc-muted, #6b7280);
+}
+
+/* ── Etapas ───────────────────────────────────────────────── */
+.proc-op__etapas-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.proc-op__filtros { display: flex; gap: .4rem; margin-bottom: .9rem; }
+.proc-op__filtro {
+  border: 1px solid var(--mc-border, #e5e7eb);
+  background: transparent;
+  color: inherit;
+  border-radius: 999px;
+  padding: .3rem .85rem;
+  font-size: .82rem;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.proc-op__filtro:hover { background: var(--mc-surface-2, rgba(0,0,0,.04)); }
+.proc-op__filtro.is-ativo {
+  background: var(--mc-ink, #1f2937);
+  color: var(--mc-surface, #fff);
+  border-color: transparent;
+}
+
+.proc-op__etapa {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border, #e5e7eb);
+  border-left: 4px solid #999;
+  border-radius: 12px;
+  margin-bottom: .7rem;
+  overflow: hidden;
+}
+.proc-op__etapa-cabeca {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  padding: .9rem 1.1rem;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+.proc-op__etapa-cabeca:hover { background: var(--mc-surface-2, rgba(0,0,0,.03)); }
+.proc-op__etapa-numero {
+  flex: 0 0 auto;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+.proc-op__etapa-titulo { flex: 1; font-weight: 600; font-size: 1rem; }
+.proc-op__etapa-dono {
+  font-size: .74rem;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  font-weight: 700;
+}
+
+.proc-op__etapa-corpo {
+  padding: 0 1.1rem 1.2rem 3.2rem;
+  animation: proc-op-abre .16s ease-out;
+}
+@keyframes proc-op-abre {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+.proc-op__etapa-oque { margin: 0 0 .8rem; line-height: 1.6; font-size: .95rem; }
+.proc-op__etapa-prazo {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: rgba(217, 119, 6, .1);
+  color: #B45309;
+  border-radius: 8px;
+  padding: .35rem .7rem;
+  font-size: .85rem;
+  font-weight: 600;
+  margin-bottom: .9rem;
+}
+.proc-op__etapa-corpo h4 {
+  font-size: .76rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--mc-muted, #6b7280);
+  margin: 0 0 .45rem;
+}
+.proc-op__passos { margin: 0 0 1rem; padding-left: 1.15rem; }
+.proc-op__passos li { margin-bottom: .4rem; line-height: 1.55; font-size: .93rem; }
+
+/* fala do @R: é voz de gente — tipografia diferente do texto do sistema */
+.proc-op__fala {
+  margin: 0 0 1rem;
+  padding: .8rem 1rem;
+  background: rgba(124, 58, 237, .06);
+  border-left: 1px solid #7C3AED;
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  line-height: 1.6;
+  font-size: .93rem;
+}
+.proc-op__fala--curta { margin-top: .6rem; }
+.proc-op__fala-rotulo {
+  display: block;
+  font-style: normal;
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: #7C3AED;
+  font-weight: 700;
+  margin-bottom: .35rem;
+}
+
+.proc-op__atencao {
+  display: flex; gap: .6rem; align-items: flex-start;
+  background: rgba(220, 38, 38, .06);
+  border-radius: 8px;
+  padding: .75rem .9rem;
+  font-size: .9rem;
+  line-height: 1.55;
+  margin-bottom: 1rem;
+}
+.proc-op__atencao i { color: #DC2626; margin-top: .15rem; }
+
+.proc-op__ir {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-size: .88rem; font-weight: 600;
+  text-decoration: none;
+  color: #0F766E;
+}
+.proc-op__ir:hover { text-decoration: underline; }
+
+/* ── Regras ───────────────────────────────────────────────── */
+.proc-op__regras { margin-top: 2rem; }
+.proc-op__regra {
+  background: var(--mc-surface, #fff);
+  border: 1px solid var(--mc-border, #e5e7eb);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  margin-bottom: .7rem;
+}
+.proc-op__regra h3 { font-size: .98rem; font-weight: 700; margin: 0 0 .4rem; }
+.proc-op__regra p { margin: 0; line-height: 1.6; font-size: .93rem; }
+
+.proc-op__fonte {
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--mc-border, #e5e7eb);
+  font-size: .78rem;
+  color: var(--mc-muted, #6b7280);
+}
+
+@media (max-width: 640px) {
+  .proc-op__etapa-corpo { padding-left: 1.1rem; }
+  .proc-op__etapa-dono { display: none; }
+}
+
+.proc-op__pdf {
+  display: inline-flex; align-items: center; gap: .45rem;
+  border: 1px solid var(--mc-border, #e5e7eb);
+  background: var(--mc-surface, #fff);
+  color: inherit;
+  border-radius: 8px;
+  padding: .45rem .9rem;
+  font-size: .87rem; font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 1.75rem;
+}
+.proc-op__pdf:hover { background: var(--mc-surface-2, rgba(0,0,0,.04)); }
+
+/* ── IMPRESSÃO / PDF ────────────────────────────────────────
+   Decisão do @R: o PDF deve ser IGUAL ao HTML — colorido e bonito, porque
+   ele vai para a mão de cada pessoa da equipe. Então NÃO dessaturamos nada:
+   as cores são o que separa a fala do Rapha do texto do sistema, o dono de
+   cada etapa, e o alerta do passo comum. Em preto e branco isso vira um
+   paredão de texto e a leitura perde o mapa.
+   Some só o que é de TELA (menu, cabeçalho da aplicação, botões de ação). */
+@media print {
+  @page { margin: 0; }
+
+  body { background: #fff !important; }
+  .layout-sidebar, .layout-topbar, .p-sidebar, nav,
+  .proc-op__pdf, .proc-op__filtros, .proc-op__ir { display: none !important; }
+  .layout-main, .layout-content, .layout-wrapper {
+    margin: 0 !important; padding: 0 !important;
+  }
+
+  .proc-op { max-width: 100%; padding: 1.2rem 1.6rem 2rem; }
+
+  /* as cores impressas de verdade (senão o Chrome descarta os fundos) */
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+  /* todo o corpo das etapas aberto — seção fechada não existiria no PDF */
+  .proc-op__etapa-corpo { animation: none; display: block !important; }
+  .proc-op__etapa-cabeca i { display: none; }
+
+  /* evita cortar um cartão no meio; a paginação em si não é a prioridade */
+  .proc-op__porque, .proc-op__prazo-card, .proc-op__etapa, .proc-op__regra {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

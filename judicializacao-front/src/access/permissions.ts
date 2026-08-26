@@ -28,7 +28,10 @@ export type ScreenKey =
   | 'configuracoes'
   | 'configuracoesEmails'
   | 'monitorIntegracao'
-  | 'logs';
+  | 'logs'
+  | 'processoOperacional'
+  | 'funil'
+  | 'sla';
 
 export type ReportKey = 'relatorioResumido' | 'relatorioConsolidado';
 
@@ -42,6 +45,9 @@ interface GroupPermissionConfig {
 export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
   ADMIN: {
     view: [
+      'funil',
+      'sla',
+      'processoOperacional',
       'home',
       'dashboard',
       'processos',
@@ -94,6 +100,9 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
   },
   GERENTE: {
     view: [
+      'funil',
+      'sla',
+      'processoOperacional',
       'home',
       'dashboard',
       'processos',
@@ -111,12 +120,20 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'relatorioResumido',
       'relatorioConsolidado',
     ],
-    edit: [],
+    // Gerente era 100% somente-leitura por padrão — mas na prática precisa agir na
+    // tela de orçamento médico (enviar orçamento, solicitar exames, recusar o
+    // procedimento), em para protocolar (editar/protocolar/não protocolar) e em
+    // protocolados (acompanhamento + decisão ganho/perda), achado 26/08 ao vivo
+    // em produção (modal/tela sem nenhum botão de ação).
+    edit: ['orcamentoMedico', 'paraProtocolar', 'protocolados'],
     exportReports: ['relatorioResumido', 'relatorioConsolidado'],
     allMedicos: true,
   },
   JURIDICO: {
     view: [
+      'funil',
+      'sla',
+      'processoOperacional',
       'home',
       'clientes',
       'juridico',
@@ -130,12 +147,13 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'relatorioResumido',
       'relatorioConsolidado',
     ],
-    edit: ['juridico', 'paraProtocolar', 'protocolados', 'segredoJustica'],
+    edit: ['clientes', 'juridico', 'paraProtocolar', 'protocolados', 'segredoJustica'],
     exportReports: ['relatorioResumido', 'relatorioConsolidado'],
     allMedicos: true,
   },
   MEDICO: {
     view: [
+      'processoOperacional',
       'home',
       'orcamentoMedico',
       'paraProtocolar',
@@ -154,6 +172,9 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
   },
   SUPERVISOR: {
     view: [
+      'funil',
+      'sla',
+      'processoOperacional',
       'home',
       'juridico',
       'selecionarMedico',
@@ -173,7 +194,7 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
     allMedicos: false,
   },
   SECRETARIA: {
-    view: ['home', 'selecionarMedico'],
+    view: ['processoOperacional', 'home', 'selecionarMedico'],
     edit: ['selecionarMedico'],
     exportReports: [],
     allMedicos: false,
@@ -203,6 +224,9 @@ export const SCREEN_PATHS: Record<ScreenKey, string> = {
   configuracoesEmails: '/configuracoes-emails',
   monitorIntegracao: '/monitor-integracao',
   logs: '/logs',
+  processoOperacional: '/processo-operacional',
+  funil: '/funil',
+  sla: '/sla',
 };
 
 export const SCREEN_ORDER: ScreenKey[] = [

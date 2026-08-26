@@ -12,6 +12,12 @@ import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder } from '..
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './JuridicoPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
+
+// Meta desta fase (triagem jurídica) — espelha backend/funil.py FASES['triagem'].meta_dias.
+// "a análise sai no dia seguinte — libera para mim até meio-dia" (fala do @R na reunião).
+const SLA_META_DIAS_TRIAGEM = 1;
 
 interface ProcessoJuridico {
   id: number;
@@ -24,6 +30,8 @@ interface ProcessoJuridico {
   dias: number;
   statusJuridico: string;
   nprocesso: string;
+  numeroSei: string | null;
+  familiaSei: string | null;
   solicitacao: string;
   emailSolicitante: string;
 }
@@ -57,14 +65,18 @@ export function JuridicoPage() {
   const [loading, setLoading] = useState(false);
   const [processos, setProcessos] = useState<ProcessoJuridico[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(10);
-  const [sortField, setSortField] = useState<string | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [rows, setRows] = useState(100);
+  const [sortField, setSortField] = useState<string | undefined>('dias');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const [editDialogVisible, setEditDialogVisible] = useState(false);
   const [processoEditando, setProcessoEditando] = useState<ProcessoJuridicoRow | null>(null);
   const [obsObrigatorio, setObsObrigatorio] = useState(false);
   const [nprocessoObrigatorio, setNprocessoObrigatorio] = useState(false);
   const [nprocesso, setNprocesso] = useState('');
+  // SEI (reunião 22/08): o pedido ganha DOIS números — o do processo e o do SEI.
+  // O SEI é o que permite achar o pagamento do lado do Estado.
+  const [numeroSei, setNumeroSei] = useState('');
+  const [familiaSei, setFamiliaSei] = useState<string | null>(null);
   const [statusJuridico, setStatusJuridico] = useState('');
   const [orcamentos, setOrcamentos] = useState('');
   const [obs, setObs] = useState('');
@@ -82,6 +94,8 @@ export function JuridicoPage() {
     procedimento: { value: '', matchMode: FilterMatchMode.CONTAINS },
     dias: { value: '', matchMode: FilterMatchMode.CONTAINS },
   });
+
+  const [visibleProcessos, setVisibleProcessos] = useState<ProcessoJuridicoRow[]>([]);
 
   const carregarDados = () => {
     setLoading(true);
@@ -116,17 +130,21 @@ export function JuridicoPage() {
     return processos.map((item, index) => ({ ...item, sequencial: index + 1 }));
   }, [processos]);
 
+  useEffect(() => { setVisibleProcessos(dataComSequencial); }, [dataComSequencial]);
+
   const kpis = useMemo(() => {
-    const total = dataComSequencial.length;
-    const somaRefPreco = dataComSequencial.reduce((acc, p) => acc + (p.refPreco ?? 0), 0);
+    const total = visibleProcessos.length;
+    const somaRefPreco = visibleProcessos.reduce((acc, p) => acc + (p.refPreco ?? 0), 0);
     const valorMedio = total > 0 ? somaRefPreco / total : 0;
-    const maisAntigo = total > 0 ? Math.max(...dataComSequencial.map(p => p.dias)) : 0;
+    const maisAntigo = total > 0 ? Math.max(...visibleProcessos.map(p => p.dias)) : 0;
     return { total, valorMedio, maisAntigo };
-  }, [dataComSequencial]);
+  }, [visibleProcessos]);
 
 const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
   setProcessoEditando(rowData);
   setNprocesso(rowData.nprocesso ?? '');
+  setNumeroSei(rowData.numeroSei ?? '');
+  setFamiliaSei(rowData.familiaSei ?? null);
   setStatusJuridico('');
   setOrcamentos('');
   setObs('');
@@ -151,13 +169,16 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
       return;
     }
 
-    if (statusJuridico === 'Não Cotar' && !obs.trim()) {
+    // Recusa exige o motivo com as palavras da pessoa (mín. 20 chars) — é este texto
+    // que alimenta a análise de padrões de recusa (regra também aplicada no backend).
+    if (statusJuridico === 'Não Cotar' && obs.trim().length < 20) {
       setObsObrigatorio(true);
       return;
     }
 
       const payload = {
         nprocesso: nprocesso || null,
+        numeroSei: numeroSei || null,
         statusJuridico: statusJuridico || null,
         orcamentos: orcamentos || null,
         obs: obs || null,
@@ -211,6 +232,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
 
   return (
     <div className="juridico-page">
+      <PrimeiraVisitaInfo etapaId="juridico" />
       <div className="page-header">
         <div>
           <h1>Jurídico</h1>
@@ -220,6 +242,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
 
       {readOnly && <ReadOnlyBanner />}
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-header"><span>Quantidade de Processos</span><i className="pi pi-list" /></div>
@@ -234,12 +257,20 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           <div className="kpi-value">{kpis.maisAntigo}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos aguardando triagem jurídica</h2>
         <DataTable
+          aria-label="Pedidos aguardando triagem jurídica"
           value={dataComSequencial}
+          onValueChange={(value) => setVisibleProcessos(value as ProcessoJuridicoRow[])}
+          rowClassName={(rowData: ProcessoJuridicoRow) =>
+            rowData.dias > SLA_META_DIAS_TRIAGEM ? 'linha-fora-sla' : ''
+          }
           dataKey="id"
           paginator
+          rowsPerPageOptions={[10, 20, 50, 100]}
           rows={rows}
           first={first}
           onPage={(e: DataTablePageEvent) => { setFirst(e.first); setRows(e.rows); }}
@@ -411,6 +442,27 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
               )}
             </div>
 
+            {/* SEI — o par do número do processo (reunião 22/08). É por ele que se
+                acha o pagamento do lado do Estado; por isso vive ao lado, ¬escondido. */}
+            <div className="field field-span-2">
+              <label>Número do SEI</label>
+              <InputText
+                value={numeroSei}
+                onChange={(e) => setNumeroSei(e.target.value)}
+                placeholder="Ex: 1080.01.0012345/2026-45"
+                disabled={readOnly}
+              />
+              {familiaSei && (
+                <small style={{ color: familiaSei === 'PAGADOR' ? '#16a34a' : '#64748b' }}>
+                  {familiaSei === 'PAGADOR'
+                    ? 'Família PAGADOR — este SEI casa com o empenho do depósito judicial'
+                    : familiaSei === 'ADMINISTRATIVO'
+                      ? 'Família ADMINISTRATIVO — SEI do pedido'
+                      : `Família ${familiaSei}`}
+                </small>
+              )}
+            </div>
+
             <div className="field field-span-2">
               <label>Status Jurídico</label>
               <Dropdown
@@ -457,7 +509,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                 value={obs}
                 onChange={(e) => {
                   setObs(e.target.value);
-                  if (e.target.value.trim()) setObsObrigatorio(false);
+                  if (e.target.value.trim().length >= 20) setObsObrigatorio(false);
                 }}
                 rows={3}
                 autoResize
@@ -467,7 +519,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
               />
               {obsObrigatorio && (
                 <small style={{ color: '#ef4444' }}>
-                  Observações é obrigatório quando o status é "Não Cotar"
+                  Para "Não Cotar", descreva o motivo com suas palavras (mínimo 20 caracteres)
                 </small>
               )}
             </div>

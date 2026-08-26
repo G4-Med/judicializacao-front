@@ -17,7 +17,7 @@
   margin: 0 0 4px 0;
   font-size: 1.6rem;
   font-weight: 700;
-  color: var(--mc-ink-1, #0f2431);
+  color: var(--mc-ink, #0f2431);
 }
 
 .monitor-header__title p {
@@ -40,17 +40,17 @@
 
 .monitor-kpi-card {
   position: relative;
-  background: #fff;
+  background: var(--mc-surface, #fff);
   border-radius: 12px;
   padding: 18px 20px;
   box-shadow: 0 1px 2px rgba(15, 36, 49, 0.06);
-  border-left: 4px solid #94a3b8;
+  border-left: 1px solid #94a3b8;
 }
 
 .monitor-kpi-card__label {
   font-size: 0.78rem;
   letter-spacing: 0.04em;
-  color: #64748b;
+  color: var(--mc-muted, #64748b);
   font-weight: 600;
   margin-bottom: 6px;
 }
@@ -58,7 +58,7 @@
 .monitor-kpi-card__value {
   font-size: 1.9rem;
   font-weight: 700;
-  color: #0f2431;
+  color: var(--mc-ink, #0f2431);
 }
 
 .monitor-kpi-card__icon {
@@ -88,7 +88,7 @@
 
 /* Card da tabela */
 .monitor-card {
-  background: #fff;
+  background: var(--mc-surface, #fff);
   border-radius: 12px;
   padding: 16px 18px 8px 18px;
   box-shadow: 0 1px 2px rgba(15, 36, 49, 0.06);
@@ -107,7 +107,7 @@
   margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
-  color: #0f2431;
+  color: var(--mc-ink, #0f2431);
 }
 
 .monitor-search input {
@@ -141,7 +141,7 @@
 .monitor-form__row label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #334155;
+  color: var(--mc-ink-2, #334155);
 }
 
 .monitor-form__row--switch {
@@ -151,7 +151,7 @@
 }
 
 .monitor-form__hint {
-  color: #64748b;
+  color: var(--mc-muted, #64748b);
   font-size: 0.78rem;
 }
 
@@ -165,7 +165,7 @@
 .monitor-loading {
   padding: 24px 0;
   text-align: center;
-  color: #64748b;
+  color: var(--mc-muted, #64748b);
 }
 
 @media (max-width: 1100px) {

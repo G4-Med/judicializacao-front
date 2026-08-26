@@ -1,0 +1,80 @@
+.painel-kpis {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+
+.painel-kpis__cabecalho {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.painel-kpis__cabecalho:hover { background: #f8fafc; }
+
+.painel-kpis__titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #1f2937;
+}
+.painel-kpis__titulo i { color: #0F766E; }
+
+.painel-kpis__seta {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  transition: transform 0.15s ease;
+}
+
+.painel-kpis__corpo {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0 16px;
+  transition: max-height 0.22s ease, opacity 0.18s ease, padding 0.22s ease;
+}
+
+/* aberto por CLIQUE (fixado) — fica aberto independente do mouse */
+.painel-kpis--aberto .painel-kpis__corpo {
+  max-height: 600px;
+  opacity: 1;
+  padding: 4px 16px 16px;
+}
+
+/* aberto por HOVER (ainda não fixado por clique) — o pedido original */
+.painel-kpis--hover-abre:hover .painel-kpis__corpo {
+  max-height: 600px;
+  opacity: 1;
+  padding: 4px 16px 16px;
+}
+
+@media (max-width: 700px) {
+  /* touch não tem hover — sem isso o painel só abriria por clique mesmo,
+     o que já é o fallback correto (aria-expanded cobre o acesso). */
+  .painel-kpis__corpo { padding-left: 12px; padding-right: 12px; }
+}
+
+/* Este componente é usado em ~17 páginas ("Indicadores" no topo de cada
+   tela) e nunca teve versão escura — ficava uma faixa branca fixa cruando
+   com o resto da tela escura em toda página do sistema. */
+body.dark-theme .painel-kpis {
+  background: var(--mc-surface, #0f1f33);
+  border-color: var(--mc-border, #1e2d42);
+}
+body.dark-theme .painel-kpis__cabecalho:hover {
+  background: var(--mc-surface-2, #0d1b2a);
+}
+body.dark-theme .painel-kpis__titulo {
+  color: var(--mc-ink, #e6eef6);
+}

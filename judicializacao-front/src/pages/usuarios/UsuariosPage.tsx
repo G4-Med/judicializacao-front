@@ -24,6 +24,7 @@ import {
 } from '../../services/api/usuarios';
 import { getMedicosCompleto } from '../../services/api/orders';
 import './UsuariosPage.css';
+import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 
 interface ApiUsuario {
   id: number;
@@ -126,9 +127,9 @@ export function UsuariosPage() {
 
   const [selectedUsuarios, setSelectedUsuarios] = useState<UsuarioRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(10);
-  const [sortField, setSortField] = useState<string | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(null);
+  const [rows, setRows] = useState(100);
+  const [sortField, setSortField] = useState<string | undefined>('lastLogin');
+  const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(-1);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     nomeCompleto: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -449,6 +450,7 @@ export function UsuariosPage() {
         </div>
       </div>
 
+      <PainelKpis titulo="Indicadores">
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-header">
@@ -482,12 +484,16 @@ export function UsuariosPage() {
           <div className="kpi-value">{kpis.semLogin}</div>
         </div>
       </div>
+      </PainelKpis>
 
       <div className="card">
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Usuários cadastrados</h2>
         <DataTable
+          aria-label="Usuários cadastrados"
           value={usuarios}
           dataKey="id"
           paginator
+          rowsPerPageOptions={[10, 20, 50, 100]}
           rows={rows}
           first={first}
           totalRecords={usuarios.length}
