@@ -9,7 +9,7 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { Dropdown } from 'primereact/dropdown';
 import { Dialog } from 'primereact/dialog';
 import { FilterMatchMode } from 'primereact/api';
-import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder } from '../../services/api/orders';
+import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder, getCnjCandidatos, confirmarCnj } from '../../services/api/orders';
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './JuridicoPage.css';
@@ -101,6 +101,10 @@ export function JuridicoPage() {
   const [previewUrl, setPreviewUrl] = useState<string>('')
   const [previewTipo, setPreviewTipo] = useState<'pdf' | 'imagem' | 'outro'>('outro')
   const [previewNome, setPreviewNome] = useState<string>('')
+  // Candidatos a CNJ (task #217 peça 3): o batch noturno extrai dos anexos e PROPÕE;
+  // o humano confirma aqui vendo a origem — o sistema nunca grava CNJ sozinho (F1/G4).
+  const [candidatosCnj, setCandidatosCnj] = useState<{ cnj: string; origem?: string }[]>([])
+  const [confirmandoCnj, setConfirmandoCnj] = useState(false)
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -183,7 +187,30 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
     .then((res: any) => setAnexos(res.data.anexos))
     .catch(() => setAnexos([]))
     .finally(() => setLoadingAnexos(false))
+
+  // só busca candidato quando o pedido ainda não tem CNJ (senão o endpoint devolve 409)
+  setCandidatosCnj([])
+  if (!rowData.nprocesso) {
+    getCnjCandidatos(rowData.id)
+      .then((res: any) => setCandidatosCnj(res.data.candidatos ?? []))
+      .catch(() => setCandidatosCnj([]))
+  }
 };
+
+  const usarCandidatoCnj = async (cnj: string) => {
+    if (!processoEditando) return;
+    setConfirmandoCnj(true);
+    try {
+      await confirmarCnj(processoEditando.id, cnj, 'confirmar');
+      setNprocesso(cnj);
+      setCandidatosCnj([]);
+      carregarDados();
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'Não foi possível confirmar este CNJ.');
+    } finally {
+      setConfirmandoCnj(false);
+    }
+  };
 
   const handleSalvar = async () => {
     if (!processoEditando) return;
@@ -536,6 +563,19 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
 
 
             {/* Campos editáveis */}
+            {candidatosCnj.length > 0 && !nprocesso && (
+              <div className="field field-span-4 candidato-cnj" role="region" aria-label="Candidato a número do processo">
+                <label>Nº do processo encontrado nos anexos — confirme antes de usar</label>
+                {candidatosCnj.map((c) => (
+                  <div key={c.cnj} className="candidato-cnj__linha">
+                    <code className="juridico-numero">{c.cnj}</code>
+                    <small>origem: {c.origem === 'ocr' ? 'OCR do anexo escaneado' : 'texto do anexo'} · dígito verificador válido</small>
+                    <Button label="Confirmar este CNJ" size="small" icon="pi pi-check"
+                      loading={confirmandoCnj} onClick={() => usarCandidatoCnj(c.cnj)} disabled={readOnly} />
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="field field-span-2">
               <label>Número do Processo</label>
               <InputText

@@ -5,6 +5,7 @@ import { DatePickerPeriodo, type PeriodoSelecionado } from '../../components/Dat
 import { getMedicosCompleto, getOrders, getPerdas, getResultados } from '../../services/api/orders';
 import './DashboardPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { getKpiCompletude } from '../../services/api/orders';
 
 interface MedicoOption {
   label: string;
@@ -222,6 +223,12 @@ function createDoughnutOptions() {
 }
 
 export function DashboardPage() {
+  // KPI '% cadastro completo' (task #217 peça 4) — série do completar_cadastro (batch 03:00)
+  const [completude, setCompletude] = useState<any>(null);
+  useEffect(() => {
+    getKpiCompletude().then(({ data }) => setCompletude(data.ultima_medicao)).catch(() => setCompletude(null));
+  }, []);
+
   const [medicosOptions, setMedicosOptions] = useState<MedicoOption[]>([
     { label: 'Todos os médicos', value: null }
   ]);
@@ -654,6 +661,21 @@ export function DashboardPage() {
         ))}
       </div>
       </PainelKpis>
+
+      {completude && (
+        <PainelKpis titulo="Cadastro dos pedidos (CNJ · SEI · Comarca · Anexo)">
+          <div className="dashboard-completude" aria-label="Completude do cadastro por fase">
+            {completude.telas?.filter((m: any) => m.tela !== 'todos').map((m: any) => (
+              <div key={m.tela} className="dc-card">
+                <span className="dc-tela">{({juridico:'1. Análise Jurídica',orcamento:'3. Orçamento Médico',protocolar:'4. Protocolar',protocolados:'5. Protocolados',segredo:'6. Segredo de Justiça'} as any)[m.tela] ?? m.tela}</span>
+                <strong>{m.n ? Math.round(100*(m.cnj_ok+m.sei_ok+m.comarca_ok+m.anexo_ok)/(4*m.n)) : 100}%</strong>
+                <small>CNJ {m.cnj_ok}/{m.n} · SEI {m.sei_ok}/{m.n} · Comarca {m.comarca_ok}/{m.n} · Anexo {m.anexo_ok}/{m.n}</small>
+              </div>
+            ))}
+            <small className="dc-rodape">medição {completude.telas?.[0]?.dia} · atualiza todo dia às 03:00 (batch de completude)</small>
+          </div>
+        </PainelKpis>
+      )}
 
       <PainelKpis titulo="Análises operacionais">
       <div className="dashboard-section-subtitle">Status, distribuição por médico e ticket médio do período.</div>

@@ -633,3 +633,11 @@ body.dark-theme .dashboard-medico-performance__mini-bar { background: var(--mc-s
   }
   .dashboard-medico-performance__header-row { display: none; }
 }
+
+/* Completude do cadastro (task #217 peça 4) */
+.dashboard-completude { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; padding: 4px 2px; }
+.dc-card { background: var(--mc-surface, #fff); border: 1px solid var(--mc-border, #e3eaef); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+.dc-tela { font-size: 0.78rem; color: var(--mc-muted, #5b6b7a); font-weight: 600; }
+.dc-card strong { font-size: 1.5rem; color: var(--mc-green-500, #00a651); font-variant-numeric: tabular-nums; }
+.dc-card small { font-size: 0.72rem; color: var(--mc-muted, #5b6b7a); }
+.dc-rodape { grid-column: 1 / -1; color: #94a3b8; font-size: 0.72rem; }

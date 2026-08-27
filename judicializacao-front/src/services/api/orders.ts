@@ -231,3 +231,11 @@ export const getInteligenciaPedido = (orderId: number) =>
 // só chamar quando a linha for EXPANDIDA, nunca no carregamento da tabela.
 export const getPrecosProcedimento = (orderId: number) =>
   api.get(`/orders/${orderId}/precos/`);
+
+// Peças 3-4 do chip cadastro (task #217): candidato a CNJ extraído dos anexos pelo batch
+// noturno — o humano confirma vendo a origem; e o KPI de completude (série do ledger).
+export const getCnjCandidatos = (orderId: number) =>
+  api.get(`/orders/${orderId}/cnj-candidatos/`);
+export const confirmarCnj = (orderId: number, cnj: string, acao: 'confirmar' | 'corrigir') =>
+  api.post(`/orders/${orderId}/cnj-confirmar/`, { cnj, acao });
+export const getKpiCompletude = () => api.get('/kpis/completude/');
