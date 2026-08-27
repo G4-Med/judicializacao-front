@@ -26,6 +26,8 @@ export const salvarResultadoSegredo = (id: number, data: any) => api.post(`/orde
 // Classificação retroativa (task #196, 26/08) — candidatos já no banco (menor de
 // idade, ainda não marcados) e a ação de confirmar 1 candidato como segredo.
 export const getCandidatosSegredoJustica = () => api.get('/orders/segredo-justica/candidatos/');
+export const desmarcarSegredoJustica = (id: number, motivo: string) =>
+  api.post(`/orders/segredo-justica/${id}/desmarcar/`, { motivo });
 export const marcarSegredoJusticaRetroativo = (id: number) =>
   api.post(`/orders/segredo-justica/${id}/marcar-retroativo/`);
 export const getProtocolados = () => api.get('/orders/protocolados/');

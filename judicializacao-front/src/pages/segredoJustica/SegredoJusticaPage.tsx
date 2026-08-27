@@ -16,7 +16,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode } from 'primereact/api';
 import {
   getSegredoJustica, salvarResultadoSegredo, getAnexosOrder,
-  getCandidatosSegredoJustica, marcarSegredoJusticaRetroativo,
+  getCandidatosSegredoJustica, marcarSegredoJusticaRetroativo, desmarcarSegredoJustica,
 } from '../../services/api/orders';
 import { Dialog } from 'primereact/dialog';
 import { getStatusTagStyle } from '../../utils/statusTag';
@@ -581,7 +581,20 @@ useEffect(() => { carregarDados(); }, [fila]);
             style={{ minWidth: '11rem' }}
             body={(r: any) => {
               if (r.segredoApiSinal === true) return <Tag value="API confirma" severity="danger" icon="pi pi-lock" title={r.segredoApiFonte ?? ''} />;
-              if (r.segredoApiSinal === false) return <Tag value="API refuta — revisar" severity="warning" icon="pi pi-exclamation-triangle" title={`Pode ser processo comum. ${r.segredoApiFonte ?? ''}`} />;
+              if (r.segredoApiSinal === false) return (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Tag value="API refuta — revisar" severity="warning" icon="pi pi-exclamation-triangle" title={`Pode ser processo comum. ${r.segredoApiFonte ?? ''}`} />
+                  {!readOnly && <Button label="Desmarcar" size="small" text severity="danger"
+                    title="Confirmou que NÃO é segredo? Devolve o pedido ao fluxo comum (com motivo, auditado)."
+                    onClick={async (ev) => {
+                      ev.stopPropagation();
+                      const motivo = window.prompt(`Desmarcar Segredo de Justiça de ${r.paciente}?\nEscreva o motivo (obrigatório):`);
+                      if (!motivo?.trim()) return;
+                      try { await desmarcarSegredoJustica(r.id, motivo.trim()); carregarDados(); }
+                      catch (err: any) { alert(err?.response?.data?.error ?? 'Erro ao desmarcar.'); }
+                    }} />}
+                </span>
+              );
               return <span className="ident-vazio" title={r.segredoApiFonte ?? 'CNJ ausente ou não consta no DataJud'}>não verificado</span>;
             }}
           />
