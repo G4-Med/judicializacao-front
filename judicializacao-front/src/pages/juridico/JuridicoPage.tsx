@@ -76,8 +76,11 @@ function calcularIdade(dataNascimento: string | null): number {
 
 
 export function JuridicoPage() {
-  const { isReadOnly } = useAccess();
+  const { isReadOnly, profile } = useAccess();
   const readOnly = isReadOnly('juridico');
+  // Equipe g4med (Admin/Gerente) pode decidir SEM a peça de inteiro teor
+  // (@R 27/08 20:27; decisão procurador a4183eff70) — o escritório jurídico não.
+  const equipeG4med = profile.group === 'ADMIN' || profile.group === 'GERENTE';
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [processos, setProcessos] = useState<ProcessoJuridico[]>([]);
@@ -245,8 +248,9 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
     }
 
     // Peça de inteiro teor obrigatória nos DOIS caminhos da decisão (@R 27/08).
+    // Refinamento 20:27: a equipe g4med pode seguir sem — anexa depois em outra fase.
     const decidindo = statusJuridico === 'Cotar' || statusJuridico === 'Não Cotar';
-    if (decidindo && !inteiroTeorJaAnexado && !inteiroTeorFile) {
+    if (decidindo && !equipeG4med && !inteiroTeorJaAnexado && !inteiroTeorFile) {
       setInteiroTeorObrigatorio(true);
       return;
     }
@@ -691,7 +695,9 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
               <label>
                 Peça de inteiro teor (PDF)
                 {(statusJuridico === 'Cotar' || statusJuridico === 'Não Cotar') && !inteiroTeorJaAnexado && (
-                  <span style={{ color: '#ef4444', marginLeft: '4px' }}>*obrigatório na decisão</span>
+                  equipeG4med
+                    ? <span style={{ color: '#b45309', marginLeft: '4px' }}>equipe g4med pode seguir sem — anexe depois em outra fase</span>
+                    : <span style={{ color: '#ef4444', marginLeft: '4px' }}>*obrigatório na decisão</span>
                 )}
               </label>
               {inteiroTeorJaAnexado ? (

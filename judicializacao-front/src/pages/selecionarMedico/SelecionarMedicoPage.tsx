@@ -23,7 +23,7 @@ import './SelecionarMedicoPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
@@ -441,6 +441,7 @@ export function SelecionarMedicoPage() {
           {colunaComarca()}
           {colunaCadastro()}
           {colunaSegredo()}
+          {colunaInteiroTeor()}
           {colunaSolicitante()}
           <Column
             field="procedimento" className="col-procedimento-upper"

@@ -27,7 +27,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import './ProcessosPage.css';
-import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
@@ -2079,6 +2079,7 @@ ${linhasAnexos}
           {colunaComarca()}
           {colunaCadastro()}
           {colunaSegredo()}
+          {colunaInteiroTeor()}
           {colunaSolicitante()}
 
           {/* <Column

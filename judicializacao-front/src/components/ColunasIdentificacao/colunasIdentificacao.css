@@ -23,3 +23,19 @@ body.dark-theme .chip-cadastro--completo { background: rgba(28,122,72,0.16); bor
 .hint-coluna__corpo { font-size: 0.92rem; line-height: 1.6; color: var(--mc-ink-2, #334155); }
 .hint-coluna__corpo p { margin: 0 0 10px; }
 .hint-coluna__corpo code { background: var(--mc-surface-2, #f1f5f9); padding: 1px 6px; border-radius: 4px; font-size: 0.85em; }
+
+/* botão de anexar a peça de inteiro teor direto na linha (qualquer fase) */
+.inteiro-teor-anexar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px dashed #f59e0b;
+  border-radius: 6px;
+  color: #b45309;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.inteiro-teor-anexar:hover { background: #fffbeb; }

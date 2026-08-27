@@ -234,6 +234,15 @@ body.dark-theme .p-multiselect {
   font-size: 0.85rem;
   font-weight: 600;
 }
+/* ícone alinhado no centro vertical do botão (pedido @R 27/08 20:31) */
+.p-button.botao-colunas .p-button-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 0.9rem;
+  margin: 0;
+}
 .p-button.botao-colunas:hover {
   background: #f1f5f9;
   color: #1e293b;

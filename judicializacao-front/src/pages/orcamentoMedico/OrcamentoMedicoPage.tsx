@@ -23,7 +23,7 @@ import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { ContadorRegistros, contarPorCampo } from '../../components/ContadorRegistros/ContadorRegistros';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaSolicitante, tagTipoPaciente, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, tagTipoPaciente, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
@@ -598,6 +598,7 @@ ${blocos}
           {colunaComarca()}
           {colunaCadastro()}
           {colunaSegredo()}
+          {colunaInteiroTeor()}
           {colunaSolicitante()}
           <Column field="idade" header="Idade" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '7rem' }} />

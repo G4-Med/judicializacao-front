@@ -29,7 +29,7 @@ import './ResultadosPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 // Reaproveita estilos do dialog Atualizar (timeline, update-section, anexo, etc).
 import '../protocolados/ProtocoladosPage.css';
-import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
@@ -578,6 +578,7 @@ const kpis = useMemo(() => {
           {colunaComarca()}
           {colunaCadastro()}
           {colunaSegredo()}
+          {colunaInteiroTeor()}
           {colunaSolicitante()}
 
           <Column

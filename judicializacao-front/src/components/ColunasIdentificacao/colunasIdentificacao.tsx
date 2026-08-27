@@ -4,6 +4,7 @@ import { Dialog } from 'primereact/dialog';
 import { Tag } from 'primereact/tag';
 import { InputText } from 'primereact/inputtext';
 import { BotaoCopiar } from '../BotaoCopiar/BotaoCopiar';
+import { uploadAnexoOrder } from '../../services/api/orders';
 import './colunasIdentificacao.css';
 
 /**
@@ -34,7 +35,9 @@ export interface Cadastro {
 
 export interface LinhaIdentificada {
   cadastro?: Cadastro | null;
+  id?: number;
   segredo?: 'sim' | 'possivel' | 'nao' | null;
+  temInteiroTeor?: boolean | null;
   solicitante?: string | null;
   segredoFonte?: string | null;
   nprocesso?: string | null;
@@ -126,6 +129,50 @@ function nomeDoEmail(email: string): string {
     .map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
 }
 
+/* Peça de inteiro teor (@R 27/08 20:27): a decisão do Jurídico exige a peça
+   (equipe g4med pode passar sem), e ENQUANTO ESTIVER VAZIA qualquer fase pode
+   anexá-la — esta célula é esse "qualquer momento": ✓ quando existe, botão
+   Anexar quando falta. O upload vai pro bucket R2 (tipo DECISAO_INTEIRO_TEOR). */
+function CelulaInteiroTeor({ linha }: { linha: LinhaIdentificada }) {
+  const [enviado, setEnviado] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+
+  if (linha.temInteiroTeor || enviado) {
+    return <Tag value="Inteiro teor ✓" severity="success" icon="pi pi-file-check"
+      title="A peça de inteiro teor já está anexada a este pedido" />;
+  }
+  if (!linha.id) return <span className="ident-vazio">—</span>;
+  return (
+    <label className="inteiro-teor-anexar" title="Falta a peça de inteiro teor — anexe o PDF aqui (pode ser feito em qualquer fase)">
+      <i className={enviando ? 'pi pi-spin pi-spinner' : 'pi pi-upload'} />
+      {enviando ? ' Enviando…' : ' Anexar'}
+      <input type="file" accept="application/pdf" style={{ display: 'none' }} disabled={enviando}
+        onChange={async (e) => {
+          const f = e.target.files?.[0];
+          if (!f) return;
+          setEnviando(true);
+          try {
+            await uploadAnexoOrder(linha.id as number, f, 'DECISAO_INTEIRO_TEOR');
+            setEnviado(true);
+          } catch {
+            alert('Não foi possível anexar a peça. Tente novamente.');
+          } finally {
+            setEnviando(false);
+          }
+        }} />
+    </label>
+  );
+}
+
+export function colunaInteiroTeor(largura = '10rem') {
+  return (
+    <Column key="col-inteiro-teor" field="temInteiroTeor"
+      header={cabecalhoComHint('Inteiro teor', EXPLICA.inteiroTeor)} sortable
+      style={{ minWidth: largura }}
+      body={(r: LinhaIdentificada) => <CelulaInteiroTeor linha={r} />} />
+  );
+}
+
 export function colunaSolicitante(largura = '13rem') {
   return (
     <Column key="col-solicitante" field="solicitante" header={cabecalhoComHint('Solicitante', EXPLICA.solicitante)}
@@ -195,6 +242,13 @@ export function cabecalhoComHint(titulo: string, explicacao: React.ReactNode) {
 }
 
 const EXPLICA = {
+  inteiroTeor: <>
+    <p>A <strong>peça de inteiro teor</strong> é o PDF da decisão judicial completa,
+    guardado no servidor junto ao pedido.</p>
+    <p>Ela é exigida na Análise Jurídica ao decidir Cotar ou Não Cotar (a equipe g4med
+    pode seguir sem — o escritório jurídico não). Enquanto estiver faltando, o botão
+    <em> Anexar</em> aparece aqui em qualquer fase.</p>
+  </>,
   cnj: <>
     <p>O <strong>número CNJ</strong> é a identidade nacional do processo judicial (padrão do
     Conselho Nacional de Justiça): <code>NNNNNNN-DD.AAAA.J.TR.OOOO</code>.</p>

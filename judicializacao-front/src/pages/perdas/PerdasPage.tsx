@@ -13,7 +13,7 @@ import { getPerdas, getOrders, getMedicosCompleto } from '../../services/api/ord
 import { getStatusTagStyle } from '../../utils/statusTag';
 import './PerdasPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
-import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
@@ -337,6 +337,7 @@ export function PerdasPage() {
           {colunaComarca()}
           {colunaCadastro()}
           {colunaSegredo()}
+          {colunaInteiroTeor()}
           {colunaSolicitante()}
 
           <Column
