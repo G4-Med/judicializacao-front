@@ -211,3 +211,31 @@ body.dark-theme .p-multiselect {
   font-size: 0.85rem;
 }
 .botao-exportar-excel { margin-left: auto; }
+
+/* Botão "Colunas" (personalização por usuário, task #228): alguns cabeçalhos de
+   card têm regras de tema que esmagam o botão num pill só-ícone. Estas regras
+   garantem o formato padrão (ícone + rótulo, outline) em TODA tabela. */
+.p-button.botao-colunas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: auto;
+  height: auto;
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  background: transparent;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.p-button.botao-colunas .p-button-label {
+  display: inline;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.p-button.botao-colunas:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #94a3b8;
+}

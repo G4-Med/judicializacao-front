@@ -470,7 +470,6 @@ export function AguardandoCirurgiaPage() {
               onClick={() => window.open(a.linkImagem, '_blank', 'noopener,noreferrer')}
               title={nome}
             >
-          {colunasCfg.filtrar(<>
               <i className={`${icone} ag-cir-anexo-item__icon`} />
               <span className="ag-cir-anexo-item__nome">{nome}</span>
               <i className="pi pi-external-link ag-cir-anexo-item__action" />
@@ -544,6 +543,7 @@ export function AguardandoCirurgiaPage() {
           emptyMessage="Nenhum pedido aguardando cirurgia."
           className="ag-cir-table"
         >
+          {colunasCfg.filtrar(<>
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}

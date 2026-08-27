@@ -432,7 +432,6 @@ useEffect(() => { carregarDados(); }, [fila]);
             onClick={() => candidatosHook.setAberto((v) => !v)}
             aria-expanded={candidatosHook.aberto}
           >
-          {colunasCfg.filtrar(<>
             <i className={`pi ${candidatosHook.aberto ? 'pi-chevron-down' : 'pi-chevron-right'}`} />
             <i className="pi pi-flag" />
             <span>
@@ -519,6 +518,7 @@ useEffect(() => { carregarDados(); }, [fila]);
           emptyMessage="Nenhum processo encontrado."
           className="segredo-justica-table"
         >
+          {colunasCfg.filtrar(<>
           {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
 
           <Column

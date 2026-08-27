@@ -1605,7 +1605,6 @@ ${linhasAnexos}
               onMouseEnter={(e) => { e.currentTarget.style.background = '#f3f4f6' }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
             >
-          {colunasCfg.filtrar(<>
               <i className={icone} style={{ fontSize: '1.1rem', color: '#f97316' }} />
               <span style={{ flex: 1 }}>{nomeArquivo}</span>
               <i className="pi pi-eye" style={{ color: '#9ca3af', fontSize: '0.85rem' }} />
@@ -2047,6 +2046,7 @@ ${linhasAnexos}
           emptyMessage="Nenhum processo encontrado."
           className="processos-table"
         >
+          {colunasCfg.filtrar(<>
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
 
           <Column

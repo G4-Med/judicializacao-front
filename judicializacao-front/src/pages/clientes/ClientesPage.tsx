@@ -1325,7 +1325,6 @@ const handleSalvarEdicao = async () => {
               rel="noopener noreferrer"
               className="base-orcamento-pdf__link"
             >
-          {colunasCfg.filtrar(<>
               <i className="pi pi-file-pdf" />
               <span>Ver PDF atual</span>
             </a>
@@ -1550,6 +1549,7 @@ const handleSalvarEdicao = async () => {
           emptyMessage="Nenhum cliente encontrado."
           className="clientes-table"
         >
+          {colunasCfg.filtrar(<>
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
 
           <Column

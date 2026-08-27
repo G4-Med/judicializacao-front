@@ -98,7 +98,7 @@ export function useColunasVisiveis(tela: string) {
   const botao = (
     <>
       <Button label="Colunas" icon="pi pi-sliders-h" size="small" outlined severity="secondary"
-        onClick={() => setAberto(true)}
+        className="botao-colunas" onClick={() => setAberto(true)}
         title="Escolha quais colunas aparecem — a escolha fica salva para o seu usuário" />
       <Dialog header="Colunas visíveis" visible={aberto} modal onHide={() => setAberto(false)}
         style={{ width: '24rem', maxWidth: '94vw' }}>
