@@ -114,12 +114,15 @@ export function colunaSegredo(largura = '9rem') {
   );
 }
 
-/** Tipo do paciente pela idade (@R 27/08 18:51: "pediatria ou adulto... ou idoso").
- *  Pediátrico <18 · Adulto 18-59 · Idoso 60+ (Estatuto do Idoso). Sem data = "—". */
+/** Tipo do paciente (@R 27/08 18:51 + 19:26): Recém-nascido ≤28 dias · Pediátrico <18 ·
+ *  Adulto 18-59 · Idoso 60+ (Estatuto do Idoso). Sem data = "—". */
 export function tagTipoPaciente(tipo?: string | null) {
   if (!tipo) return <span className="ident-vazio" title="Sem data de nascimento no pedido">—</span>;
-  const sev = tipo === 'Pediátrico' ? 'warning' : tipo === 'Idoso' ? 'danger' : 'info';
-  return <Tag value={tipo} severity={sev as any} />;
+  const sev = tipo === 'Recém-nascido' ? 'contrast'
+    : tipo === 'Pediátrico' ? 'warning'
+    : tipo === 'Idoso' ? 'danger' : 'info';
+  return <Tag value={tipo} severity={sev as any}
+    title={tipo === 'Recém-nascido' ? 'Até 28 dias de vida (neonato)' : undefined} />;
 }
 
 /** Célula de nome com botão de copiar — para a coluna Paciente que cada tela já tem. */
