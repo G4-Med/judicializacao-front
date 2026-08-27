@@ -143,17 +143,21 @@
   font-size: 0.88rem;
   vertical-align: middle;
 }
-.orcamento-table .p-column-filter,
-.orcamento-table .p-inputtext,
-.orcamento-table .p-dropdown {
+/* Escopado ao CABEÇALHO (27/08): estes campos são os filtros de coluna, que vivem no
+   thead. Sem o `thead`, o seletor também alcançava o seletor de itens-por-página do
+   paginator — que fica dentro de .orcamento-table mas FORA da tabela — e o `width:100%`
+   o esticava na largura inteira da tela, virando uma barra solta no rodapé. */
+.orcamento-table thead .p-column-filter,
+.orcamento-table thead .p-inputtext,
+.orcamento-table thead .p-dropdown {
   width: 100%;
   border-color: var(--mc-border-2, #d6e0e6);
   border-radius: 8px;
   font-size: 0.85rem;
 }
-.orcamento-table .p-column-filter:focus,
-.orcamento-table .p-inputtext:focus,
-.orcamento-table .p-dropdown:not(.p-disabled).p-focus {
+.orcamento-table thead .p-column-filter:focus,
+.orcamento-table thead .p-inputtext:focus,
+.orcamento-table thead .p-dropdown:not(.p-disabled).p-focus {
   border-color: var(--mc-green-500);
   box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.12);
 }
@@ -727,3 +731,7 @@ body.dark-theme .secao-orcamento {
   border-color: #1e2d42;
 }
 body.dark-theme .secao-orcamento h3 { color: #e6eef6; }
+
+/* Alerta "Sem anexo" (task #192, 26/08) */
+.orcamento-paciente-cel { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.orcamento-tag-sem-anexo { font-size: 10.5px; }
