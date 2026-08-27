@@ -26,7 +26,7 @@ import './SegredoJusticaPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { tagTipoPaciente, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 interface DocumentoProcesso {
   label: string;
@@ -549,9 +549,7 @@ useEffect(() => { carregarDados(); }, [fila]);
             header="Tipo"
             sortable
             style={{ minWidth: '8rem' }}
-            body={(r: any) => r.tipoPaciente
-              ? <Tag value={r.tipoPaciente} severity={r.tipoPaciente === 'Pediátrico' ? 'warning' : 'info'} />
-              : <span className="ident-vazio" title="Sem data de nascimento no pedido">—</span>}
+            body={(r: any) => tagTipoPaciente(r.tipoPaciente)}
           />
           <Column
             field="procedimento"

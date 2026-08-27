@@ -13,6 +13,7 @@ import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder, getCnjCan
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './JuridicoPage.css';
+import { tagTipoPaciente } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { PainelPrecos } from '../../components/PainelPrecos/PainelPrecos';
@@ -408,6 +409,8 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             filterElement={(o) => filterElement(o, 'Buscar')}
             style={{ minWidth: '7rem' }}
           />
+          <Column field="tipoPaciente" header="Tipo" sortable style={{ minWidth: '7rem' }}
+            body={(r: any) => tagTipoPaciente(r.tipoPaciente)} />
           <Column field="procedimento" className="col-procedimento-upper" header="Procedimento" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '18rem' }} />
           {/* CNJ e SEI nas colunas (@R 27/08 12:59): os dois números do pedido, buscáveis e copiáveis */}

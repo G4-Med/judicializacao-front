@@ -114,6 +114,14 @@ export function colunaSegredo(largura = '9rem') {
   );
 }
 
+/** Tipo do paciente pela idade (@R 27/08 18:51: "pediatria ou adulto... ou idoso").
+ *  Pediátrico <18 · Adulto 18-59 · Idoso 60+ (Estatuto do Idoso). Sem data = "—". */
+export function tagTipoPaciente(tipo?: string | null) {
+  if (!tipo) return <span className="ident-vazio" title="Sem data de nascimento no pedido">—</span>;
+  const sev = tipo === 'Pediátrico' ? 'warning' : tipo === 'Idoso' ? 'danger' : 'info';
+  return <Tag value={tipo} severity={sev as any} />;
+}
+
 /** Célula de nome com botão de copiar — para a coluna Paciente que cada tela já tem. */
 export function nomeComCopiar(nome: string | null | undefined) {
   return <>{nome}<BotaoCopiar valor={nome} rotulo="nome do paciente" /></>;
