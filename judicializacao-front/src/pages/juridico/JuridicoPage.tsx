@@ -18,6 +18,7 @@ import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/Primeira
 import { PainelPrecos } from '../../components/PainelPrecos/PainelPrecos';
 import { ContadorRegistros } from '../../components/ContadorRegistros/ContadorRegistros';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
+import { BotaoCopiar } from '../../components/BotaoCopiar/BotaoCopiar';
 import { useNavigate } from 'react-router-dom';
 
 // Meta desta fase (triagem jurídica) — espelha backend/funil.py FASES['triagem'].meta_dias.
@@ -360,6 +361,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             body={(r: ProcessoJuridicoRow) => (
               <span className="juridico-paciente-cel">
                 {r.paciente}
+                <BotaoCopiar valor={r.paciente} rotulo="nome do paciente" />
                 {r.possivelMenorIdade && (
                   <Tag value="Menor de idade — avaliar Segredo de Justiça" severity="warning"
                     className="juridico-tag-menor-idade"
@@ -385,12 +387,12 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           <Column field="nprocesso" header="Nº CNJ" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar CNJ')} style={{ minWidth: '14rem' }}
             body={(r: ProcessoJuridicoRow) => r.nprocesso
-              ? <code className="juridico-numero" title="Número CNJ do processo">{r.nprocesso}</code>
+              ? <><code className="juridico-numero" title="Número CNJ do processo">{r.nprocesso}</code><BotaoCopiar valor={r.nprocesso} rotulo="número CNJ" /></>
               : <span className="juridico-geo-vazio">—</span>} />
           <Column field="numeroSei" header="Nº SEI" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar SEI')} style={{ minWidth: '12rem' }}
             body={(r: ProcessoJuridicoRow) => r.numeroSei
-              ? <code className="juridico-numero" title={r.familiaSei ? `Família ${r.familiaSei}` : 'Número SEI'}>{r.numeroSei}</code>
+              ? <><code className="juridico-numero" title={r.familiaSei ? `Família ${r.familiaSei}` : 'Número SEI'}>{r.numeroSei}</code><BotaoCopiar valor={r.numeroSei} rotulo="número SEI" /></>
               : <span className="juridico-geo-vazio">—</span>} />
           <Column field="comarca" header="Comarca" sortable style={{ minWidth: '11rem' }}
             body={(r: ProcessoJuridicoRow) => {

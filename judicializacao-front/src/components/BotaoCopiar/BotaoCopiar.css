@@ -1,0 +1,10 @@
+.botao-copiar {
+  border: 1px solid transparent; background: transparent; color: #94a3b8;
+  width: 24px; height: 24px; border-radius: 6px; cursor: pointer; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center; margin-left: 6px;
+  vertical-align: middle; font-size: 0.8rem;
+}
+.botao-copiar:hover { background: var(--mc-surface-2, #f1f5f9); color: var(--mc-ink-2, #33414f); border-color: var(--mc-border, #e3eaef); }
+.botao-copiar:focus-visible { outline: 2px solid var(--mc-green-500, #00a651); outline-offset: 1px; }
+.botao-copiar--ok { color: #16a34a; }
+.botao-copiar .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
