@@ -27,7 +27,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import './ProcessosPage.css';
-import { colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 const STATUS_PROCESSO_FALLBACK = [
   'Aguardando Juridico',
@@ -2071,6 +2071,7 @@ ${linhasAnexos}
           {colunaSei()}
           {colunaComarca()}
           {colunaCadastro()}
+          {colunaSegredo()}
 
           {/* <Column
             field="idade"

@@ -17,7 +17,10 @@ export const trocarMedicoOrcamento = (id: number, idMedico: number) =>
   api.post(`/orders/orcamento-medico/${id}/trocar-medico/`, { idMedico });
 export const getParaProtocolar = () => api.get('/orders/para-protocolar/');
 export const salvarProtocolar = (id: number, data: any) => api.post(`/orders/para-protocolar/${id}/salvar/`, data);
-export const getSegredoJustica = () => api.get('/orders/segredo-justica/');
+// fila: 'analisar' (aguardando decisão) | 'ses' (orçamento já respondido à SES) |
+// undefined = todas (task #222 — área "Enviado à SES — Segredo de Justiça").
+export const getSegredoJustica = (fila?: 'analisar' | 'ses') =>
+  api.get('/orders/segredo-justica/', { params: fila ? { fila } : {} });
 export const salvarResultadoSegredo = (id: number, data: any) => api.post(`/orders/segredo-justica/${id}/salvar/`, data);
 
 // Classificação retroativa (task #196, 26/08) — candidatos já no banco (menor de

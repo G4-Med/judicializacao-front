@@ -23,7 +23,7 @@ import './SelecionarMedicoPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 interface ProcessoResumo {
   id: number;
@@ -433,6 +433,7 @@ export function SelecionarMedicoPage() {
           {colunaSei()}
           {colunaComarca()}
           {colunaCadastro()}
+          {colunaSegredo()}
           <Column
             field="procedimento" className="col-procedimento-upper"
             header="Procedimento"

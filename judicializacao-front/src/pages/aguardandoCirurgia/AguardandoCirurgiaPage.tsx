@@ -21,7 +21,7 @@ import type {
 } from '../../services/api/financeiro';
 import './AguardandoCirurgiaPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
-import { colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 interface Anexo {
   id: number;
@@ -551,6 +551,7 @@ export function AguardandoCirurgiaPage() {
           {colunaSei()}
           {colunaComarca()}
           {colunaCadastro()}
+          {colunaSegredo()}
           <Column
             field="medico"
             header="Médico"

@@ -34,6 +34,7 @@ export const MENU_CONFIG: MenuConfigItem[] = [
       { label: 'Protocolar', icon: 'pi pi-angle-right', path: '/para-protocolar', screen: 'paraProtocolar' },
       { label: 'Protocolados', icon: 'pi pi-angle-right', path: '/protocolados', screen: 'protocolados' },
       { label: 'Segredo de Justiça', icon: 'pi pi-angle-right', path: '/segredo-justica', screen: 'segredoJustica' },
+      { label: 'Enviado à SES — Segredo', icon: 'pi pi-angle-right', path: '/segredo-justica?fila=ses', screen: 'segredoJustica' },
     ],
   },
   {

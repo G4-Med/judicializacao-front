@@ -34,6 +34,8 @@ export interface Cadastro {
 
 export interface LinhaIdentificada {
   cadastro?: Cadastro | null;
+  segredo?: 'sim' | 'possivel' | 'nao' | null;
+  segredoFonte?: string | null;
   nprocesso?: string | null;
   numeroSei?: string | null;
   familiaSei?: string | null;
@@ -95,6 +97,23 @@ export function colunaComarca(largura = '11rem') {
   );
 }
 
+/** Coluna Segredo × Sem segredo em TODA tabela (@R 27/08 16:52: "toda coluna tem se o
+ *  processo é segredo de justiça ou sem segredo em cada página"). 3 estados do backend:
+ *  sim = marca confirmada · possivel = API DataJud sinalizou, aguardando confirmação
+ *  humana (aba Candidatos do Segredo) · nao = sem marca nem sinal. */
+export function colunaSegredo(largura = '9rem') {
+  return (
+    <Column key="col-segredo" field="segredo" header={cabecalhoComHint('Segredo', EXPLICA.segredo)} sortable
+      style={{ minWidth: largura }}
+      body={(r: LinhaIdentificada) => {
+        if (r.segredo === 'sim') return <Tag value="Segredo de Justiça" severity="danger" icon="pi pi-lock" title={r.segredoFonte ?? 'Marcado no sistema'} />;
+        if (r.segredo === 'possivel') return <Tag value="Possível segredo" severity="warning" icon="pi pi-question-circle" title={`Sinal da API — confirme na tela Segredo de Justiça. ${r.segredoFonte ?? ''}`} />;
+        if (r.segredo === 'nao') return <Tag value="Sem segredo" severity="secondary" title={r.segredoFonte ?? 'Sem marca nem sinal da API'} />;
+        return <span className="ident-vazio">—</span>;
+      }} />
+  );
+}
+
 /** Célula de nome com botão de copiar — para a coluna Paciente que cada tela já tem. */
 export function nomeComCopiar(nome: string | null | undefined) {
   return <>{nome}<BotaoCopiar valor={nome} rotulo="nome do paciente" /></>;
@@ -152,6 +171,16 @@ const EXPLICA = {
     <p>Processo na <strong>Justiça Federal</strong> não tem comarca estadual (a etiqueta
     diz isso). "Comarca não mapeada" = código ainda sem tradução no nosso mapa — a aliança
     de dados completa aos poucos.</p>
+  </>,
+  segredo: <>
+    <p>Diz se o processo corre em <strong>segredo de justiça</strong>:</p>
+    <p><strong>Segredo de Justiça</strong> = confirmado no sistema (fluxo próprio: folha
+    timbrada e e-mails específicos) · <strong>Possível segredo</strong> = a consulta
+    automática ao DataJud/CNJ sinalizou (sigilo declarado ou classe protegida por lei,
+    como Infância e Juventude), mas ninguém confirmou ainda — confirme na tela Segredo
+    de Justiça · <strong>Sem segredo</strong> = processo comum.</p>
+    <p><em>De onde vem:</em> consulta automática à base pública do CNJ na chegada do
+    pedido + confirmação humana. Passe o mouse na etiqueta para ver a fonte.</p>
   </>,
   cadastro: <>
     <p>O <strong>cadastro</strong> resume, em 4 pontos, o que este pedido tem e o que falta:

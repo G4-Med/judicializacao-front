@@ -437,6 +437,15 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                 </span>
               );
             }} />
+          {/* Selo Segredo em toda tabela (@R 27/08 16:52) — na fase 1 é onde a decisão
+              COTAR/NÃO COTAR acontece já sabendo que o processo é sigiloso. */}
+          <Column field="segredo" header="Segredo" sortable style={{ minWidth: '9rem' }}
+            body={(r: any) => {
+              if (r.segredo === 'sim') return <Tag value="Segredo de Justiça" severity="danger" icon="pi pi-lock" title={r.segredoFonte ?? 'Marcado no sistema'} />;
+              if (r.segredo === 'possivel') return <Tag value="Possível segredo" severity="warning" icon="pi pi-question-circle" title={`Sinal da consulta ao CNJ. ${r.segredoFonte ?? ''}`} />;
+              if (r.segredo === 'nao') return <Tag value="Sem segredo" severity="secondary" />;
+              return <span className="juridico-geo-vazio">—</span>;
+            }} />
           <Column
             field="dias"
             header="Dias Solicitados"

@@ -1,6 +1,21 @@
 import type { MenuItem } from 'primereact/menuitem';
 import type { NavigateFunction } from 'react-router-dom';
 import type { ScreenKey } from '../../access/permissions';
+import { ETAPAS } from '../../pages/processoOperacional/conteudo';
+
+// Pedido @R 26/08: o menu lateral usa o MESMO número da regra do Processo
+// Operacional (SSOT em conteudo.ts) — assim quem opera (ex.: Yago) liga o item
+// do menu à regra numerada sem precisar decorar qual etapa é qual. Derivado, não
+// duplicado: se a numeração mudar em conteudo.ts, o menu acompanha sozinho.
+const NUMERO_REGRA_POR_PATH: Record<string, number> = Object.fromEntries(
+  ETAPAS.filter((etapa) => etapa.rota).map((etapa) => [etapa.rota as string, etapa.numero]),
+);
+
+// Mesmo pedido — quem é dono de cada etapa (G4MED ou Instituto Mateus), pra um
+// hint visual no menu (26/08). Derivado do MESMO SSOT, mesma razão do número.
+export const DONO_POR_PATH: Record<string, 'INSTITUTO' | 'G4MED'> = Object.fromEntries(
+  ETAPAS.filter((etapa) => etapa.rota).map((etapa) => [etapa.rota as string, etapa.dono]),
+);
 
 interface MenuLeafConfig {
   label: string;
@@ -25,18 +40,20 @@ export const MENU_CONFIG_CLEAN: MenuConfigItem[] = [
   { label: 'Dashboard', icon: 'pi pi-chart-bar', path: '/dashboard', screen: 'dashboard' },
   { label: 'Funil', icon: 'pi pi-filter', path: '/funil', screen: 'funil' },
   { label: 'SLA', icon: 'pi pi-clock', path: '/sla', screen: 'sla' },
-  { label: 'Processos', icon: 'pi pi-briefcase', path: '/processos', screen: 'processos' },
+  { label: 'Notificações', icon: 'pi pi-bell', path: '/notificacoes-historico', screen: 'notificacoesHistorico' },
+  { label: 'Base de Processos', icon: 'pi pi-briefcase', path: '/processos', screen: 'processos' },
   { label: 'Clientes', icon: 'pi pi-users', path: '/clientes', screen: 'clientes' },
   {
-    label: 'Protocolos',
+    label: 'Processo SES-MG',
     icon: 'pi pi-file-edit',
     children: [
-      { label: 'Jurídico', icon: 'pi pi-angle-right', path: '/juridico', screen: 'juridico' },
+      { label: 'Análise Jurídica', icon: 'pi pi-angle-right', path: '/juridico', screen: 'juridico' },
       { label: 'Selecionar Médico', icon: 'pi pi-angle-right', path: '/selecionar-medico', screen: 'selecionarMedico' },
       { label: 'Orçamento Médico', icon: 'pi pi-angle-right', path: '/orcamento-medico', screen: 'orcamentoMedico' },
       { label: 'Protocolar', icon: 'pi pi-angle-right', path: '/para-protocolar', screen: 'paraProtocolar' },
       { label: 'Protocolados', icon: 'pi pi-angle-right', path: '/protocolados', screen: 'protocolados' },
       { label: 'Segredo de Justiça', icon: 'pi pi-angle-right', path: '/segredo-justica', screen: 'segredoJustica' },
+      { label: 'Enviado à SES — Segredo', icon: 'pi pi-angle-right', path: '/segredo-justica?fila=ses', screen: 'segredoJustica' },
     ],
   },
   {
@@ -71,6 +88,11 @@ export const MENU_CONFIG_CLEAN: MenuConfigItem[] = [
   },
 ];
 
+function rotularComNumeroDaRegra(label: string, path: string): string {
+  const numero = NUMERO_REGRA_POR_PATH[path];
+  return numero ? `${numero}. ${label}` : label;
+}
+
 export function buildMenuItems({
   navigate,
   currentPath,
@@ -98,10 +120,11 @@ export function buildMenuItems({
           icon: item.icon,
           className: visibleChildren.some((child) => child.path === currentPath) ? 'menu-active-item' : '',
           items: visibleChildren.map((child) => ({
-            label: child.label,
+            label: rotularComNumeroDaRegra(child.label, child.path),
             icon: child.icon,
             command: () => go(child.path),
             className: child.path === currentPath ? 'menu-active-item' : '',
+            dono: DONO_POR_PATH[child.path],
           })),
         } as MenuItem,
       ];
@@ -111,7 +134,7 @@ export function buildMenuItems({
 
     return [
       {
-        label: item.label,
+        label: rotularComNumeroDaRegra(item.label, item.path),
         icon: item.icon,
         command: () => go(item.path),
         className: currentPath === item.path || (item.path === '/home' && currentPath === '/') ? 'menu-active-item' : '',

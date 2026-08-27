@@ -29,7 +29,7 @@ import './ResultadosPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 // Reaproveita estilos do dialog Atualizar (timeline, update-section, anexo, etc).
 import '../protocolados/ProtocoladosPage.css';
-import { colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -569,6 +569,7 @@ const kpis = useMemo(() => {
           {colunaSei()}
           {colunaComarca()}
           {colunaCadastro()}
+          {colunaSegredo()}
 
           <Column
             field="cliente"

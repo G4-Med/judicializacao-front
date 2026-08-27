@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { DataTable } from 'primereact/datatable';
 import type {
   DataTableFilterMeta,
@@ -38,6 +39,9 @@ interface SegredoJustica {
   paciente: string;
   nprocesso: string;
   procedimento: string;
+  idade?: number | null;
+  tipoPaciente?: string | null;      // Pediátrico | Adulto (@R 27/08: "tipo do médico")
+  statusOrcamento?: string | null;
   area: string;
   refPreco: number;
   valorOrcamento: number;
@@ -60,7 +64,7 @@ interface SegredoJusticaTableRow extends SegredoJustica {
   dias: number;
 }
 
-type ResultadoType = 'ganho' | 'perda' | 'habilitacao' | '';
+type ResultadoType = 'ganho' | 'perda' | 'habilitacao' | 'cotacao' | '';
 
 // Classificação retroativa (task #196, 26/08) — candidatos já no banco que a
 // nova regra de idade<18 pegaria, mas nunca passaram pelo alerta (saíram do
@@ -69,7 +73,9 @@ type ResultadoType = 'ganho' | 'perda' | 'habilitacao' | '';
 interface CandidatoSegredo {
   id: number;
   paciente: string;
-  idade: number;
+  idade: number | null;              // null quando o candidato veio só da API (task #222)
+  origem?: 'idade' | 'api' | 'idade+api';
+  motivo?: string;                   // fonte legível (ex.: "classe sigilosa por lei: ...")
   procedimento: string;
   statusProcesso: string;
   statusJuridico: string | null;
@@ -114,6 +120,10 @@ export function SegredoJusticaPage() {
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<SegredoJustica[]>([]);
   const [first, setFirst] = useState(0);
+  // Task #222 (@R: "temos que ter uma área Enviado para SES - Segredo de Justiça"):
+  // a MESMA tela em 2 filas — o menu aponta /segredo-justica?fila=ses.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const fila: 'analisar' | 'ses' = searchParams.get('fila') === 'ses' ? 'ses' : 'analisar';
   const [rows, setRows] = useState(100);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
@@ -121,6 +131,7 @@ export function SegredoJusticaPage() {
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    procedimento: { value: '', matchMode: FilterMatchMode.CONTAINS },
     cliente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     valor: { value: '', matchMode: FilterMatchMode.CONTAINS },
     numeroProcesso: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -145,9 +156,13 @@ export function SegredoJusticaPage() {
 
 const carregarDados = () => {
   setLoading(true);
-  getSegredoJustica()
+  getSegredoJustica(fila)
     .then(({ data }) => {
       setRegistros(data.map((o: any) => ({
+        // Campos de identificação (task #214/#217/#222) preservados por spread — o
+        // mapeamento explícito antigo os DESCARTAVA e a comarca/cadastro/segredo
+        // chegavam undefined nesta tela (bug visto no print do @R 27/08 16:45).
+        ...o,
         id: o.id,
         paciente: o.paciente ?? '',
         nprocesso: o.nprocesso ?? '',
@@ -173,7 +188,7 @@ const carregarDados = () => {
     .finally(() => setLoading(false));
 };
 
-useEffect(() => { carregarDados(); }, []);
+useEffect(() => { carregarDados(); }, [fila]);
 
   const dataComCamposCalculados = useMemo<SegredoJusticaTableRow[]>(() => {
     const hoje = new Date();
@@ -318,12 +333,18 @@ useEffect(() => { carregarDados(); }, []);
     // Habilitação não é desfecho financeiro — é o processo saindo do escuro e
     // voltando para o acompanhamento normal. Exigir valor aqui obrigaria a
     // inventar um número, e número inventado contamina o indicador.
-    if (resultadoSelecionado !== 'habilitacao' && (valorGanho === null || valorGanho <= 0)) {
+    if (!['habilitacao', 'cotacao'].includes(resultadoSelecionado)
+        && (valorGanho === null || valorGanho <= 0)) {
       alert(resultadoSelecionado === 'ganho' ? 'Informe o valor ganho.' : 'Informe o valor da causa.');
       return;
     }
     if (resultadoSelecionado === 'habilitacao' && !parecerJuridico.trim()) {
       alert('Escreva no parecer como a habilitação foi obtida.');
+      return;
+    }
+    // Perda sem motivo é número cego — mesma exigência das outras telas (task #222).
+    if (resultadoSelecionado === 'perda' && !parecerJuridico.trim()) {
+      alert('Escreva no parecer o motivo da perda (obrigatório).');
       return;
     }
 
@@ -406,8 +427,8 @@ useEffect(() => { carregarDados(); }, []);
             <i className={`pi ${candidatosHook.aberto ? 'pi-chevron-down' : 'pi-chevron-right'}`} />
             <i className="pi pi-flag" />
             <span>
-              Candidatos a revisar — {candidatosHook.candidatos.length} pedido(s) já no banco são
-              menores de idade e ainda não estão marcados Segredo de Justiça
+              Candidatos a revisar — {candidatosHook.candidatos.length} pedido(s) com sinal de
+              segredo (menor de idade ou consulta ao CNJ) ainda não marcados Segredo de Justiça
               {candidatosHook.candidatos.some((c) => !c.fechado) && (
                 <strong> ({candidatosHook.candidatos.filter((c) => !c.fechado).length} ainda em andamento)</strong>
               )}
@@ -423,7 +444,14 @@ useEffect(() => { carregarDados(); }, []);
                 <div key={c.id} className="candidatos-segredo-item">
                   <div className="candidatos-segredo-item__info">
                     <strong>{c.paciente}</strong>
-                    <span>{c.idade} anos · {c.procedimento}</span>
+                    <span>
+                      {c.idade !== null && c.idade !== undefined ? `${c.idade} anos · ` : ''}
+                      {c.procedimento}
+                      {c.origem && c.origem !== 'idade' && (
+                        <Tag value="API DataJud" severity="warning" style={{ marginLeft: 6, fontSize: '10px' }}
+                          title={c.motivo ?? 'Sinalizado pela consulta automática ao CNJ'} />
+                      )}
+                    </span>
                     <span className="candidatos-segredo-item__status">
                       {c.statusProcesso}
                       {c.fechado && <Tag value="Encerrado" severity="secondary" style={{ marginLeft: 6, fontSize: '10px' }} />}
@@ -446,7 +474,18 @@ useEffect(() => { carregarDados(); }, []);
       )}
 
       <div className="card">
-        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos em segredo de justiça</h2>
+        <div className="segredo-filas" role="tablist" aria-label="Filas do segredo de justiça">
+          <Button label="Analisar / Desfecho" icon="pi pi-search" role="tab"
+            aria-selected={fila === 'analisar'}
+            severity={fila === 'analisar' ? 'success' : 'secondary'} outlined={fila !== 'analisar'}
+            onClick={() => setSearchParams({})} />
+          <Button label="Enviado à SES — aguardando resposta" icon="pi pi-send" role="tab"
+            aria-selected={fila === 'ses'}
+            severity={fila === 'ses' ? 'success' : 'secondary'} outlined={fila !== 'ses'}
+            onClick={() => setSearchParams({ fila: 'ses' })} />
+        </div>
+        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />
+          {fila === 'ses' ? 'Segredo de justiça — enviado à SES (aguardando resposta)' : 'Pedidos em segredo de justiça'}</h2>
         <DataTable
           aria-label="Pedidos em segredo de justiça"
           value={dataComCamposCalculados}
@@ -493,13 +532,63 @@ useEffect(() => { carregarDados(); }, []);
           {colunaComarca()}
           {colunaCadastro()}
 
+          {/* @R 27/08 16:45: "quero saber a idade, se é pediatria e adulto (tipo do
+              médico) e o nome do procedimento". Idade ausente = "—", nunca chute. */}
           <Column
-            field="cliente"
-            header="Cliente"
+            field="idade"
+            header="Idade"
+            sortable
+            style={{ minWidth: '6rem' }}
+            body={(r: any) => (r.idade ?? null) !== null ? `${r.idade} anos` : <span className="ident-vazio">—</span>}
+          />
+          <Column
+            field="tipoPaciente"
+            header="Tipo"
+            sortable
+            style={{ minWidth: '8rem' }}
+            body={(r: any) => r.tipoPaciente
+              ? <Tag value={r.tipoPaciente} severity={r.tipoPaciente === 'Pediátrico' ? 'warning' : 'info'} />
+              : <span className="ident-vazio" title="Sem data de nascimento no pedido">—</span>}
+          />
+          <Column
+            field="procedimento"
+            header="Procedimento"
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
+          />
+          {/* @R 27/08 16:53: médico vinculado ou "sem profissional" na cara — a ação
+              de passar para médico é o "Enviar para cotação" do diálogo Atualizar. */}
+          <Column
+            field="medico"
+            header="Médico"
+            sortable
+            style={{ minWidth: '12rem' }}
+            body={(r: any) => r.medico
+              ? r.medico
+              : <Tag value="Sem profissional" severity="warning" title="Use Atualizar → Enviar para cotação para passar ao médico" />}
+          />
+          {/* @R 27/08 16:53: "cadê a coluna para verificar se era segredo mesmo —
+              alguns eram normais". O veredito da consulta automática ao CNJ. */}
+          <Column
+            field="segredoApiSinal"
+            header="É segredo mesmo?"
+            sortable
+            style={{ minWidth: '11rem' }}
+            body={(r: any) => {
+              if (r.segredoApiSinal === true) return <Tag value="API confirma" severity="danger" icon="pi pi-lock" title={r.segredoApiFonte ?? ''} />;
+              if (r.segredoApiSinal === false) return <Tag value="API refuta — revisar" severity="warning" icon="pi pi-exclamation-triangle" title={`Pode ser processo comum. ${r.segredoApiFonte ?? ''}`} />;
+              return <span className="ident-vazio" title={r.segredoApiFonte ?? 'CNJ ausente ou não consta no DataJud'}>não verificado</span>;
+            }}
+          />
+          <Column
+            field="cliente"
+            header="Especialidade"
+            sortable
+            filter
+            filterElement={(options) => filterElement(options, 'Buscar')}
+            style={{ minWidth: '14rem' }}
           />
 
           <Column
@@ -646,6 +735,19 @@ useEffect(() => { carregarDados(); }, []);
                     outlined={resultadoSelecionado !== 'perda'}
                     onClick={() => {
                       setResultadoSelecionado('perda');
+                      setValorGanho(null);
+                    }}
+                  />
+                  {/* Task #222 (@R: segredo é onde se define "se cota ou não") —
+                      devolve à fase 1 para o jurídico solicitar o médico; a marca
+                      de segredo permanece (statusProcesso composto, decisão 36f8f9dd9c). */}
+                  <Button
+                    label="Enviar para cotação"
+                    icon="pi pi-send"
+                    severity={resultadoSelecionado === 'cotacao' ? 'success' : 'secondary'}
+                    outlined={resultadoSelecionado !== 'cotacao'}
+                    onClick={() => {
+                      setResultadoSelecionado('cotacao');
                       setValorGanho(null);
                     }}
                   />
