@@ -22,7 +22,7 @@ import './ProtocoladosPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaCnj, colunaSei, colunaComarca, FILTROS_IDENTIFICACAO } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaCnj, colunaSei, colunaComarca, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -541,7 +541,7 @@ export function ProtocoladosPage() {
           />
 
           <Column
-            field="paciente"
+            field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header="Paciente"
             sortable
             filter
