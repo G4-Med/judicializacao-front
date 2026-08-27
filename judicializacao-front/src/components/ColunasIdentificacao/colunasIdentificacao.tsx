@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { Column } from 'primereact/column';
+import { Dialog } from 'primereact/dialog';
 import { Tag } from 'primereact/tag';
 import { InputText } from 'primereact/inputtext';
 import { BotaoCopiar } from '../BotaoCopiar/BotaoCopiar';
@@ -54,7 +56,7 @@ const filtro = (placeholder: string) => (options: any) => (
 
 export function colunaCnj(largura = '14rem') {
   return (
-    <Column key="col-cnj" field="nprocesso" header="Nº CNJ" sortable filter
+    <Column key="col-cnj" field="nprocesso" header={cabecalhoComHint('Nº CNJ', EXPLICA.cnj)} sortable filter
       filterElement={filtro('Buscar CNJ')} style={{ minWidth: largura }}
       body={(r: LinhaIdentificada) => r.nprocesso
         ? <><code className="ident-numero" title="Número CNJ do processo">{r.nprocesso}</code><BotaoCopiar valor={r.nprocesso} rotulo="número CNJ" /></>
@@ -64,7 +66,7 @@ export function colunaCnj(largura = '14rem') {
 
 export function colunaSei(largura = '12rem') {
   return (
-    <Column key="col-sei" field="numeroSei" header="Nº SEI" sortable filter
+    <Column key="col-sei" field="numeroSei" header={cabecalhoComHint('Nº SEI', EXPLICA.sei)} sortable filter
       filterElement={filtro('Buscar SEI')} style={{ minWidth: largura }}
       body={(r: LinhaIdentificada) => r.numeroSei
         ? <><code className="ident-numero" title={r.familiaSei ? `Família ${r.familiaSei}` : 'Número SEI'}>{r.numeroSei}</code><BotaoCopiar valor={r.numeroSei} rotulo="número SEI" /></>
@@ -74,7 +76,7 @@ export function colunaSei(largura = '12rem') {
 
 export function colunaComarca(largura = '11rem') {
   return (
-    <Column key="col-comarca" field="comarca" header="Comarca" sortable filter
+    <Column key="col-comarca" field="comarca" header={cabecalhoComHint('Comarca', EXPLICA.comarca)} sortable filter
       filterElement={filtro('Buscar comarca')} style={{ minWidth: largura }}
       body={(r: LinhaIdentificada) => {
         // @R 27/08: "federal não tem distância" — dito na cara, ¬célula vazia.
@@ -98,6 +100,72 @@ export function nomeComCopiar(nome: string | null | undefined) {
   return <>{nome}<BotaoCopiar valor={nome} rotulo="nome do paciente" /></>;
 }
 
+
+
+/** Hint de coluna (@R 27/08 14:26: "ao lado de cada coluna um hint para abrir um modal
+ *  explicando o que é"): ícone ? no cabeçalho → Dialog com a explicação em linguagem de
+ *  operação. Reutilizável por qualquer tabela: header={cabecalhoComHint('Nº CNJ', <>...</>)} */
+function HintColuna({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  const [aberto, setAberto] = useState(false);
+  return (
+    <>
+      <button type="button" className="hint-coluna" aria-label={`O que é ${titulo}?`}
+        title={`O que é ${titulo}?`}
+        onClick={(e) => { e.stopPropagation(); setAberto(true); }}>?</button>
+      <Dialog header={titulo} visible={aberto} modal style={{ width: '34rem', maxWidth: '94vw' }}
+        onHide={() => setAberto(false)} dismissableMask>
+        <div className="hint-coluna__corpo">{children}</div>
+      </Dialog>
+    </>
+  );
+}
+
+export function cabecalhoComHint(titulo: string, explicacao: React.ReactNode) {
+  return (
+    <span className="cabecalho-hint">
+      {titulo}
+      <HintColuna titulo={titulo}>{explicacao}</HintColuna>
+    </span>
+  );
+}
+
+const EXPLICA = {
+  cnj: <>
+    <p>O <strong>número CNJ</strong> é a identidade nacional do processo judicial (padrão do
+    Conselho Nacional de Justiça): <code>NNNNNNN-DD.AAAA.J.TR.OOOO</code>.</p>
+    <p>É por ele que cruzamos o pedido com os pagamentos do Estado. O sistema valida o
+    dígito verificador — número com DV errado não entra.</p>
+    <p><em>De onde vem:</em> lido automaticamente dos PDFs anexados ao e-mail, ou digitado
+    pelo jurídico na análise. Um clique no número seleciona tudo para copiar.</p>
+  </>,
+  sei: <>
+    <p>O <strong>número SEI</strong> é o protocolo do processo ADMINISTRATIVO no Estado
+    (SEI-MG) — o par do CNJ: o CNJ acha o processo na Justiça, o SEI acha o pagamento
+    dentro do Estado.</p>
+    <p><em>De onde vem:</em> do carimbo do SEI-MG impresso nas páginas dos PDFs anexados
+    (extraído automaticamente). A família PAGADOR é a que casa com o empenho do depósito
+    judicial — aparece ao passar o mouse.</p>
+  </>,
+  comarca: <>
+    <p>A <strong>comarca</strong> é onde o processo corre — derivada dos 4 últimos dígitos
+    do próprio número CNJ, com a distância em linha reta até Juiz de Fora.</p>
+    <p>Processo na <strong>Justiça Federal</strong> não tem comarca estadual (a etiqueta
+    diz isso). "Comarca não mapeada" = código ainda sem tradução no nosso mapa — a aliança
+    de dados completa aos poucos.</p>
+  </>,
+  cadastro: <>
+    <p>O <strong>cadastro</strong> resume, em 4 pontos, o que este pedido tem e o que falta:
+    CNJ · SEI · Comarca · Anexo.</p>
+    <p><span style={{color:'#00a651'}}>●</span> <strong>verde</strong> = temos (o tooltip diz a fonte) ·{' '}
+    <span style={{color:'#f59e0b'}}>●</span> <strong>âmbar</strong> = falta, mas há uma rota
+    automática em curso (ex.: releitura dos anexos hoje à noite) ·{' '}
+    <span style={{color:'#9aa7a1'}}>●</span> <strong>cinza</strong> = falta e depende de pessoa
+    (o tooltip diz quem).</p>
+    <p>Passe o mouse no chip para ver, item a item, a fonte de cada dado e a próxima ação
+    com o responsável. Nenhuma falta fica sem rota.</p>
+  </>,
+};
+
 const ROTULO_PONTO: Record<string, string> = { cnj: 'CNJ', sei: 'SEI', comarca: 'Comarca', anexo: 'Anexo' };
 
 /** Chip "cadastro" (desenho af56e8f2, nota 94 — GO @R 27/08 14:19): 4 pontos, tooltip com
@@ -105,7 +173,7 @@ const ROTULO_PONTO: Record<string, string> = { cnj: 'CNJ', sei: 'SEI', comarca: 
  *  humana. cadastro null (falha no cálculo) = "indisponível" — a tabela nunca cai (K6). */
 export function colunaCadastro(largura = '9rem') {
   return (
-    <Column key="col-cadastro" field="cadastro" header="Cadastro" sortable
+    <Column key="col-cadastro" field="cadastro" header={cabecalhoComHint('Cadastro', EXPLICA.cadastro)} sortable
       sortField="cadastro.completos" style={{ minWidth: largura }}
       body={(r: LinhaIdentificada) => {
         const c = r.cadastro;
