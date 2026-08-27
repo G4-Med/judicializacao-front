@@ -21,6 +21,7 @@ import { useAccess } from '../../access/AccessContext';
 import './ProtocoladosPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
+import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -453,10 +454,8 @@ export function ProtocoladosPage() {
     <div className="protocolados-page">
       <PrimeiraVisitaInfo etapaId="protocolados" />
       <div className="page-header">
-        <div>
-          <h1>Protocolados</h1>
-          <p>Gestão dos processos protocolados</p>
-        </div>
+        <CabecalhoFase nome="Protocolados" screen="protocolados"
+          subtitulo="Gestão dos processos protocolados" />
 
         <div className="page-actions">
           {!readOnly && <Button

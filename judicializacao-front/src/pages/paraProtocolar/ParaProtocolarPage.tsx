@@ -22,6 +22,7 @@ import { useAccess } from '../../access/AccessContext';
 import './ParaProtocolarPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
+import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 
 interface ParaProtocolar {
   id: number;
@@ -575,10 +576,8 @@ const handleConfirmarProtocolacao = async () => {
     <div className="para-protocolar-page">
       <PrimeiraVisitaInfo etapaId="para-protocolar" />
       <div className="page-header">
-        <div>
-          <h1>Para Protocolar</h1>
-          <p>Gestão dos processos prontos para protocolação</p>
-        </div>
+        <CabecalhoFase nome="Protocolar" screen="paraProtocolar"
+          subtitulo="Gestão dos processos prontos para protocolação" />
 
 
       </div>

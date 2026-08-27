@@ -22,6 +22,7 @@ import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './SelecionarMedicoPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
+import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 
 interface ProcessoResumo {
   id: number;
@@ -320,10 +321,8 @@ export function SelecionarMedicoPage() {
     <div className="selecionar-medico-page">
       <PrimeiraVisitaInfo etapaId="selecionar-medico" />
       <div className="page-header">
-        <div>
-          <h1>Selecionar Médico</h1>
-          <p>Defina o médico responsável para os processos pendentes.</p>
-        </div>
+        <CabecalhoFase nome="Selecionar Médico" screen="selecionarMedico"
+          subtitulo="Defina o médico responsável para os processos pendentes." />
         {!readOnly && (
           <div className="page-actions">
             <Button

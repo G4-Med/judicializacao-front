@@ -12,7 +12,10 @@ import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { InputNumber } from 'primereact/inputnumber';
 import { FilterMatchMode } from 'primereact/api';
-import { getSegredoJustica, salvarResultadoSegredo, getAnexosOrder } from '../../services/api/orders';
+import {
+  getSegredoJustica, salvarResultadoSegredo, getAnexosOrder,
+  getCandidatosSegredoJustica, marcarSegredoJusticaRetroativo,
+} from '../../services/api/orders';
 import { Dialog } from 'primereact/dialog';
 import { getStatusTagStyle } from '../../utils/statusTag';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
@@ -20,6 +23,7 @@ import { useAccess } from '../../access/AccessContext';
 import './SegredoJusticaPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
+import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 
 interface DocumentoProcesso {
   label: string;
@@ -57,9 +61,55 @@ interface SegredoJusticaTableRow extends SegredoJustica {
 
 type ResultadoType = 'ganho' | 'perda' | 'habilitacao' | '';
 
+// Classificação retroativa (task #196, 26/08) — candidatos já no banco que a
+// nova regra de idade<18 pegaria, mas nunca passaram pelo alerta (saíram do
+// Jurídico antes dessa feature existir). Marcação é sempre confirmada por
+// clique — nunca automática, mesmo princípio do alerta na tela Jurídico.
+interface CandidatoSegredo {
+  id: number;
+  paciente: string;
+  idade: number;
+  procedimento: string;
+  statusProcesso: string;
+  statusJuridico: string | null;
+  fechado: boolean;
+}
+
+function useCandidatosSegredoJustica() {
+  const [candidatos, setCandidatos] = useState<CandidatoSegredo[]>([]);
+  const [loadingCandidatos, setLoadingCandidatos] = useState(false);
+  const [marcandoId, setMarcandoId] = useState<number | null>(null);
+  const [aberto, setAberto] = useState(false);
+
+  const recarregar = () => {
+    setLoadingCandidatos(true);
+    getCandidatosSegredoJustica()
+      .then(({ data }) => setCandidatos(data.itens ?? []))
+      .catch(() => console.error('Erro ao carregar candidatos a segredo de justiça'))
+      .finally(() => setLoadingCandidatos(false));
+  };
+
+  useEffect(() => { recarregar(); }, []);
+
+  const marcar = async (id: number) => {
+    setMarcandoId(id);
+    try {
+      await marcarSegredoJusticaRetroativo(id);
+      recarregar();
+    } catch {
+      alert('Não foi possível marcar este pedido como Segredo de Justiça.');
+    } finally {
+      setMarcandoId(null);
+    }
+  };
+
+  return { candidatos, loadingCandidatos, marcandoId, marcar, aberto, setAberto };
+}
+
 export function SegredoJusticaPage() {
   const { isReadOnly } = useAccess();
   const readOnly = isReadOnly('segredoJustica');
+  const candidatosHook = useCandidatosSegredoJustica();
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<SegredoJustica[]>([]);
   const [first, setFirst] = useState(0);
@@ -121,8 +171,7 @@ const carregarDados = () => {
     .finally(() => setLoading(false));
 };
 
-useEffect(() => { carregarDados(); }, []);  
-
+useEffect(() => { carregarDados(); }, []);
 
   const dataComCamposCalculados = useMemo<SegredoJusticaTableRow[]>(() => {
     const hoje = new Date();
@@ -294,10 +343,8 @@ useEffect(() => { carregarDados(); }, []);
     <div className="segredo-justica-page">
       <PrimeiraVisitaInfo etapaId="segredo-justica" />
       <div className="page-header">
-        <div>
-          <h1>Segredos de Justiça</h1>
-          <p>Gestão dos processos em segredo de justiça</p>
-        </div>
+        <CabecalhoFase nome="Segredo de Justiça" screen="segredoJustica"
+          subtitulo="Gestão dos processos em segredo de justiça" />
 
         <div className="page-actions">
           {!readOnly && <Button
@@ -345,6 +392,56 @@ useEffect(() => { carregarDados(); }, []);
 
       </div>
       </PainelKpis>
+
+      {candidatosHook.candidatos.length > 0 && (
+        <div className="card candidatos-segredo-card">
+          <button
+            type="button"
+            className="candidatos-segredo-toggle"
+            onClick={() => candidatosHook.setAberto((v) => !v)}
+            aria-expanded={candidatosHook.aberto}
+          >
+            <i className={`pi ${candidatosHook.aberto ? 'pi-chevron-down' : 'pi-chevron-right'}`} />
+            <i className="pi pi-flag" />
+            <span>
+              Candidatos a revisar — {candidatosHook.candidatos.length} pedido(s) já no banco são
+              menores de idade e ainda não estão marcados Segredo de Justiça
+              {candidatosHook.candidatos.some((c) => !c.fechado) && (
+                <strong> ({candidatosHook.candidatos.filter((c) => !c.fechado).length} ainda em andamento)</strong>
+              )}
+            </span>
+          </button>
+
+          {candidatosHook.aberto && (
+            <div className="candidatos-segredo-lista">
+              <p className="candidatos-segredo-nota">
+                Sugestão automática por idade — não foi marcado sozinho. Confira o caso antes de confirmar.
+              </p>
+              {candidatosHook.candidatos.map((c) => (
+                <div key={c.id} className="candidatos-segredo-item">
+                  <div className="candidatos-segredo-item__info">
+                    <strong>{c.paciente}</strong>
+                    <span>{c.idade} anos · {c.procedimento}</span>
+                    <span className="candidatos-segredo-item__status">
+                      {c.statusProcesso}
+                      {c.fechado && <Tag value="Encerrado" severity="secondary" style={{ marginLeft: 6, fontSize: '10px' }} />}
+                    </span>
+                  </div>
+                  <Button
+                    label={candidatosHook.marcandoId === c.id ? 'Marcando...' : 'Marcar Segredo de Justiça'}
+                    icon="pi pi-lock"
+                    outlined
+                    severity="warning"
+                    disabled={readOnly || candidatosHook.marcandoId !== null}
+                    loading={candidatosHook.marcandoId === c.id}
+                    onClick={() => candidatosHook.marcar(c.id)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos em segredo de justiça</h2>

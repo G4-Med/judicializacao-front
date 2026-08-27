@@ -17,6 +17,8 @@ import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { PainelPrecos } from '../../components/PainelPrecos/PainelPrecos';
 import { ContadorRegistros } from '../../components/ContadorRegistros/ContadorRegistros';
+import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
+import { useNavigate } from 'react-router-dom';
 
 // Meta desta fase (triagem jurídica) — espelha backend/funil.py FASES['triagem'].meta_dias.
 // "a análise sai no dia seguinte — libera para mim até meio-dia" (fala do @R na reunião).
@@ -72,6 +74,7 @@ function calcularIdade(dataNascimento: string | null): number {
 export function JuridicoPage() {
   const { isReadOnly } = useAccess();
   const readOnly = isReadOnly('juridico');
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [processos, setProcessos] = useState<ProcessoJuridico[]>([]);
   const [first, setFirst] = useState(0);
@@ -241,21 +244,31 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
   );
 
   const editarBodyTemplate = (rowData: ProcessoJuridicoRow) => (
-    <Button
-      icon="pi pi-pencil"
-      rounded outlined severity="secondary"
-      onClick={() => abrirEdicao(rowData)}
-    />
+    <span className="juridico-acoes">
+      <Button
+        icon="pi pi-pencil"
+        rounded outlined severity="secondary"
+        onClick={() => abrirEdicao(rowData)}
+        aria-label="Analisar este pedido"
+      />
+      {/* "botão para ir para o processo" (@R 27/08): abre a tela Processos já filtrada */}
+      <Button
+        icon="pi pi-external-link"
+        rounded text severity="secondary"
+        onClick={() => navigate(`/processos?paciente=${encodeURIComponent(rowData.paciente)}`)}
+        aria-label="Abrir o processo deste pedido"
+        title="Ir para o processo"
+      />
+    </span>
   );
 
   return (
     <div className="juridico-page">
       <PrimeiraVisitaInfo etapaId="juridico" />
+      {/* task #211: número da fase + quem opera + SLA ativo, derivados do SSOT (ETAPAS/permissions) */}
       <div className="page-header">
-        <div>
-          <h1>Jurídico</h1>
-          <p>Processos aguardando análise jurídica</p>
-        </div>
+        <CabecalhoFase nome="Análise Jurídica" screen="juridico" slaDias={SLA_META_DIAS_TRIAGEM}
+          subtitulo="Processos aguardando análise jurídica" />
       </div>
 
       {readOnly && <ReadOnlyBanner />}
@@ -390,7 +403,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             filterElement={(o) => filterElement(o, 'Buscar')}
             style={{ minWidth: '10rem' }}
           />
-          <Column header="Editar" 
+          <Column header="Ações"
             body={editarBodyTemplate}
             style={{ minWidth: '7rem' }} 
             bodyStyle={{ textAlign: 'center' }} />

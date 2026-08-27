@@ -13,6 +13,7 @@ import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { FilterMatchMode } from 'primereact/api';
+import { useSearchParams } from 'react-router-dom';
 import { TieredMenu } from 'primereact/tieredmenu';
 import type { MenuItem } from 'primereact/menuitem';
 import { useRef } from 'react';
@@ -278,8 +279,11 @@ export function ProcessosPage() {
   const [jsonBatchInput, setJsonBatchInput] = useState('');
   const [jsonBatchItems, setJsonBatchItems] = useState<JsonBatchProcessItem[]>([]);
 
+  // Prefiltro por URL (task #211): as telas de fase mandam o usuário para cá com
+  // ?paciente=<nome> pelo botão "Processo" — a tabela abre já filtrada nele.
+  const [searchParams] = useSearchParams();
   const [filters, setFilters] = useState<DataTableFilterMeta>({
-    paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    paciente: { value: searchParams.get('paciente') ?? '', matchMode: FilterMatchMode.CONTAINS },
     idade: { value: '', matchMode: FilterMatchMode.CONTAINS },
     procedimento: { value: '', matchMode: FilterMatchMode.CONTAINS },
     refPreco: { value: '', matchMode: FilterMatchMode.CONTAINS },

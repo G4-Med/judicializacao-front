@@ -22,6 +22,7 @@ import './OrcamentoMedicoPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { ContadorRegistros, contarPorCampo } from '../../components/ContadorRegistros/ContadorRegistros';
+import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 
 // Meta desta fase (orçamento) — espelha backend/funil.py FASES['orcamento'].meta_dias.
 // "96 horas — é o prazo que sustenta o contrato com o Estado".
@@ -509,10 +510,8 @@ ${blocos}
     <div className="orcamento-medico-page">
       <PrimeiraVisitaInfo etapaId="orcamento-medico" />
       <div className="page-header">
-        <div>
-          <h1>Orçamento Médico</h1>
-          <p>Processos aguardando orçamento do médico</p>
-        </div>
+        <CabecalhoFase nome="Orçamento Médico" screen="orcamentoMedico" slaDias={SLA_META_DIAS_ORCAMENTO}
+          subtitulo="Processos aguardando orçamento do médico" />
         <div className="page-actions">
           <Button
             label="Cobrança"
