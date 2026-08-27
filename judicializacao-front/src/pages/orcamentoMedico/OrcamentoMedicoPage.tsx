@@ -21,6 +21,7 @@ import { useAccess } from '../../access/AccessContext';
 import './OrcamentoMedicoPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
+import { ContadorRegistros, contarPorCampo } from '../../components/ContadorRegistros/ContadorRegistros';
 
 // Meta desta fase (orçamento) — espelha backend/funil.py FASES['orcamento'].meta_dias.
 // "96 horas — é o prazo que sustenta o contrato com o Estado".
@@ -52,6 +53,7 @@ interface ProcessoOrcamento {
   emailCopia?: string | null;
   emailData?: string | null;
   orcamentosJuridico: string | null;
+  qtdAnexos?: number;
   medicoId?: number;
   idMedico?: number;
   medico_id?: number;
@@ -539,7 +541,21 @@ ${blocos}
       </PainelKpis>
 
       <div className="card">
-        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos aguardando orçamento médico</h2>
+        <h2 className="mc-tabela-titulo">
+          <i className="pi pi-table" />Pedidos aguardando orçamento médico
+          {/* Diz quantos são e em que fase estão (task #208): a tela mostrar 16 estava
+              CERTO, mas sem o contador o número virava dúvida ("cadê os outros?"). */}
+          <ContadorRegistros
+            total={dataComMedico.length}
+            visiveis={visibleProcessos.length}
+            substantivo="pedidos"
+            fases={contarPorCampo(
+              visibleProcessos,
+              (p) => p.statusOrcamento,
+              { 'Solicitado ao Medico': 'ok', 'Solicitar Exames': 'atencao' },
+            )}
+          />
+        </h2>
         <DataTable
           aria-label="Pedidos aguardando orçamento médico"
           value={dataComMedico} dataKey="id" paginator rowsPerPageOptions={[10, 20, 50, 100]} rows={rows} first={first}
@@ -557,7 +573,16 @@ ${blocos}
         >
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
           <Column field="paciente" header="Paciente" sortable filter
-            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }} />
+            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }}
+            body={(r: ProcessoOrcamentoRow) => (
+              <span className="orcamento-paciente-cel">
+                {r.paciente}
+                {!r.qtdAnexos && (
+                  <Tag value="Sem anexo" severity="danger" className="orcamento-tag-sem-anexo"
+                    title="Este pedido chegou sem nenhum anexo (processo/relatório/orçamento)." />
+                )}
+              </span>
+            )} />
           <Column field="idade" header="Idade" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '7rem' }} />
           <Column field="procedimento" className="col-procedimento-upper" header="Procedimento" sortable filter

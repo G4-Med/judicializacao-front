@@ -2,6 +2,7 @@
 import { DataTable } from 'primereact/datatable';
 import type { DataTableFilterMeta, DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
@@ -14,6 +15,8 @@ import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './JuridicoPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
+import { PainelPrecos } from '../../components/PainelPrecos/PainelPrecos';
+import { ContadorRegistros } from '../../components/ContadorRegistros/ContadorRegistros';
 
 // Meta desta fase (triagem jurídica) — espelha backend/funil.py FASES['triagem'].meta_dias.
 // "a análise sai no dia seguinte — libera para mim até meio-dia" (fala do @R na reunião).
@@ -34,6 +37,8 @@ interface ProcessoJuridico {
   familiaSei: string | null;
   solicitacao: string;
   emailSolicitante: string;
+  possivelMenorIdade?: boolean;
+  qtdAnexos?: number;
 }
 
 interface ProcessoJuridicoRow extends ProcessoJuridico {
@@ -96,6 +101,11 @@ export function JuridicoPage() {
   });
 
   const [visibleProcessos, setVisibleProcessos] = useState<ProcessoJuridicoRow[]>([]);
+
+  // Preços do procedimento (task #207): UMA linha aberta por vez. A consulta é pesada
+  // (~5s na 1ª vez, cache de 6h no backend) — deixar N linhas abertas dispararia N
+  // consultas simultâneas e travaria a tela que o painel deveria ajudar.
+  const [linhaExpandida, setLinhaExpandida] = useState<ProcessoJuridicoRow[]>([]);
 
   const carregarDados = () => {
     setLoading(true);
@@ -260,7 +270,27 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
       </PainelKpis>
 
       <div className="card">
-        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos aguardando triagem jurídica</h2>
+        <h2 className="mc-tabela-titulo">
+          <i className="pi pi-table" />Pedidos aguardando triagem jurídica
+          {/* Quantos são e quantos estão fora do prazo (task #208) */}
+          <ContadorRegistros
+            total={dataComSequencial.length}
+            visiveis={visibleProcessos.length}
+            substantivo="pedidos"
+            fases={[
+              {
+                rotulo: 'no prazo',
+                quantidade: visibleProcessos.filter((p) => p.dias <= SLA_META_DIAS_TRIAGEM).length,
+                tom: 'ok',
+              },
+              {
+                rotulo: 'fora do prazo',
+                quantidade: visibleProcessos.filter((p) => p.dias > SLA_META_DIAS_TRIAGEM).length,
+                tom: 'alerta',
+              },
+            ]}
+          />
+        </h2>
         <DataTable
           aria-label="Pedidos aguardando triagem jurídica"
           value={dataComSequencial}
@@ -269,6 +299,19 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             rowData.dias > SLA_META_DIAS_TRIAGEM ? 'linha-fora-sla' : ''
           }
           dataKey="id"
+          expandedRows={linhaExpandida}
+          onRowToggle={(e) => {
+            // Só a última aberta permanece: 1 consulta por vez (ver comentário no estado).
+            const abertas = e.data as ProcessoJuridicoRow[];
+            setLinhaExpandida(abertas.length ? [abertas[abertas.length - 1]] : []);
+          }}
+          rowExpansionTemplate={(rowData: ProcessoJuridicoRow) => (
+            <PainelPrecos
+              orderId={rowData.id}
+              procedimento={rowData.procedimento}
+              nossoPreco={rowData.refPreco || null}
+            />
+          )}
           paginator
           rowsPerPageOptions={[10, 20, 50, 100]}
           rows={rows}
@@ -284,9 +327,26 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           emptyMessage="Nenhum processo aguardando jurídico."
           className="juridico-table"
         >
+          {/* Abre o painel de preços do procedimento dentro da própria linha (task #207) */}
+          <Column expander style={{ width: '3.5rem' }} headerStyle={{ width: '3.5rem' }}
+            headerClassName="col-expander" bodyClassName="col-expander" />
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
           <Column field="paciente" header="Paciente" sortable filter
-            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }} />
+            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }}
+            body={(r: ProcessoJuridicoRow) => (
+              <span className="juridico-paciente-cel">
+                {r.paciente}
+                {r.possivelMenorIdade && (
+                  <Tag value="Menor de idade — avaliar Segredo de Justiça" severity="warning"
+                    className="juridico-tag-menor-idade"
+                    title="Paciente com menos de 18 anos. Confirme se este pedido deve ser marcado Segredo de Justiça." />
+                )}
+                {!r.qtdAnexos && (
+                  <Tag value="Sem anexo" severity="danger" className="juridico-tag-sem-anexo"
+                    title="Este pedido chegou do e-mail do Estado sem nenhum anexo." />
+                )}
+              </span>
+            )} />
           <Column
             field="idade"
             header="Idade"

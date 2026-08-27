@@ -78,6 +78,7 @@ body.dark-theme .p-datatable .linha-fora-sla:hover > td {
 .mc-tabela-titulo {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;   /* o contador de registros (à direita) desce inteiro em tela estreita */
   gap: 10px;
   margin: 0;
   padding: 16px 20px;

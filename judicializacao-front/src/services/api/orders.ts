@@ -224,3 +224,10 @@ export const baixarFunilCsv = (params: Record<string, string | number> = {}) =>
 // Loop de inteligência do pedido (task #203, 27/08): "já respondemos? o que já cobramos?"
 export const getInteligenciaPedido = (orderId: number) =>
   api.get(`/orders/${orderId}/inteligencia/`);
+
+// Painel de preços do procedimento (task #207, 27/08): quanto o Estado vem pagando
+// por ESTA cirurgia — 5 números, série da janela e os 10 últimos pagamentos com
+// comarca e distância. Consulta pesada (~5s na 1ª vez, cache de 6h no backend):
+// só chamar quando a linha for EXPANDIDA, nunca no carregamento da tabela.
+export const getPrecosProcedimento = (orderId: number) =>
+  api.get(`/orders/${orderId}/precos/`);
