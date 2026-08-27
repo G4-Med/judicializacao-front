@@ -16,6 +16,7 @@ import { Calendar } from 'primereact/calendar';
 import { FilterMatchMode } from 'primereact/api';
 import { Dialog } from 'primereact/dialog';
 import { RadioButton } from 'primereact/radiobutton';
+import { Dropdown } from 'primereact/dropdown';
 import { getStatusTagStyle } from '../../utils/statusTag';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import { useAccess } from '../../access/AccessContext';
@@ -52,7 +53,7 @@ interface ParaProtocolarTableRow extends ParaProtocolar {
   dias: number;
 }
 
-type NaoProtocolarOpcao = 'perda' | 'segredo' | 'diretoria' | '';
+type NaoProtocolarOpcao = 'perda' | 'segredo' | 'diretoria' | 'sem_protocolo' | '';
 
 export function ParaProtocolarPage() {
   const { isReadOnly } = useAccess();
@@ -99,6 +100,7 @@ export function ParaProtocolarPage() {
 
   const [naoProtocolarOpcao, setNaoProtocolarOpcao] = useState<NaoProtocolarOpcao>('');
   const [naoProtocolarObs, setNaoProtocolarObs] = useState('');
+  const [motivoPerdaCat, setMotivoPerdaCat] = useState<string | null>(null);  // task #223
 
   const carregarDados = () => {
     setLoading(true);
@@ -560,12 +562,14 @@ const handleConfirmarProtocolacao = async () => {
       return;
     }
 
-    const acao = naoProtocolarOpcao === 'segredo' ? 'segredo' : 'perda';
+    const acao = naoProtocolarOpcao === 'segredo' ? 'segredo'
+      : naoProtocolarOpcao === 'sem_protocolo' ? 'recusar_protocolo' : 'perda';
 
     try {
       await salvarProtocolar(registroNaoProtocolar.id, {
         acao,
-        obs: naoProtocolarObs
+        obs: naoProtocolarObs,
+        motivoPerdaCategoria: motivoPerdaCat ?? undefined,   // task #223 (opcional)
       });
       carregarDados();
       setNaoProtocolarDialogVisible(false);
@@ -1315,6 +1319,17 @@ const handleConfirmarProtocolacao = async () => {
 
                 <div className="radio-item">
                   <RadioButton
+                    inputId="opcaoSemProtocolo"
+                    name="naoProtocolarOpcao"
+                    value="sem_protocolo"
+                    onChange={(e) => setNaoProtocolarOpcao(e.value)}
+                    checked={naoProtocolarOpcao === 'sem_protocolo'}
+                  />
+                  <label htmlFor="opcaoSemProtocolo">Já enviado à SES — recusar protocolo (perda de prazo de protocolação)</label>
+                </div>
+
+                <div className="radio-item">
+                  <RadioButton
                     inputId="opcaoDiretoria"
                     name="naoProtocolarOpcao"
                     value="diretoria"
@@ -1325,6 +1340,22 @@ const handleConfirmarProtocolacao = async () => {
                 </div>
               </div>
             </div>
+
+            {(naoProtocolarOpcao === 'perda') && (
+              <div className="field field-span-4">
+                <label>Motivo da perda (opcional — o texto abaixo continua obrigatório)</label>
+                <Dropdown value={motivoPerdaCat} onChange={(e) => setMotivoPerdaCat(e.value)}
+                  options={[
+                    { label: 'Decidimos não cotar', value: 'NAO_COTAR' },
+                    { label: 'Não localizamos o médico', value: 'MEDICO_NAO_LOCALIZADO' },
+                    { label: 'Não conseguimos o orçamento', value: 'ORCAMENTO_NAO_OBTIDO' },
+                    { label: 'O médico recusou o pedido', value: 'MEDICO_RECUSOU' },
+                    { label: 'Orçamento não chegou em tempo hábil', value: 'ORCAMENTO_FORA_DO_PRAZO' },
+                    { label: 'Outro (ver justificativa)', value: 'OUTRO' },
+                  ]}
+                  placeholder="Escolha, se algum se aplicar" showClear />
+              </div>
+            )}
 
             <div className="field field-span-4">
               <label>

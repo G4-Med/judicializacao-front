@@ -12,6 +12,7 @@ import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { InputNumber } from 'primereact/inputnumber';
+import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode } from 'primereact/api';
 import {
   getSegredoJustica, salvarResultadoSegredo, getAnexosOrder,
@@ -148,6 +149,7 @@ export function SegredoJusticaPage() {
   const [resultadoSelecionado, setResultadoSelecionado] = useState<ResultadoType>('');
   const [parecerJuridico, setParecerJuridico] = useState('');
   const [valorGanho, setValorGanho] = useState<number | null>(null);
+  const [motivoPerdaCat, setMotivoPerdaCat] = useState<string | null>(null);  // task #223
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
   const [previewTipo, setPreviewTipo] = useState<'pdf' | 'imagem' | 'outro'>('outro');
@@ -353,6 +355,7 @@ useEffect(() => { carregarDados(); }, [fila]);
         resultado: resultadoSelecionado,
         parecer: parecerJuridico,
         valorGanho,
+        motivoPerdaCategoria: motivoPerdaCat ?? undefined,   // task #223 (opcional)
       });
       carregarDados();
       setUpdateDialogVisible(false);
@@ -765,6 +768,21 @@ useEffect(() => { carregarDados(); }, [fila]);
                   />
                 </div>}
 
+                {resultadoSelecionado === 'perda' && (
+                  <div className="field">
+                    <label>Motivo da perda (opcional — o parecer continua obrigatório)</label>
+                    <Dropdown value={motivoPerdaCat} onChange={(e) => setMotivoPerdaCat(e.value)}
+                      options={[
+                        { label: 'Decidimos não cotar', value: 'NAO_COTAR' },
+                        { label: 'Não localizamos o médico', value: 'MEDICO_NAO_LOCALIZADO' },
+                        { label: 'Não conseguimos o orçamento', value: 'ORCAMENTO_NAO_OBTIDO' },
+                        { label: 'O médico recusou o pedido', value: 'MEDICO_RECUSOU' },
+                        { label: 'Orçamento não chegou em tempo hábil', value: 'ORCAMENTO_FORA_DO_PRAZO' },
+                        { label: 'Outro (ver justificativa)', value: 'OUTRO' },
+                      ]}
+                      placeholder="Escolha, se algum se aplicar" showClear />
+                  </div>
+                )}
                 {resultadoSelecionado !== '' && resultadoSelecionado !== 'habilitacao' && (
                   <div className="field">
                     <label>{resultadoSelecionado === 'ganho' ? 'Valor Ganho' : 'Valor da Causa'}</label>

@@ -29,6 +29,7 @@ interface PerdaProcesso {
   statusProcesso: string;
   statusPerda: string;
   justificativaPerda: string;
+  motivoPerdaCategoria?: string | null;
   analiseJuridicaFinal: string;
   cliente: string;
   valor: number;
@@ -91,6 +92,7 @@ export function PerdasPage() {
               statusProcesso: o.statusProcesso ?? '',
               statusPerda: o.statusPerda ?? '',
               justificativaPerda: o.justificativaPerda ?? '',
+              motivoPerdaCategoria: o.motivoPerdaCategoria ?? null,
               analiseJuridicaFinal: o.analiseJuridicaFinal ?? '',
               cliente: medico?.razaoSocial ?? '',
               valor: valorOrcamento || o.refPreco || 0,
@@ -352,6 +354,9 @@ export function PerdasPage() {
             style={{ minWidth: '16rem' }}
           />
 
+          <Column field="motivoPerdaCategoria" header="Motivo (categoria)" sortable
+            style={{ minWidth: '13rem' }}
+            body={(r: any) => r.motivoPerdaCategoria ?? <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>não classificado</span>} />
           <Column
             field="justificativaPerda"
             header="Justificativa Perda"
