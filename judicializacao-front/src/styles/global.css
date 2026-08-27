@@ -167,8 +167,10 @@ body.dark-theme .p-multiselect {
    de empurrar colunas pra fora da tela.
    !important é necessário: os minWidth vêm INLINE do tableStyle/Column de cada
    página — sem tocar nas 10 telas uma a uma, esta regra única neutraliza todos.
-   Em monitor largo (>1600px) nada muda. */
-@media (max-width: 1600px) {
+   Teto 1920px (27/08, achado do responsividade_scanner): 3 telas exigem >2000px
+   (Processos 2432 · ParaProtocolar 2016 · OrcamentoMedico 2000) — rolavam de lado
+   ATÉ em monitor full-HD. Acima de 1920px (ultrawide) as larguras originais valem. */
+@media (max-width: 1920px) {
   .p-datatable > .p-datatable-wrapper > .p-datatable-table {
     min-width: 0 !important;            /* mata o tableStyle minWidth:9Xrem */
   }
