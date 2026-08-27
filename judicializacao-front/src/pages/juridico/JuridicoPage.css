@@ -392,3 +392,14 @@ body.dark-theme .juridico-table .p-datatable-tbody > tr > td {
 .status-significados ul { margin: 0; padding-left: 16px; }
 .status-significados li { margin-bottom: 4px; }
 .status-significados li strong { color: var(--mc-ink, #0f2236); }
+
+/* Alerta idade<18 = possível segredo de justiça (task #193, 26/08) */
+.juridico-paciente-cel { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.juridico-tag-menor-idade { font-size: 10.5px; }
+/* Alerta "Sem anexo" (task #197, 26/08) */
+.juridico-tag-sem-anexo { font-size: 10.5px; }
+
+/* Comarca + distância (task #212) */
+.juridico-geo { display: flex; flex-direction: column; line-height: 1.2; }
+.juridico-geo small { color: #64748b; font-size: 0.75rem; }
+.juridico-geo-vazio { color: #94a3b8; font-size: 0.8rem; font-style: italic; }

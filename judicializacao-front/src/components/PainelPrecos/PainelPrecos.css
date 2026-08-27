@@ -46,14 +46,20 @@
   border-radius: 999px;
 }
 
+/* @R 27/08 12:58: "grid de uma linha, um do lado do outro" — linha | barras | números+tabela,
+   alturas reduzidas. Em tela estreita cai para 2 linhas (gráficos em cima, lateral embaixo). */
 .painel-precos__corpo {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.1fr);
+  gap: 14px;
   align-items: start;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1500px) {
+  .painel-precos__corpo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .painel-precos__lateral { grid-column: 1 / -1; }
+}
+@media (max-width: 900px) {
   .painel-precos__corpo { grid-template-columns: 1fr; }
 }
 
@@ -74,7 +80,7 @@
 
 .painel-precos__numeros {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
   gap: 8px;
 }
 
@@ -155,7 +161,7 @@
 }
 
 /* Gráfico de linhas casos/mês (27/08) — empilhado sobre as barras, coluna esquerda. */
-.painel-precos__graficos { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.painel-precos__graficos { display: contents; }   /* os 2 gráficos viram células irmãs do grid */
 .painel-precos__grafico--linha canvas { cursor: pointer; }
 .ppc-grafico-titulo {
   font-size: 0.72rem;

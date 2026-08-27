@@ -320,11 +320,11 @@ export function PainelPrecos({ orderId, procedimento, nossoPreco }: {
               <div className="ppc-grafico-titulo">
                 Casos por mês · {meses.length} meses · clique num ponto para filtrar o painel
               </div>
-              <Chart type="line" data={dadosLinha} options={opcoesLinha} style={{ height: '150px' }} />
+              <Chart type="line" data={dadosLinha} options={opcoesLinha} style={{ height: '190px' }} />
             </div>
           )}
           <div className="painel-precos__grafico">
-            <Chart type="bar" data={dadosGrafico} options={opcoesGrafico} style={{ height: '240px' }} />
+            <Chart type="bar" data={dadosGrafico} options={opcoesGrafico} style={{ height: '210px' }} />
           </div>
         </div>
 

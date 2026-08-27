@@ -39,6 +39,11 @@ interface ProcessoJuridico {
   emailSolicitante: string;
   possivelMenorIdade?: boolean;
   qtdAnexos?: number;
+  // Geografia do processo, derivada do CNJ no backend (task #212): federal não tem comarca.
+  comarca?: string | null;
+  distanciaKm?: number | null;
+  esfera?: 'estadual' | 'federal' | 'trabalhista' | 'stf' | 'stj' | 'outra' | null;
+  geoMotivo?: string | null;
 }
 
 interface ProcessoJuridicoRow extends ProcessoJuridico {
@@ -361,6 +366,22 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           />
           <Column field="procedimento" className="col-procedimento-upper" header="Procedimento" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '18rem' }} />
+          <Column field="comarca" header="Comarca" sortable style={{ minWidth: '11rem' }}
+            body={(r: ProcessoJuridicoRow) => {
+              // @R 27/08: "quando for federal aí não temos distância" — dizer isso na cara,
+              // ¬deixar a célula vazia (vazio lê como 'esqueceram de preencher').
+              if (r.esfera === 'federal') return <Tag value="Federal" severity="info" title="Processo na Justiça Federal — sem comarca estadual" />;
+              if (!r.comarca) return <span className="juridico-geo-vazio" title={r.geoMotivo ?? ''}>
+                {r.geoMotivo === 'sem_cnj' ? 'sem nº do processo' : 'comarca não mapeada'}</span>;
+              return (
+                <span className="juridico-geo">
+                  <strong>{r.comarca}</strong>
+                  {r.distanciaKm !== null && r.distanciaKm !== undefined && (
+                    <small>{r.distanciaKm === 0 ? 'aqui (JF)' : `${r.distanciaKm.toLocaleString('pt-BR')} km`}</small>
+                  )}
+                </span>
+              );
+            }} />
           <Column
             field="dias"
             header="Dias Solicitados"
