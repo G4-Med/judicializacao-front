@@ -4,3 +4,13 @@
 .ident-geo { display: flex; flex-direction: column; line-height: 1.2; }
 .ident-geo small { color: #64748b; font-size: 0.75rem; }
 body.dark-theme .ident-numero { color: #c6d2df; }
+
+/* Chip cadastro (4 pontos) — task #217 peça 1 */
+.chip-cadastro { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--mc-border, #e3eaef); background: var(--mc-surface-2, #f9fbfc); cursor: help; }
+.chip-cadastro--completo { border-color: #bfe6cf; background: #f0faf4; }
+.chip-cadastro small { font-size: 0.72rem; color: var(--mc-muted, #5b6b7a); font-variant-numeric: tabular-nums; margin-left: 2px; }
+.cc-ponto { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.cc-ponto--ok { background: var(--mc-green-500, #00a651); }
+.cc-ponto--acao { background: #f59e0b; }
+.cc-ponto--humano { background: #9aa7a1; }
+body.dark-theme .chip-cadastro--completo { background: rgba(28,122,72,0.16); border-color: rgba(28,122,72,0.4); }

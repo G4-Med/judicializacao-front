@@ -17,7 +17,21 @@ import './colunasIdentificacao.css';
  *       + no estado `filters`: ...FILTROS_IDENTIFICACAO
  */
 
+export interface ItemCadastro {
+  ok: boolean;
+  fonte: string | null;
+  tom: 'ok' | 'acao' | 'humano';
+  acao: string | null;
+  dono: string | null;
+}
+
+export interface Cadastro {
+  cnj: ItemCadastro; sei: ItemCadastro; comarca: ItemCadastro; anexo: ItemCadastro;
+  completos: number; total: number; faltas: string[]; completo: boolean;
+}
+
 export interface LinhaIdentificada {
+  cadastro?: Cadastro | null;
   nprocesso?: string | null;
   numeroSei?: string | null;
   familiaSei?: string | null;
@@ -82,4 +96,35 @@ export function colunaComarca(largura = '11rem') {
 /** Célula de nome com botão de copiar — para a coluna Paciente que cada tela já tem. */
 export function nomeComCopiar(nome: string | null | undefined) {
   return <>{nome}<BotaoCopiar valor={nome} rotulo="nome do paciente" /></>;
+}
+
+const ROTULO_PONTO: Record<string, string> = { cnj: 'CNJ', sei: 'SEI', comarca: 'Comarca', anexo: 'Anexo' };
+
+/** Chip "cadastro" (desenho af56e8f2, nota 94 — GO @R 27/08 14:19): 4 pontos, tooltip com
+ *  fonte + próxima ação + dono. verde=tem · âmbar=falta com rota automática · cinza=fila
+ *  humana. cadastro null (falha no cálculo) = "indisponível" — a tabela nunca cai (K6). */
+export function colunaCadastro(largura = '9rem') {
+  return (
+    <Column key="col-cadastro" field="cadastro" header="Cadastro" sortable
+      sortField="cadastro.completos" style={{ minWidth: largura }}
+      body={(r: LinhaIdentificada) => {
+        const c = r.cadastro;
+        if (c === null) return <span className="ident-vazio" title="Falha ao calcular — a análise segue normalmente">indisponível</span>;
+        if (!c) return <span className="ident-vazio">—</span>;
+        const titulo = (['cnj', 'sei', 'comarca', 'anexo'] as const).map((k) => {
+          const i = c[k];
+          if (i.ok) return `${ROTULO_PONTO[k]}: ok${i.fonte ? ` (${i.fonte})` : ''}`;
+          return `${ROTULO_PONTO[k]}: FALTA — ${i.acao ?? ''}${i.dono ? ` · ${i.dono}` : ''}`;
+        }).join('\n');
+        return (
+          <span className={`chip-cadastro${c.completo ? ' chip-cadastro--completo' : ''}`} title={titulo}
+            aria-label={`Cadastro ${c.completos} de ${c.total} completos${c.faltas.length ? `; faltando ${c.faltas.join(', ')}` : ''}`}>
+            {(['cnj', 'sei', 'comarca', 'anexo'] as const).map((k) => (
+              <span key={k} className={`cc-ponto cc-ponto--${c[k].tom}`} aria-hidden="true" />
+            ))}
+            <small>{c.completos}/{c.total}</small>
+          </span>
+        );
+      }} />
+  );
 }

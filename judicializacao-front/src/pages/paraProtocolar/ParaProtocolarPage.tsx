@@ -23,7 +23,7 @@ import './ParaProtocolarPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaCnj, colunaSei, colunaComarca, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 interface ParaProtocolar {
   id: number;
@@ -662,6 +662,7 @@ const handleConfirmarProtocolacao = async () => {
           {colunaCnj()}
           {colunaSei()}
           {colunaComarca()}
+          {colunaCadastro()}
 
           <Column
             field="cliente"

@@ -13,7 +13,7 @@ import { getPerdas, getOrders, getMedicosCompleto } from '../../services/api/ord
 import { getStatusTagStyle } from '../../utils/statusTag';
 import './PerdasPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
-import { colunaCnj, colunaSei, colunaComarca, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 interface PerdaProcesso {
   id: number;
@@ -300,6 +300,7 @@ export function PerdasPage() {
           {colunaCnj()}
           {colunaSei()}
           {colunaComarca()}
+          {colunaCadastro()}
 
           <Column
             field="cliente"
