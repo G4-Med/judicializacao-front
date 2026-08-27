@@ -9,7 +9,7 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { Dropdown } from 'primereact/dropdown';
 import { Dialog } from 'primereact/dialog';
 import { FilterMatchMode } from 'primereact/api';
-import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder, getCnjCandidatos, confirmarCnj } from '../../services/api/orders';
+import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder, getCnjCandidatos, confirmarCnj, uploadAnexoOrder } from '../../services/api/orders';
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './JuridicoPage.css';
@@ -108,6 +108,10 @@ export function JuridicoPage() {
   // o humano confirma aqui vendo a origem — o sistema nunca grava CNJ sozinho (F1/G4).
   const [candidatosCnj, setCandidatosCnj] = useState<{ cnj: string; origem?: string }[]>([])
   const [confirmandoCnj, setConfirmandoCnj] = useState(false)
+  // Peça de inteiro teor (@R 27/08): obrigatória ao decidir Cotar OU Não Cotar.
+  const [inteiroTeorFile, setInteiroTeorFile] = useState<File | null>(null)
+  const [inteiroTeorJaAnexado, setInteiroTeorJaAnexado] = useState(false)
+  const [inteiroTeorObrigatorio, setInteiroTeorObrigatorio] = useState(false)
 
   const colunasCfg = useColunasVisiveis('analise-juridica');
 
@@ -193,6 +197,14 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
     .catch(() => setAnexos([]))
     .finally(() => setLoadingAnexos(false))
 
+  // inteiro teor: se o pedido JÁ tem a peça, não exigir de novo
+  setInteiroTeorFile(null)
+  setInteiroTeorObrigatorio(false)
+  setInteiroTeorJaAnexado(false)
+  getAnexosOrder(rowData.id, 'DECISAO_INTEIRO_TEOR')
+    .then((res: any) => setInteiroTeorJaAnexado((res.data.anexos ?? []).length > 0))
+    .catch(() => setInteiroTeorJaAnexado(false))
+
   // só busca candidato quando o pedido ainda não tem CNJ (senão o endpoint devolve 409)
   setCandidatosCnj([])
   if (!rowData.nprocesso) {
@@ -232,6 +244,13 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
       return;
     }
 
+    // Peça de inteiro teor obrigatória nos DOIS caminhos da decisão (@R 27/08).
+    const decidindo = statusJuridico === 'Cotar' || statusJuridico === 'Não Cotar';
+    if (decidindo && !inteiroTeorJaAnexado && !inteiroTeorFile) {
+      setInteiroTeorObrigatorio(true);
+      return;
+    }
+
       const payload = {
         nprocesso: nprocesso || null,
         numeroSei: numeroSei || null,
@@ -244,6 +263,11 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
       console.log('PROCESSO EDITANDO:', processoEditando);
 
     try {
+        // upload da peça ANTES do salvar — o backend confere a existência dela
+        if (decidindo && !inteiroTeorJaAnexado && inteiroTeorFile) {
+          await uploadAnexoOrder(processoEditando.id, inteiroTeorFile, 'DECISAO_INTEIRO_TEOR');
+          setInteiroTeorJaAnexado(true);
+        }
         await salvarJuridico(processoEditando.id, payload);
         carregarDados();
         setEditDialogVisible(false);
@@ -659,6 +683,40 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                   <li><strong>Segredo de Justiça</strong> — processo sob sigilo judicial: tratamento diferenciado, com fluxo próprio de resposta.</li>
                 </ul>
               </div>
+            </div>
+
+            {/* Peça de inteiro teor — obrigatória ao decidir (Cotar OU Não Cotar),
+                porque a peça serve a uso posterior independente do rumo (@R 27/08). */}
+            <div className="field field-span-4">
+              <label>
+                Peça de inteiro teor (PDF)
+                {(statusJuridico === 'Cotar' || statusJuridico === 'Não Cotar') && !inteiroTeorJaAnexado && (
+                  <span style={{ color: '#ef4444', marginLeft: '4px' }}>*obrigatório na decisão</span>
+                )}
+              </label>
+              {inteiroTeorJaAnexado ? (
+                <small style={{ color: '#16a34a' }}>
+                  <i className="pi pi-check-circle" /> Este pedido já tem a peça de inteiro teor anexada.
+                </small>
+              ) : (
+                <>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    disabled={readOnly}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0] ?? null;
+                      setInteiroTeorFile(f);
+                      if (f) setInteiroTeorObrigatorio(false);
+                    }}
+                  />
+                  {inteiroTeorObrigatorio && (
+                    <small style={{ color: '#ef4444' }}>
+                      Anexe a peça de inteiro teor da decisão — ela é obrigatória tanto para Cotar quanto para Não Cotar.
+                    </small>
+                  )}
+                </>
+              )}
             </div>
 
             <div className="field field-span-4">
