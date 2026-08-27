@@ -142,12 +142,21 @@ export function PerdasPage() {
     const perdaSemEspecialista = dataComCamposCalculados.filter(
       (item) => item.statusPerda === 'Perda por falta de especialista'
     ).length;
+    // Padronização 68b1f91e32 (@R 27/08): as 2 classes novas de perda parcial/tempo
+    const perdaSesSemResposta = dataComCamposCalculados.filter(
+      (item) => item.statusPerda === 'Perda sem resposta da SES'
+    ).length;
+    const perdaPrazoProtocolo = dataComCamposCalculados.filter(
+      (item) => item.statusPerda === 'Perda de prazo de protocolação'
+    ).length;
 
     return {
       totalProcessos,
       valorTotal,
       perdaJuridico,
       perdaMedico,
+      perdaSesSemResposta,
+      perdaPrazoProtocolo,
       perdaSemEspecialista
     };
   }, [dataComCamposCalculados]);
@@ -242,6 +251,22 @@ export function PerdasPage() {
             <i className="pi pi-ban"></i>
           </div>
           <div className="kpi-value">{kpis.perdaSemEspecialista}</div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>SES sem resposta</span>
+            <i className="pi pi-clock"></i>
+          </div>
+          <div className="kpi-value">{kpis.perdaSesSemResposta}</div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>Prazo de protocolação</span>
+            <i className="pi pi-calendar-times"></i>
+          </div>
+          <div className="kpi-value">{kpis.perdaPrazoProtocolo}</div>
         </div>
 
         <div className="kpi-card">
