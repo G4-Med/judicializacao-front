@@ -13,6 +13,7 @@ import { getPerdas, getOrders, getMedicosCompleto } from '../../services/api/ord
 import { getStatusTagStyle } from '../../utils/statusTag';
 import './PerdasPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { colunaCnj, colunaSei, colunaComarca, FILTROS_IDENTIFICACAO } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 interface PerdaProcesso {
   id: number;
@@ -50,6 +51,7 @@ export function PerdasPage() {
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
+    ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     cliente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     valor: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -294,6 +296,10 @@ export function PerdasPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+          {colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
 
           <Column
             field="cliente"

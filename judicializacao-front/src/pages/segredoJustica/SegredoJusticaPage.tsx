@@ -24,6 +24,7 @@ import './SegredoJusticaPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
+import { colunaCnj, colunaSei, colunaComarca, FILTROS_IDENTIFICACAO } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 interface DocumentoProcesso {
   label: string;
@@ -118,6 +119,7 @@ export function SegredoJusticaPage() {
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
+    ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     cliente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     valor: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -485,6 +487,10 @@ useEffect(() => { carregarDados(); }, []);
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+          {colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
 
           <Column
             field="cliente"

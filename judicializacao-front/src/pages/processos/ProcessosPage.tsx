@@ -27,6 +27,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import './ProcessosPage.css';
+import { colunaCnj, colunaSei, colunaComarca, FILTROS_IDENTIFICACAO } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 const STATUS_PROCESSO_FALLBACK = [
   'Aguardando Juridico',
@@ -283,6 +284,7 @@ export function ProcessosPage() {
   // ?paciente=<nome> pelo botão "Processo" — a tabela abre já filtrada nele.
   const [searchParams] = useSearchParams();
   const [filters, setFilters] = useState<DataTableFilterMeta>({
+    ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: searchParams.get('paciente') ?? '', matchMode: FilterMatchMode.CONTAINS },
     idade: { value: '', matchMode: FilterMatchMode.CONTAINS },
     procedimento: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -2064,6 +2066,10 @@ ${linhasAnexos}
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+          {colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
 
           {/* <Column
             field="idade"

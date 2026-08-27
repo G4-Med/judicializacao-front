@@ -21,6 +21,7 @@ import type {
 } from '../../services/api/financeiro';
 import './AguardandoCirurgiaPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { colunaCnj, colunaSei, colunaComarca, FILTROS_IDENTIFICACAO } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 interface Anexo {
   id: number;
@@ -250,6 +251,7 @@ export function AguardandoCirurgiaPage() {
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
+    ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     medico: { value: '', matchMode: FilterMatchMode.CONTAINS },
     valor: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -544,6 +546,10 @@ export function AguardandoCirurgiaPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+          {colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
           <Column
             field="medico"
             header="Médico"

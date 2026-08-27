@@ -1,0 +1,6 @@
+/* Colunas de identificação (CNJ · SEI · Comarca) — task #214 */
+.ident-numero { font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; font-size: 0.78rem; font-variant-numeric: tabular-nums; user-select: all; white-space: nowrap; color: var(--mc-ink-2, #33414f); }
+.ident-vazio { color: #94a3b8; font-size: 0.8rem; font-style: italic; }
+.ident-geo { display: flex; flex-direction: column; line-height: 1.2; }
+.ident-geo small { color: #64748b; font-size: 0.75rem; }
+body.dark-theme .ident-numero { color: #c6d2df; }
