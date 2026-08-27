@@ -19,6 +19,12 @@ export const getParaProtocolar = () => api.get('/orders/para-protocolar/');
 export const salvarProtocolar = (id: number, data: any) => api.post(`/orders/para-protocolar/${id}/salvar/`, data);
 export const getSegredoJustica = () => api.get('/orders/segredo-justica/');
 export const salvarResultadoSegredo = (id: number, data: any) => api.post(`/orders/segredo-justica/${id}/salvar/`, data);
+
+// Classificação retroativa (task #196, 26/08) — candidatos já no banco (menor de
+// idade, ainda não marcados) e a ação de confirmar 1 candidato como segredo.
+export const getCandidatosSegredoJustica = () => api.get('/orders/segredo-justica/candidatos/');
+export const marcarSegredoJusticaRetroativo = (id: number) =>
+  api.post(`/orders/segredo-justica/${id}/marcar-retroativo/`);
 export const getProtocolados = () => api.get('/orders/protocolados/');
 export const salvarResultadoProtocolado = (id: number, data: any) => api.post(`/orders/protocolados/${id}/salvar/`, data);
 export const adicionarAcompanhamento = (id: number, data: any) => api.post(`/orders/protocolados/${id}/acompanhamento/`, data);
@@ -193,6 +199,14 @@ export const getSlaEstourados = () => api.get('/sla/estourados/');
 
 export const getNotificacoesCentral = () => api.get('/notificacoes/central/');
 
+export const getNotificacoesHistorico = () => api.get('/notificacoes/historico/');
+
+// Log de auditoria + reverter fase (task #198, 26/08)
+export const getLogAuditoria = (filtros: Record<string, string>) =>
+  api.get('/admin/log-auditoria/', { params: filtros });
+export const reverterHistorico = (historicoId: number) =>
+  api.post(`/admin/log-auditoria/${historicoId}/reverter/`);
+
 export const getSlaTrajetoria = (orderId: number) =>
   api.get(`/orders/${orderId}/trajetoria/`);
 
@@ -206,3 +220,7 @@ export const getFunilDetalhe = (params: Record<string, string | number> = {}) =>
 // usar um <a href> simples — busca como blob e o componente entrega ao usuário.
 export const baixarFunilCsv = (params: Record<string, string | number> = {}) =>
   api.get('/funil/detalhe/', { params: { ...params, formato: 'csv' }, responseType: 'blob' });
+
+// Loop de inteligência do pedido (task #203, 27/08): "já respondemos? o que já cobramos?"
+export const getInteligenciaPedido = (orderId: number) =>
+  api.get(`/orders/${orderId}/inteligencia/`);

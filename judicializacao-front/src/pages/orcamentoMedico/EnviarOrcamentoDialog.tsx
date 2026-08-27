@@ -8,7 +8,7 @@ import html2canvas from 'html2canvas';
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { getBaseOrcamento, getDadosMedico, type TipoBaseOrcamento } from '../../services/api/client';
-import { salvarOrcamentoMedico, uploadAnexoOrder } from '../../services/api/orders';
+import { salvarOrcamentoMedico, uploadAnexoOrder, getInteligenciaPedido } from '../../services/api/orders';
 import './OrcamentoMedicoPage.css';
 
 GlobalWorkerOptions.workerSrc = pdfWorker;
@@ -164,6 +164,79 @@ export function EnviarOrcamentoDialog({
 
   const previewDocumentoRef = useRef<HTMLDivElement>(null);
   const basePdfCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Loop de inteligência do pedido (task #203, 27/08): antes de orçar, o sistema abre a
+  // "pasta" — já respondemos ESTE pedido (duplicata)? o que já cobramos por ESTA cirurgia
+  // (experiência, com data)? Fail-soft: erro na dica NUNCA impede o envio do orçamento.
+  interface IntelItem {
+    order_id: number; score: number; exato: boolean; procedimento: string;
+    mesmo_medico: boolean; data_pedido: string | null;
+    valor_respondido: number | null; data_resposta: string | null;
+  }
+  interface Inteligencia {
+    duplicata: IntelItem[]; experiencia: IntelItem[]; media_18m?: number | null;
+    n_similares: number; piso_estado?: number | null; referencia_mercado?: number | null;
+  }
+  const [inteligencia, setInteligencia] = useState<Inteligencia | null>(null);
+
+  useEffect(() => {
+    if (!visible || !processo?.id) { setInteligencia(null); return; }
+    let cancelado = false;
+    getInteligenciaPedido(processo.id)
+      .then((resp) => { if (!cancelado) setInteligencia(resp.data); })
+      .catch(() => { if (!cancelado) setInteligencia(null); });
+    return () => { cancelado = true; };
+  }, [visible, processo?.id]);
+
+  const fmtBRL = (v: number) =>
+    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+  const fmtData = (iso: string | null) => {
+    if (!iso) return '';
+    const [y, m] = iso.split('-');
+    return `${m}/${y?.slice(2)}`;
+  };
+
+  const cardInteligencia = inteligencia
+    && (inteligencia.duplicata.length > 0 || inteligencia.experiencia.length > 0) ? (
+      <div style={{ marginBottom: '12px' }}>
+        {inteligencia.duplicata.length > 0 && (
+          <div style={{
+            background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px',
+            padding: '10px 14px', marginBottom: '8px', fontSize: '0.875rem', color: '#991b1b',
+          }}>
+            <strong>⚠ Já respondemos este pedido?</strong> Mesmo paciente + mesma cirurgia:{' '}
+            {inteligencia.duplicata.map((d) => (
+              <span key={d.order_id}>
+                pedido #{d.order_id}
+                {d.valor_respondido ? ` — respondido por ${fmtBRL(d.valor_respondido)} em ${fmtData(d.data_resposta)}` : ' (sem resposta registrada)'}
+                {'. '}
+              </span>
+            ))}
+            Confira antes de enviar um valor diferente.
+          </div>
+        )}
+        {inteligencia.experiencia.length > 0 && (
+          <div style={{
+            background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px',
+            padding: '10px 14px', fontSize: '0.875rem', color: '#1e3a5f',
+          }}>
+            <strong>🧠 Já orçamos esta cirurgia:</strong>{' '}
+            {inteligencia.experiencia
+              .filter((e) => e.valor_respondido)
+              .slice(0, 3)
+              .map((e) => (
+                <span key={e.order_id} title={e.procedimento}>
+                  {fmtBRL(e.valor_respondido as number)} ({fmtData(e.data_resposta)}
+                  {e.mesmo_medico ? ', mesmo médico' : ''}){' · '}
+                </span>
+              ))}
+            {inteligencia.media_18m ? (
+              <span>média 18m: <strong>{fmtBRL(inteligencia.media_18m)}</strong></span>
+            ) : null}
+          </div>
+        )}
+      </div>
+    ) : null;
 
   useEffect(() => {
     if (!visible) return;
@@ -563,6 +636,7 @@ export function EnviarOrcamentoDialog({
         modal
         onHide={handleClose}
       >
+        {cardInteligencia}
         <div style={{ display: 'flex', gap: '16px', padding: '8px 0 16px' }}>
           <button
             onClick={() => setModo('arquivo')}
