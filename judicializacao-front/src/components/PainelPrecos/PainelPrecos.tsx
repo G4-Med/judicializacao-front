@@ -36,6 +36,8 @@ interface Precos {
   };
   serie: Pagamento[];
   pagamentos: Pagamento[];
+  historico: Pagamento[];                                   // todos, mais recente primeiro
+  casos_por_mes: { mes: string; casos: number; total: number }[];
   janela_dias: number | null;
   janela_ampliada: boolean;
   total_na_fonte: number;
@@ -53,6 +55,30 @@ const dataCurta = (iso: string) => {
   const [ano, mes, dia] = iso.split('-');
   return `${dia}/${mes}/${ano.slice(2)}`;
 };
+
+const mesCurto = (aaaaMm: string) => {
+  const [ano, mes] = aaaaMm.split('-');
+  return `${mes}/${ano.slice(2)}`;
+};
+
+/** Os 5 números sobre um subconjunto (mês clicado) — mesma régua do backend, no cliente. */
+function estatisticaLocal(valores: number[]): Precos['estatistica'] {
+  if (!valores.length) return { n: 0, moda: null, moda_frequencia: 0, media: null, mediana: null, minimo: null, maximo: null };
+  const ord = [...valores].sort((a, b) => a - b);
+  const cont = new Map<number, number>();
+  for (const v of valores) cont.set(v, (cont.get(v) ?? 0) + 1);
+  const [modaV, modaF] = [...cont.entries()].sort((a, b) => b[1] - a[1])[0];
+  const meio = Math.floor(ord.length / 2);
+  return {
+    n: valores.length,
+    moda: modaF > 1 ? modaV : null,
+    moda_frequencia: modaF > 1 ? modaF : 0,
+    media: Math.round((valores.reduce((a, b) => a + b, 0) / valores.length) * 100) / 100,
+    mediana: ord.length % 2 ? ord[meio] : Math.round(((ord[meio - 1] + ord[meio]) / 2) * 100) / 100,
+    minimo: ord[0],
+    maximo: ord[ord.length - 1],
+  };
+}
 
 /** Frase honesta sobre QUAL período está na tela — número sem janela engana. */
 function textoJanela(p: Precos): string {
@@ -78,6 +104,7 @@ export function PainelPrecos({ orderId, procedimento, nossoPreco }: {
   const [dados, setDados] = useState<Precos | null>(() => memoriaPrecos.get(orderId) ?? null);
   const [carregando, setCarregando] = useState(!memoriaPrecos.has(orderId));
   const [falhou, setFalhou] = useState(false);
+  const [filtroMes, setFiltroMes] = useState<string | null>(null);   // 'AAAA-MM' clicado na linha
 
   useEffect(() => {
     const guardado = memoriaPrecos.get(orderId);
@@ -149,28 +176,75 @@ export function PainelPrecos({ orderId, procedimento, nossoPreco }: {
     );
   }
 
-  const e = dados.estatistica;
+  // FILTRO POR MÊS (@R 27/08 12:36: "clicar no gráfico de linhas para fazer o filtro"):
+  // com um mês selecionado, barras, 5 números e tabela passam a ser DAQUELE mês, sobre o
+  // histórico completo que o backend já mandou — zero consulta nova.
+  const doMes = filtroMes ? (dados.historico ?? []).filter((p) => p.data.startsWith(filtroMes)) : null;
+  const serie = doMes ? [...doMes].sort((a, b) => a.data.localeCompare(b.data)) : dados.serie;
+  const pagamentos = doMes ?? dados.pagamentos;
+  const e = doMes ? estatisticaLocal(doMes.map((p) => p.valor)) : dados.estatistica;
   const mediana = e.mediana ?? 0;
 
   // Outlier: mais que o dobro da mediana. Marcado em cinza para não sequestrar a escala —
   // sem isso, um pagamento de R$ 121 mil achata visualmente todos os de R$ 30-40 mil.
   const ehOutlier = (v: number) => v > mediana * 2;
 
+  const meses = dados.casos_por_mes ?? [];
+  const dadosLinha = {
+    labels: meses.map((m) => mesCurto(m.mes)),
+    datasets: [{
+      type: 'line' as const,
+      label: 'Casos por mês (pagamentos do Estado)',
+      data: meses.map((m) => m.casos),
+      borderColor: '#0f766e',
+      backgroundColor: 'rgba(15,118,110,0.12)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: meses.map((m) => (m.mes === filtroMes ? 6 : 3)),
+      pointBackgroundColor: meses.map((m) => (m.mes === filtroMes ? '#f59e0b' : '#0f766e')),
+      pointHoverRadius: 7,
+    }],
+  };
+  const opcoesLinha = {
+    maintainAspectRatio: false,
+    onClick: (_evt: unknown, elementos: { index: number }[]) => {
+      const alvo = elementos?.[0] ? meses[elementos[0].index]?.mes : null;
+      if (!alvo) return;
+      console.debug(`[PainelPrecos] filtro por mês: ${filtroMes === alvo ? 'limpo' : alvo}`);
+      setFiltroMes((atual) => (atual === alvo ? null : alvo));   // reclicar limpa
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx: any) => {
+            const m = meses[ctx.dataIndex];
+            return ` ${m.casos} caso${m.casos === 1 ? '' : 's'} · ${moeda(m.total)} · clique para filtrar`;
+          },
+        },
+      },
+    },
+    scales: {
+      y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+      x: { ticks: { font: { size: 10 }, maxTicksLimit: 18 }, grid: { display: false } },
+    },
+  };
+
   const dadosGrafico = {
-    labels: dados.serie.map((p) => dataCurta(p.data)),
+    labels: serie.map((p) => dataCurta(p.data)),
     datasets: [
       {
         type: 'bar' as const,
         label: 'Pagamento do Estado',
-        data: dados.serie.map((p) => p.valor),
-        backgroundColor: dados.serie.map((p) => (ehOutlier(p.valor) ? '#cbd5e1' : '#3b82f6')),
+        data: serie.map((p) => p.valor),
+        backgroundColor: serie.map((p) => (ehOutlier(p.valor) ? '#cbd5e1' : '#3b82f6')),
         borderRadius: 4,
         order: 2,
       },
       {
         type: 'line' as const,
         label: `Mediana (${moeda(mediana)})`,
-        data: dados.serie.map(() => mediana),
+        data: serie.map(() => mediana),
         borderColor: '#f59e0b',
         borderWidth: 2,
         borderDash: [6, 4],
@@ -198,7 +272,7 @@ export function PainelPrecos({ orderId, procedimento, nossoPreco }: {
       tooltip: {
         callbacks: {
           afterLabel: (ctx: any) => {
-            const p = dados.serie[ctx.dataIndex];
+            const p = serie[ctx.dataIndex];
             if (!p) return '';
             const onde = p.comarca ?? 'comarca não informada';
             const km = p.distancia_km !== null ? ` · ${p.distancia_km} km daqui` : '';
@@ -228,12 +302,30 @@ export function PainelPrecos({ orderId, procedimento, nossoPreco }: {
     <div className="painel-precos">
       <div className="painel-precos__cabecalho">
         <h3><i className="pi pi-chart-bar" /> Quanto o Estado pagou por “{procedimento}”</h3>
-        <span className="painel-precos__janela">{textoJanela(dados)}</span>
+        {filtroMes ? (
+          <span className="painel-precos__janela painel-precos__janela--filtro">
+            mês {mesCurto(filtroMes)} · {e.n} pagamento{e.n === 1 ? '' : 's'}
+            <button type="button" className="ppc-limpar" onClick={() => setFiltroMes(null)}
+              aria-label="Limpar o filtro de mês">× limpar</button>
+          </span>
+        ) : (
+          <span className="painel-precos__janela">{textoJanela(dados)}</span>
+        )}
       </div>
 
       <div className="painel-precos__corpo">
-        <div className="painel-precos__grafico">
-          <Chart type="bar" data={dadosGrafico} options={opcoesGrafico} style={{ height: '260px' }} />
+        <div className="painel-precos__graficos">
+          {meses.length > 1 && (
+            <div className="painel-precos__grafico painel-precos__grafico--linha">
+              <div className="ppc-grafico-titulo">
+                Casos por mês · {meses.length} meses · clique num ponto para filtrar o painel
+              </div>
+              <Chart type="line" data={dadosLinha} options={opcoesLinha} style={{ height: '150px' }} />
+            </div>
+          )}
+          <div className="painel-precos__grafico">
+            <Chart type="bar" data={dadosGrafico} options={opcoesGrafico} style={{ height: '240px' }} />
+          </div>
         </div>
 
         <div className="painel-precos__lateral">
@@ -248,12 +340,12 @@ export function PainelPrecos({ orderId, procedimento, nossoPreco }: {
           </div>
 
           <table className="painel-precos__tabela">
-            <caption>Últimos pagamentos {dados.sem_comarca > 0 && `· ${dados.sem_comarca} sem comarca informada`}</caption>
+            <caption>{filtroMes ? `Pagamentos de ${mesCurto(filtroMes)}` : 'Últimos pagamentos'} {dados.sem_comarca > 0 && `· ${dados.sem_comarca} sem comarca informada`}</caption>
             <thead>
               <tr><th>Data</th><th>Comarca</th><th>Distância</th><th>Valor</th></tr>
             </thead>
             <tbody>
-              {dados.pagamentos.map((p, i) => (
+              {pagamentos.map((p, i) => (
                 <tr key={`${p.data}-${p.num_empenho ?? i}`}>
                   <td>{dataCurta(p.data)}</td>
                   <td>{p.comarca ?? <span className="ppc-vazio">não informada</span>}</td>

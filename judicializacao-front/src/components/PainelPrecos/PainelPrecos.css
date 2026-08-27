@@ -153,3 +153,21 @@
   font-size: 0.72rem;
   color: #94a3b8;
 }
+
+/* Gráfico de linhas casos/mês (27/08) — empilhado sobre as barras, coluna esquerda. */
+.painel-precos__graficos { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.painel-precos__grafico--linha canvas { cursor: pointer; }
+.ppc-grafico-titulo {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  font-weight: 600;
+  margin: 0 0 6px 2px;
+}
+.painel-precos__janela--filtro { background: #fef3c7; color: #92400e; display: inline-flex; gap: 8px; align-items: center; }
+.ppc-limpar {
+  border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer;
+  text-decoration: underline; padding: 0;
+}
+.ppc-limpar:focus-visible { outline: 2px solid #f59e0b; outline-offset: 2px; border-radius: 4px; }
