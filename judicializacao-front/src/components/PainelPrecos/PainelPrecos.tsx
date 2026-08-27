@@ -30,6 +30,10 @@ interface Precos {
     moda: number | null;
     moda_frequencia: number;
     media: number | null;
+    media_suspeita?: boolean;
+    p25?: number | null;
+    p75?: number | null;
+    excluidos_nao_positivos?: number;
     mediana: number | null;
     minimo: number | null;
     maximo: number | null;
@@ -63,18 +67,36 @@ const mesCurto = (aaaaMm: string) => {
 
 /** Os 5 números sobre um subconjunto (mês clicado) — mesma régua do backend, no cliente. */
 function estatisticaLocal(valores: number[]): Precos['estatistica'] {
-  if (!valores.length) return { n: 0, moda: null, moda_frequencia: 0, media: null, mediana: null, minimo: null, maximo: null };
-  const ord = [...valores].sort((a, b) => a - b);
+  // Régua anti-média-ficção (lição 548, fecho #7a92fe4b): estorno/zero fora COM
+  // contador; mediana + miolo p25-p75 guiam; média ganha aviso quando dista >2x.
+  const excluidos = valores.filter((v) => v <= 0).length;
+  const validos = valores.filter((v) => v > 0);
+  if (!validos.length) return { n: 0, excluidos_nao_positivos: excluidos, moda: null, moda_frequencia: 0, media: null, media_suspeita: false, p25: null, p75: null, mediana: null, minimo: null, maximo: null };
+  const ord = [...validos].sort((a, b) => a - b);
   const cont = new Map<number, number>();
-  for (const v of valores) cont.set(v, (cont.get(v) ?? 0) + 1);
+  for (const v of validos) cont.set(v, (cont.get(v) ?? 0) + 1);
   const [modaV, modaF] = [...cont.entries()].sort((a, b) => b[1] - a[1])[0];
   const meio = Math.floor(ord.length / 2);
+  const mediana = ord.length % 2 ? ord[meio] : Math.round(((ord[meio - 1] + ord[meio]) / 2) * 100) / 100;
+  const media = Math.round((validos.reduce((a, b) => a + b, 0) / validos.length) * 100) / 100;
+  // quantis método statistics.quantiles(n=4) exclusivo (mesma conta do Python p/ JS==PY)
+  const q = (k: number): number => {
+    const pos = (k * (ord.length + 1)) / 4;
+    const i = Math.floor(pos) - 1;
+    if (i < 0) return ord[0];
+    if (i + 1 >= ord.length) return ord[ord.length - 1];
+    return Math.round((ord[i] + (ord[i + 1] - ord[i]) * (pos - Math.floor(pos))) * 100) / 100;
+  };
   return {
-    n: valores.length,
+    n: validos.length,
+    excluidos_nao_positivos: excluidos,
     moda: modaF > 1 ? modaV : null,
     moda_frequencia: modaF > 1 ? modaF : 0,
-    media: Math.round((valores.reduce((a, b) => a + b, 0) / valores.length) * 100) / 100,
-    mediana: ord.length % 2 ? ord[meio] : Math.round(((ord[meio - 1] + ord[meio]) / 2) * 100) / 100,
+    media,
+    media_suspeita: mediana > 0 && media > 2 * mediana,
+    p25: ord.length >= 4 ? q(1) : null,
+    p75: ord.length >= 4 ? q(3) : null,
+    mediana,
     minimo: ord[0],
     maximo: ord[ord.length - 1],
   };
@@ -291,12 +313,13 @@ export function PainelPrecos({ orderId, procedimento, nossoPreco }: {
   };
 
   const numeros = [
+    { rotulo: 'Mediana', valor: e.mediana, nota: 'o valor-guia (metade pagou menos)', destaque: true },
+    { rotulo: 'Miolo 50%', valor: null, nota: e.p25 != null && e.p75 != null ? `${moeda(e.p25)} – ${moeda(e.p75)}` : 'amostra pequena (<4)', textoLivre: e.p25 != null && e.p75 != null ? `${moeda(e.p25)}–${moeda(e.p75)}` : '—' },
     { rotulo: 'Moda', valor: e.moda, nota: e.moda ? `${e.moda_frequencia}× repetido` : 'nenhum valor se repete' },
-    { rotulo: 'Média', valor: e.media, nota: 'puxada por valores extremos' },
-    { rotulo: 'Mediana', valor: e.mediana, nota: 'o valor do meio', destaque: true },
+    { rotulo: 'Média', valor: e.media, nota: e.media_suspeita ? '⚠ 2× acima da mediana — possível agregado na amostra' : 'puxada por valores extremos' },
     { rotulo: 'Mínimo', valor: e.minimo, nota: 'menor pago' },
     { rotulo: 'Máximo', valor: e.maximo, nota: 'maior pago' },
-  ];
+  ] as { rotulo: string; valor: number | null; nota: string; destaque?: boolean; textoLivre?: string }[];
 
   return (
     <div className="painel-precos">
@@ -333,7 +356,7 @@ export function PainelPrecos({ orderId, procedimento, nossoPreco }: {
             {numeros.map((n) => (
               <div key={n.rotulo} className={`ppc-numero${n.destaque ? ' ppc-numero--destaque' : ''}`}>
                 <span className="ppc-numero__rotulo">{n.rotulo}</span>
-                <span className="ppc-numero__valor">{moeda(n.valor)}</span>
+                <span className="ppc-numero__valor">{n.textoLivre ?? moeda(n.valor)}</span>
                 <span className="ppc-numero__nota">{n.nota}</span>
               </div>
             ))}
