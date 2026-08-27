@@ -187,3 +187,13 @@ body.dark-theme .p-multiselect {
   }
   .p-datatable .p-column-filter { font-size: 0.8rem; }
 }
+
+/* Task #227 (@R 19:45): campos de busca com LARGURA PADRÃO em toda tabela —
+   o input ocupa a largura da própria coluna (nem mirrado nem gigante). */
+.p-datatable .p-filter-column .p-column-filter,
+.p-datatable .p-filter-column .p-inputtext {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.botao-exportar-excel { margin-left: auto; }

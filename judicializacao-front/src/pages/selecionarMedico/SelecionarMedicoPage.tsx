@@ -23,7 +23,8 @@ import './SelecionarMedicoPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 
 interface ProcessoResumo {
   id: number;
@@ -390,6 +391,7 @@ export function SelecionarMedicoPage() {
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos aguardando seleção de médico</h2>
+          <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="selecionar-medico" />
         <DataTable
           aria-label="Pedidos aguardando seleção de médico"
           value={dataComCamposCalculados}
@@ -434,6 +436,7 @@ export function SelecionarMedicoPage() {
           {colunaComarca()}
           {colunaCadastro()}
           {colunaSegredo()}
+          {colunaSolicitante()}
           <Column
             field="procedimento" className="col-procedimento-upper"
             header="Procedimento"

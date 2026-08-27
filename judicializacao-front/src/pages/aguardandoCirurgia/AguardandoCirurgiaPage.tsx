@@ -21,7 +21,8 @@ import type {
 } from '../../services/api/financeiro';
 import './AguardandoCirurgiaPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
-import { colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 
 interface Anexo {
   id: number;
@@ -520,6 +521,7 @@ export function AguardandoCirurgiaPage() {
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos aguardando confirmação de cirurgia</h2>
+          <BotaoExportarExcel todos={linhas} nome="aguardando-cirurgia" />
         <DataTable
           aria-label="Pedidos aguardando confirmação de cirurgia"
           value={linhas}
@@ -552,6 +554,7 @@ export function AguardandoCirurgiaPage() {
           {colunaComarca()}
           {colunaCadastro()}
           {colunaSegredo()}
+          {colunaSolicitante()}
           <Column
             field="medico"
             header="Médico"

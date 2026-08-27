@@ -23,7 +23,8 @@ import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { ContadorRegistros, contarPorCampo } from '../../components/ContadorRegistros/ContadorRegistros';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { tagTipoPaciente, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, tagTipoPaciente, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 
 // Meta desta fase (orçamento) — espelha backend/funil.py FASES['orcamento'].meta_dias.
 // "96 horas — é o prazo que sustenta o contrato com o Estado".
@@ -557,6 +558,7 @@ ${blocos}
             )}
           />
         </h2>
+          <BotaoExportarExcel todos={dataComMedico} visiveis={visibleProcessos} nome="orcamento-medico" />
         <DataTable
           aria-label="Pedidos aguardando orçamento médico"
           value={dataComMedico} dataKey="id" paginator rowsPerPageOptions={[10, 20, 50, 100]} rows={rows} first={first}
@@ -590,6 +592,7 @@ ${blocos}
           {colunaComarca()}
           {colunaCadastro()}
           {colunaSegredo()}
+          {colunaSolicitante()}
           <Column field="idade" header="Idade" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '7rem' }} />
           <Column field="tipoPaciente" header="Tipo" sortable style={{ minWidth: '7rem' }}

@@ -24,7 +24,8 @@ import './ParaProtocolarPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 
 interface ParaProtocolar {
   id: number;
@@ -620,6 +621,7 @@ const handleConfirmarProtocolacao = async () => {
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos para protocolar</h2>
+          <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="protocolar" />
         <DataTable
           aria-label="Pedidos para protocolar"
           value={dataComCamposCalculados}
@@ -668,6 +670,7 @@ const handleConfirmarProtocolacao = async () => {
           {colunaComarca()}
           {colunaCadastro()}
           {colunaSegredo()}
+          {colunaSolicitante()}
 
           <Column
             field="cliente"

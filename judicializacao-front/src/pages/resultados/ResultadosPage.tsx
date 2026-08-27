@@ -29,7 +29,8 @@ import './ResultadosPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 // Reaproveita estilos do dialog Atualizar (timeline, update-section, anexo, etc).
 import '../protocolados/ProtocoladosPage.css';
-import { colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -522,6 +523,7 @@ const kpis = useMemo(() => {
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Processos finalizados — resultado (ganho ou perda), valor e tempo de tramitação</h2>
+          <BotaoExportarExcel todos={dataComCamposCalculados} nome="resultados" />
         <DataTable
           aria-label="Processos finalizados — resultado (ganho ou perda), valor e tempo de tramitação"
           value={dataComCamposCalculados}
@@ -570,6 +572,7 @@ const kpis = useMemo(() => {
           {colunaComarca()}
           {colunaCadastro()}
           {colunaSegredo()}
+          {colunaSolicitante()}
 
           <Column
             field="cliente"

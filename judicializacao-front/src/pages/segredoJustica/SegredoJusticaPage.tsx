@@ -26,7 +26,8 @@ import './SegredoJusticaPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { tagTipoPaciente, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, tagTipoPaciente, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 
 interface DocumentoProcesso {
   label: string;
@@ -489,6 +490,7 @@ useEffect(() => { carregarDados(); }, [fila]);
         </div>
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />
           {fila === 'ses' ? 'Segredo de justiça — enviado à SES (aguardando resposta)' : 'Pedidos em segredo de justiça'}</h2>
+          <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="segredo-justica" />
         <DataTable
           aria-label="Pedidos em segredo de justiça"
           value={dataComCamposCalculados}
@@ -534,6 +536,7 @@ useEffect(() => { carregarDados(); }, [fila]);
           {colunaSei()}
           {colunaComarca()}
           {colunaCadastro()}
+          {colunaSolicitante()}
 
           {/* @R 27/08 16:45: "quero saber a idade, se é pediatria e adulto (tipo do
               médico) e o nome do procedimento". Idade ausente = "—", nunca chute. */}

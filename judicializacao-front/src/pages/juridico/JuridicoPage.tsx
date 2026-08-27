@@ -13,7 +13,7 @@ import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder, getCnjCan
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './JuridicoPage.css';
-import { tagTipoPaciente } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, tagTipoPaciente } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { PainelPrecos } from '../../components/PainelPrecos/PainelPrecos';
@@ -21,6 +21,7 @@ import { ContadorRegistros } from '../../components/ContadorRegistros/ContadorRe
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 import { BotaoCopiar } from '../../components/BotaoCopiar/BotaoCopiar';
 import { useNavigate } from 'react-router-dom';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 
 // Meta desta fase (triagem jurídica) — espelha backend/funil.py FASES['triagem'].meta_dias.
 // "a análise sai no dia seguinte — libera para mim até meio-dia" (fala do @R na reunião).
@@ -343,6 +344,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             ]}
           />
         </h2>
+          <BotaoExportarExcel todos={dataComSequencial} visiveis={visibleProcessos} nome="analise-juridica" />
         <DataTable
           aria-label="Pedidos aguardando triagem jurídica"
           value={dataComSequencial}
@@ -449,6 +451,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
               if (r.segredo === 'nao') return <Tag value="Sem segredo" severity="secondary" />;
               return <span className="juridico-geo-vazio">—</span>;
             }} />
+          {colunaSolicitante()}
           <Column
             field="dias"
             header="Dias Solicitados"

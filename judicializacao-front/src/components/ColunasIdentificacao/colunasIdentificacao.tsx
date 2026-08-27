@@ -35,6 +35,7 @@ export interface Cadastro {
 export interface LinhaIdentificada {
   cadastro?: Cadastro | null;
   segredo?: 'sim' | 'possivel' | 'nao' | null;
+  solicitante?: string | null;
   segredoFonte?: string | null;
   nprocesso?: string | null;
   numeroSei?: string | null;
@@ -46,6 +47,7 @@ export interface LinhaIdentificada {
 }
 
 export const FILTROS_IDENTIFICACAO = {
+  solicitante: { value: '', matchMode: 'contains' as const },
   nprocesso: { value: '', matchMode: 'contains' as const },
   numeroSei: { value: '', matchMode: 'contains' as const },
   comarca: { value: '', matchMode: 'contains' as const },
@@ -110,6 +112,39 @@ export function colunaSegredo(largura = '9rem') {
         if (r.segredo === 'possivel') return <Tag value="Possível segredo" severity="warning" icon="pi pi-question-circle" title={`Sinal da API — confirme na tela Segredo de Justiça. ${r.segredoFonte ?? ''}`} />;
         if (r.segredo === 'nao') return <Tag value="Sem segredo" severity="secondary" title={r.segredoFonte ?? 'Sem marca nem sinal da API'} />;
         return <span className="ident-vazio">—</span>;
+      }} />
+  );
+}
+
+/** Solicitante do Estado (@R 27/08 19:40: "coluna para sabermos quem pediu, o volume
+ *  de pedidos e o e-mail de quem pediu"). Nome legível derivado do e-mail SES
+ *  (aline.marques.goncalves@... → Aline Marques Goncalves) + botão ✉ abre o e-mail
+ *  (mailto) + copiar. Volume por pessoa: filtre pela coluna ou exporte no Excel. */
+function nomeDoEmail(email: string): string {
+  const local = email.split('@')[0] ?? '';
+  return local.split(/[._-]+/).filter(Boolean)
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+}
+
+export function colunaSolicitante(largura = '13rem') {
+  return (
+    <Column key="col-solicitante" field="solicitante" header={cabecalhoComHint('Solicitante', EXPLICA.solicitante)}
+      sortable filter filterElement={filtro('Buscar solicitante')} style={{ minWidth: largura }}
+      body={(r: LinhaIdentificada) => {
+        if (!r.solicitante) return <span className="ident-vazio">—</span>;
+        return (
+          <span className="ident-geo">
+            <strong>{nomeDoEmail(r.solicitante)}</strong>
+            <small style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+              {r.solicitante}
+              <a href={`mailto:${r.solicitante}`} title={`Abrir e-mail para ${r.solicitante}`}
+                onClick={(e) => e.stopPropagation()} style={{ lineHeight: 1 }}>
+                <i className="pi pi-envelope" style={{ fontSize: '0.75rem' }} />
+              </a>
+              <BotaoCopiar valor={r.solicitante} rotulo="e-mail do solicitante" />
+            </small>
+          </span>
+        );
       }} />
   );
 }
@@ -192,6 +227,13 @@ const EXPLICA = {
     de Justiça · <strong>Sem segredo</strong> = processo comum.</p>
     <p><em>De onde vem:</em> consulta automática à base pública do CNJ na chegada do
     pedido + confirmação humana. Passe o mouse na etiqueta para ver a fonte.</p>
+  </>,
+  solicitante: <>
+    <p>Quem, do lado do <strong>Estado (SES-MG)</strong>, enviou o pedido de orçamento —
+    nome derivado do e-mail do remetente.</p>
+    <p><em>Para que serve:</em> apurar o <strong>volume de pedidos por pessoa</strong>
+    (filtre pela coluna ou baixe o Excel e conte) e responder direto: o ✉ abre um
+    e-mail para o solicitante; o botão ao lado copia o endereço.</p>
   </>,
   cadastro: <>
     <p>O <strong>cadastro</strong> resume, em 4 pontos, o que este pedido tem e o que falta:

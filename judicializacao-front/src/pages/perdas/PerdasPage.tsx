@@ -13,7 +13,8 @@ import { getPerdas, getOrders, getMedicosCompleto } from '../../services/api/ord
 import { getStatusTagStyle } from '../../utils/statusTag';
 import './PerdasPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
-import { colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 
 interface PerdaProcesso {
   id: number;
@@ -281,6 +282,7 @@ export function PerdasPage() {
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos perdidos — motivo e fase em que a perda ocorreu</h2>
+          <BotaoExportarExcel todos={dataComCamposCalculados} nome="perdas" />
         <DataTable
           aria-label="Pedidos perdidos — motivo e fase em que a perda ocorreu"
           value={dataComCamposCalculados}
@@ -329,6 +331,7 @@ export function PerdasPage() {
           {colunaComarca()}
           {colunaCadastro()}
           {colunaSegredo()}
+          {colunaSolicitante()}
 
           <Column
             field="cliente"

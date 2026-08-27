@@ -29,6 +29,7 @@ import { TabView, TabPanel } from 'primereact/tabview';
 import { useAccess } from '../../access/AccessContext';
 import './ClientesPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 
 interface Cliente {
   id: number;
@@ -1519,6 +1520,7 @@ const handleSalvarEdicao = async () => {
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Médicos cadastrados como cliente — dados, contrato e procuração</h2>
+          <BotaoExportarExcel todos={dataComSequencial} nome="clientes" />
         <DataTable
           aria-label="Médicos cadastrados como cliente — dados, contrato e procuração"
           value={dataComSequencial}
