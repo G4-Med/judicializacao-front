@@ -23,6 +23,7 @@ import './AguardandoCirurgiaPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 interface Anexo {
   id: number;
@@ -251,6 +252,8 @@ export function AguardandoCirurgiaPage() {
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
+  const colunasCfg = useColunasVisiveis('aguardando-cirurgia');
+
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -467,6 +470,7 @@ export function AguardandoCirurgiaPage() {
               onClick={() => window.open(a.linkImagem, '_blank', 'noopener,noreferrer')}
               title={nome}
             >
+          {colunasCfg.filtrar(<>
               <i className={`${icone} ag-cir-anexo-item__icon`} />
               <span className="ag-cir-anexo-item__nome">{nome}</span>
               <i className="pi pi-external-link ag-cir-anexo-item__action" />
@@ -522,6 +526,7 @@ export function AguardandoCirurgiaPage() {
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos aguardando confirmação de cirurgia</h2>
           <BotaoExportarExcel todos={linhas} nome="aguardando-cirurgia" />
+          {colunasCfg.botao}
         <DataTable
           aria-label="Pedidos aguardando confirmação de cirurgia"
           value={linhas}
@@ -589,6 +594,7 @@ export function AguardandoCirurgiaPage() {
             style={{ minWidth: '7rem' }}
           />
           <Column header="Confirmar" body={renderConfirmar} style={{ minWidth: '10rem', textAlign: 'center' }} />
+        </>)}
         </DataTable>
       </div>
 

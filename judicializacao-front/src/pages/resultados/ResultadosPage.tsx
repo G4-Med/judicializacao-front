@@ -31,6 +31,7 @@ import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import '../protocolados/ProtocoladosPage.css';
 import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -93,6 +94,8 @@ export function ResultadosPage() {
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
+  const colunasCfg = useColunasVisiveis('resultados');
+
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -124,6 +127,7 @@ const carregarDados = async (): Promise<ResultadoProcesso[]> => {
         const valorOrcamento = o.valorOrcamento ?? orderCompleta?.valorOrcamento ?? 0;
 
         return {
+          ...o,   // preserva ident (SEI/comarca/cadastro/segredo/solicitante) — classe do bug 27/08
           id: o.id,
           paciente: o.paciente ?? '',
           nprocesso: o.nprocesso ?? '',
@@ -524,6 +528,7 @@ const kpis = useMemo(() => {
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Processos finalizados — resultado (ganho ou perda), valor e tempo de tramitação</h2>
           <BotaoExportarExcel todos={dataComCamposCalculados} nome="resultados" />
+          {colunasCfg.botao}
         <DataTable
           aria-label="Processos finalizados — resultado (ganho ou perda), valor e tempo de tramitação"
           value={dataComCamposCalculados}
@@ -548,6 +553,7 @@ const kpis = useMemo(() => {
           emptyMessage="Nenhum resultado encontrado."
           className="resultados-table"
         >
+          {colunasCfg.filtrar(<>
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
 
           <Column
@@ -628,6 +634,7 @@ const kpis = useMemo(() => {
             style={{ minWidth: '10rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
+        </>)}
         </DataTable>
       </div>
 

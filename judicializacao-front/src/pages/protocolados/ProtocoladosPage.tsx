@@ -24,6 +24,7 @@ import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/Primeira
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -81,6 +82,8 @@ export function ProtocoladosPage() {
   const [rows, setRows] = useState(100);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
+
+  const colunasCfg = useColunasVisiveis('protocolados');
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
@@ -163,6 +166,7 @@ export function ProtocoladosPage() {
         const nomeCliente = medico?.razaoSocial || medico?.nomeMedico || medico?.nomeSistema || '';
 
         return {
+          ...o,   // preserva ident (SEI/comarca/cadastro/segredo/solicitante) — classe do bug 27/08
           id: o.id,
           paciente: o.paciente ?? '',
           nprocesso: o.nprocesso ?? '',
@@ -510,6 +514,7 @@ export function ProtocoladosPage() {
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos protocolados</h2>
           <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="protocolados" />
+          {colunasCfg.botao}
         <DataTable
           aria-label="Pedidos protocolados"
           value={dataComCamposCalculados}
@@ -532,6 +537,7 @@ export function ProtocoladosPage() {
           emptyMessage="Nenhum processo encontrado."
           className="protocolados-table"
         >
+          {colunasCfg.filtrar(<>
           {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
 
           <Column
@@ -622,6 +628,7 @@ export function ProtocoladosPage() {
             style={{ minWidth: '10rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
+        </>)}
         </DataTable>
       </div>
 

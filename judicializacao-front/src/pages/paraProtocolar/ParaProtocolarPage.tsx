@@ -26,6 +26,7 @@ import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/Primeira
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 interface ParaProtocolar {
   id: number;
@@ -79,6 +80,8 @@ export function ParaProtocolarPage() {
   const [previewNome, setPreviewNome] = useState('');
   const [copiandoId, setCopiandoId] = useState<number | null>(null);
 
+  const colunasCfg = useColunasVisiveis('protocolar');
+
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -119,6 +122,7 @@ export function ParaProtocolarPage() {
             const medico = medicosRes.data.find((item: any) => item.id === medicoId);
 
             return {
+          ...o,   // preserva ident (SEI/comarca/cadastro/segredo/solicitante) — classe do bug 27/08
               id: o.id,
               paciente: o.paciente ?? '',
               dataNascimento: o.dataNascimento,
@@ -622,6 +626,7 @@ const handleConfirmarProtocolacao = async () => {
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos para protocolar</h2>
           <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="protocolar" />
+          {colunasCfg.botao}
         <DataTable
           aria-label="Pedidos para protocolar"
           value={dataComCamposCalculados}
@@ -644,6 +649,7 @@ const handleConfirmarProtocolacao = async () => {
           emptyMessage="Nenhum processo encontrado."
           className="para-protocolar-table"
         >
+          {colunasCfg.filtrar(<>
           {!readOnly && (
             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
           )}
@@ -762,6 +768,7 @@ const handleConfirmarProtocolacao = async () => {
             style={{ minWidth: '12rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />}
+        </>)}
         </DataTable>
       </div>
 

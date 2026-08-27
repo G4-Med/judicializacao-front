@@ -30,6 +30,7 @@ import { useAccess } from '../../access/AccessContext';
 import './ClientesPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 interface Cliente {
   id: number;
@@ -257,6 +258,8 @@ export function ClientesPage() {
   const [previewUrl, setPreviewUrl] = useState('');
   const [previewNome, setPreviewNome] = useState('');
   const [previewTipo, setPreviewTipo] = useState<'pdf' | 'image' | 'other'>('other');
+
+  const colunasCfg = useColunasVisiveis('clientes');
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     razaoSocial: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -1322,6 +1325,7 @@ const handleSalvarEdicao = async () => {
               rel="noopener noreferrer"
               className="base-orcamento-pdf__link"
             >
+          {colunasCfg.filtrar(<>
               <i className="pi pi-file-pdf" />
               <span>Ver PDF atual</span>
             </a>
@@ -1521,6 +1525,7 @@ const handleSalvarEdicao = async () => {
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Médicos cadastrados como cliente — dados, contrato e procuração</h2>
           <BotaoExportarExcel todos={dataComSequencial} nome="clientes" />
+          {colunasCfg.botao}
         <DataTable
           aria-label="Médicos cadastrados como cliente — dados, contrato e procuração"
           value={dataComSequencial}
@@ -1641,6 +1646,7 @@ const handleSalvarEdicao = async () => {
             style={{ minWidth: '4rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
+        </>)}
         </DataTable>
 
       </div>

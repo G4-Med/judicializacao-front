@@ -25,6 +25,7 @@ import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/Primeira
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 interface ProcessoResumo {
   id: number;
@@ -74,6 +75,8 @@ export function SelecionarMedicoPage() {
   const [iaSugestao, setIaSugestao] = useState<SugestaoIAResposta | null>(null);
   const [iaOrderId, setIaOrderId] = useState<number | null>(null);
   const [iaAplicando, setIaAplicando] = useState(false);
+
+  const colunasCfg = useColunasVisiveis('selecionar-medico');
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
@@ -392,6 +395,7 @@ export function SelecionarMedicoPage() {
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos aguardando seleção de médico</h2>
           <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="selecionar-medico" />
+          {colunasCfg.botao}
         <DataTable
           aria-label="Pedidos aguardando seleção de médico"
           value={dataComCamposCalculados}
@@ -420,6 +424,7 @@ export function SelecionarMedicoPage() {
           className="selecionar-medico-table"
           emptyMessage="Nenhum processo encontrado."
         >
+          {colunasCfg.filtrar(<>
           {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
           <Column
@@ -527,6 +532,7 @@ export function SelecionarMedicoPage() {
               bodyStyle={{ textAlign: 'center' }}
             />
           )}
+        </>)}
         </DataTable>
       </div>
 

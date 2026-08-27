@@ -15,6 +15,7 @@ import './PerdasPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 interface PerdaProcesso {
   id: number;
@@ -52,6 +53,8 @@ export function PerdasPage() {
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
+  const colunasCfg = useColunasVisiveis('perdas');
+
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -80,6 +83,7 @@ export function PerdasPage() {
             const valorOrcamento = o.valorOrcamento ?? orderCompleta?.valorOrcamento ?? 0;
 
             return {
+          ...o,   // preserva ident (SEI/comarca/cadastro/segredo/solicitante) — classe do bug 27/08
               id: o.id,
               paciente: o.paciente ?? '',
               nprocesso: o.nprocesso ?? '',
@@ -283,6 +287,7 @@ export function PerdasPage() {
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos perdidos — motivo e fase em que a perda ocorreu</h2>
           <BotaoExportarExcel todos={dataComCamposCalculados} nome="perdas" />
+          {colunasCfg.botao}
         <DataTable
           aria-label="Pedidos perdidos — motivo e fase em que a perda ocorreu"
           value={dataComCamposCalculados}
@@ -307,6 +312,7 @@ export function PerdasPage() {
           emptyMessage="Nenhuma perda encontrada."
           className="perdas-table"
         >
+          {colunasCfg.filtrar(<>
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
 
           <Column
@@ -393,6 +399,7 @@ export function PerdasPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '24rem' }}
           />
+        </>)}
         </DataTable>
       </div>
     </div>

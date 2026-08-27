@@ -25,6 +25,7 @@ import { ContadorRegistros, contarPorCampo } from '../../components/ContadorRegi
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 import { colunaSolicitante, tagTipoPaciente, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 // Meta desta fase (orçamento) — espelha backend/funil.py FASES['orcamento'].meta_dias.
 // "96 horas — é o prazo que sustenta o contrato com o Estado".
@@ -128,6 +129,9 @@ export function OrcamentoMedicoPage() {
       .catch(() => setStatusPersonalizados([]));
   };
   useEffect(() => { carregarStatusPersonalizados(); }, []);
+
+
+  const colunasCfg = useColunasVisiveis('orcamento-medico');
 
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
@@ -559,6 +563,7 @@ ${blocos}
           />
         </h2>
           <BotaoExportarExcel todos={dataComMedico} visiveis={visibleProcessos} nome="orcamento-medico" />
+          {colunasCfg.botao}
         <DataTable
           aria-label="Pedidos aguardando orçamento médico"
           value={dataComMedico} dataKey="id" paginator rowsPerPageOptions={[10, 20, 50, 100]} rows={rows} first={first}
@@ -574,6 +579,7 @@ ${blocos}
           emptyMessage="Nenhum processo aguardando orçamento."
           className="orcamento-table"
         >
+          {colunasCfg.filtrar(<>
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
           <Column field="paciente" header="Paciente" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }}
@@ -635,6 +641,7 @@ ${blocos}
               style={{ minWidth: '9rem' }}
               bodyStyle={{ textAlign: 'center' }}
             />
+        </>)}
         </DataTable>
       </div>
 

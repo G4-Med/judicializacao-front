@@ -29,6 +29,7 @@ import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import './ProcessosPage.css';
 import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 const STATUS_PROCESSO_FALLBACK = [
   'Aguardando Juridico',
@@ -284,6 +285,7 @@ export function ProcessosPage() {
   // Prefiltro por URL (task #211): as telas de fase mandam o usuário para cá com
   // ?paciente=<nome> pelo botão "Processo" — a tabela abre já filtrada nele.
   const [searchParams] = useSearchParams();
+  const colunasCfg = useColunasVisiveis('base-processos');
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: searchParams.get('paciente') ?? '', matchMode: FilterMatchMode.CONTAINS },
@@ -328,6 +330,7 @@ export function ProcessosPage() {
 
   const mapOrdersToProcessos = (ordersData: any[], medicosData: any[]) => (
     ordersData.map((o: any) => ({
+        ...o,   // preserva ident (SEI/comarca/cadastro/segredo/solicitante) — classe do bug 27/08
       id: o.id,
       paciente: o.paciente ?? '',
       idade: o.dataNascimento ? calcularIdade(o.dataNascimento) : 0,
@@ -1602,6 +1605,7 @@ ${linhasAnexos}
               onMouseEnter={(e) => { e.currentTarget.style.background = '#f3f4f6' }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
             >
+          {colunasCfg.filtrar(<>
               <i className={icone} style={{ fontSize: '1.1rem', color: '#f97316' }} />
               <span style={{ flex: 1 }}>{nomeArquivo}</span>
               <i className="pi pi-eye" style={{ color: '#9ca3af', fontSize: '0.85rem' }} />
@@ -2016,6 +2020,7 @@ ${linhasAnexos}
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Todos os processos — status, valor de referência e responsável por cada etapa</h2>
           <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="base-processos" />
+          {colunasCfg.botao}
         <DataTable
           aria-label="Todos os processos — status, valor de referência e responsável por cada etapa"
           value={dataComCamposCalculados}
@@ -2180,6 +2185,7 @@ ${linhasAnexos}
             style={{ minWidth: '7rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
+        </>)}
         </DataTable>
 
         <Dialog

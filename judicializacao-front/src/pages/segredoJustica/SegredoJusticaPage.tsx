@@ -28,6 +28,7 @@ import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/Primeira
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 import { colunaSolicitante, tagTipoPaciente, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 interface DocumentoProcesso {
   label: string;
@@ -130,6 +131,8 @@ export function SegredoJusticaPage() {
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
+  const colunasCfg = useColunasVisiveis('segredo-justica');
+
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -162,6 +165,7 @@ const carregarDados = () => {
   getSegredoJustica(fila)
     .then(({ data }) => {
       setRegistros(data.map((o: any) => ({
+        ...o,   // preserva ident (SEI/comarca/cadastro/segredo/solicitante) — classe do bug 27/08
         // Campos de identificação (task #214/#217/#222) preservados por spread — o
         // mapeamento explícito antigo os DESCARTAVA e a comarca/cadastro/segredo
         // chegavam undefined nesta tela (bug visto no print do @R 27/08 16:45).
@@ -428,6 +432,7 @@ useEffect(() => { carregarDados(); }, [fila]);
             onClick={() => candidatosHook.setAberto((v) => !v)}
             aria-expanded={candidatosHook.aberto}
           >
+          {colunasCfg.filtrar(<>
             <i className={`pi ${candidatosHook.aberto ? 'pi-chevron-down' : 'pi-chevron-right'}`} />
             <i className="pi pi-flag" />
             <span>
@@ -491,6 +496,7 @@ useEffect(() => { carregarDados(); }, [fila]);
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />
           {fila === 'ses' ? 'Segredo de justiça — enviado à SES (aguardando resposta)' : 'Pedidos em segredo de justiça'}</h2>
           <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="segredo-justica" />
+          {colunasCfg.botao}
         <DataTable
           aria-label="Pedidos em segredo de justiça"
           value={dataComCamposCalculados}
@@ -644,6 +650,7 @@ useEffect(() => { carregarDados(); }, [fila]);
             style={{ minWidth: '10rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
+        </>)}
         </DataTable>
       </div>
 

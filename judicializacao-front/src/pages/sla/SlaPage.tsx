@@ -172,7 +172,8 @@ export function SlaPage() {
       const achados = (r.data ?? [])
         .filter((o: any) => (o.paciente ?? '').toLowerCase().includes(termo))
         .slice(0, 15)
-        .map((o: any) => ({ id: o.id, paciente: o.paciente, statusProcesso: o.statusProcesso }));
+        .map((o: any) => ({
+        ...o,   // preserva ident (SEI/comarca/cadastro/segredo/solicitante) — classe do bug 27/08 id: o.id, paciente: o.paciente, statusProcesso: o.statusProcesso }));
       setCandidatos(achados);
       if (achados.length === 0) setErro(`Nenhum paciente encontrado com "${buscaNome}".`);
     } catch {

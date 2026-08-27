@@ -22,6 +22,7 @@ import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 import { BotaoCopiar } from '../../components/BotaoCopiar/BotaoCopiar';
 import { useNavigate } from 'react-router-dom';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 // Meta desta fase (triagem jurídica) — espelha backend/funil.py FASES['triagem'].meta_dias.
 // "a análise sai no dia seguinte — libera para mim até meio-dia" (fala do @R na reunião).
@@ -107,6 +108,8 @@ export function JuridicoPage() {
   // o humano confirma aqui vendo a origem — o sistema nunca grava CNJ sozinho (F1/G4).
   const [candidatosCnj, setCandidatosCnj] = useState<{ cnj: string; origem?: string }[]>([])
   const [confirmandoCnj, setConfirmandoCnj] = useState(false)
+
+  const colunasCfg = useColunasVisiveis('analise-juridica');
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -345,6 +348,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           />
         </h2>
           <BotaoExportarExcel todos={dataComSequencial} visiveis={visibleProcessos} nome="analise-juridica" />
+          {colunasCfg.botao}
         <DataTable
           aria-label="Pedidos aguardando triagem jurídica"
           value={dataComSequencial}
@@ -382,6 +386,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           emptyMessage="Nenhum processo aguardando jurídico."
           className="juridico-table"
         >
+          {colunasCfg.filtrar(<>
           {/* Abre o painel de preços do procedimento dentro da própria linha (task #207) */}
           <Column expander style={{ width: '3.5rem' }} headerStyle={{ width: '3.5rem' }}
             headerClassName="col-expander" bodyClassName="col-expander" />
@@ -464,6 +469,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             body={editarBodyTemplate}
             style={{ minWidth: '7rem' }} 
             bodyStyle={{ textAlign: 'center' }} />
+        </>)}
         </DataTable>
       </div>
 
