@@ -65,25 +65,54 @@ function textoJanela(p: Precos): string {
   return `últimos 90 dias · ${p.estatistica.n} pagamentos de ${p.total_na_fonte} no histórico`;
 }
 
+// Memória da sessão (módulo, sobrevive a abrir/fechar a linha): a 1ª consulta de um pedido
+// custa ~5s na API pública; reabrir a MESMA linha não pode custar de novo. O backend já
+// cacheia 6h por procedimento — esta camada elimina até o round-trip HTTP na reabertura.
+const memoriaPrecos = new Map<number, Precos>();
+
 export function PainelPrecos({ orderId, procedimento, nossoPreco }: {
   orderId: number;
   procedimento: string;
   nossoPreco?: number | null;
 }) {
-  const [dados, setDados] = useState<Precos | null>(null);
-  const [carregando, setCarregando] = useState(true);
+  const [dados, setDados] = useState<Precos | null>(() => memoriaPrecos.get(orderId) ?? null);
+  const [carregando, setCarregando] = useState(!memoriaPrecos.has(orderId));
   const [falhou, setFalhou] = useState(false);
 
   useEffect(() => {
+    const guardado = memoriaPrecos.get(orderId);
+    if (guardado) {
+      // Depuração: rastro no DevTools (Console) de onde o dado veio e quanto custou.
+      console.debug(`[PainelPrecos] pedido ${orderId}: memória da sessão (0ms) · "${procedimento}"`);
+      setDados(guardado);
+      setCarregando(false);
+      return;
+    }
     let vivo = true;
+    const t0 = performance.now();
     setCarregando(true);
     setFalhou(false);
     getPrecosProcedimento(orderId)
-      .then(({ data }) => { if (vivo) setDados(data); })
-      .catch(() => { if (vivo) setFalhou(true); })
+      .then(({ data }) => {
+        const ms = Math.round(performance.now() - t0);
+        console.debug(
+          `[PainelPrecos] pedido ${orderId}: API em ${ms}ms · janela=${data?.janela_dias ?? 'histórico'}d ` +
+          `· n=${data?.estatistica?.n ?? 0} · erro=${data?.erro ?? 'nenhum'} · "${procedimento}"`,
+        );
+        if (data?.erro) console.warn(`[PainelPrecos] fonte declarou: ${data.erro}`);
+        memoriaPrecos.set(orderId, data);
+        if (vivo) setDados(data);
+      })
+      .catch((err) => {
+        console.warn(
+          `[PainelPrecos] pedido ${orderId}: consulta FALHOU em ${Math.round(performance.now() - t0)}ms ` +
+          `(${err?.response?.status ?? 'sem resposta — backend offline?'})`, err,
+        );
+        if (vivo) setFalhou(true);
+      })
       .finally(() => { if (vivo) setCarregando(false); });
     return () => { vivo = false; };
-  }, [orderId]);
+  }, [orderId, procedimento]);
 
   if (carregando) {
     return (
@@ -95,10 +124,18 @@ export function PainelPrecos({ orderId, procedimento, nossoPreco }: {
   }
 
   if (falhou || !dados) {
+    // Fallback offline: distingue "sem internet/servidor fora" (navigator.onLine) de erro
+    // da consulta — e nunca trava a análise do pedido, que é o trabalho principal da tela.
+    const semRede = typeof navigator !== 'undefined' && !navigator.onLine;
     return (
-      <div className="painel-precos painel-precos--aviso">
+      <div className="painel-precos painel-precos--aviso" role="alert">
         <i className="pi pi-exclamation-triangle" />
-        <span>Não foi possível consultar os preços agora. A análise do pedido segue normalmente.</span>
+        <span>
+          {semRede
+            ? 'Sem conexão com a internet — os preços públicos não puderam ser consultados.'
+            : 'Não foi possível consultar os preços agora (detalhe no Console do navegador).'}
+          {' '}A análise do pedido segue normalmente.
+        </span>
       </div>
     );
   }

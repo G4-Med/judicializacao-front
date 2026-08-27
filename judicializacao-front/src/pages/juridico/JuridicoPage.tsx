@@ -105,7 +105,10 @@ export function JuridicoPage() {
   // Preços do procedimento (task #207): UMA linha aberta por vez. A consulta é pesada
   // (~5s na 1ª vez, cache de 6h no backend) — deixar N linhas abertas dispararia N
   // consultas simultâneas e travaria a tela que o painel deveria ajudar.
-  const [linhaExpandida, setLinhaExpandida] = useState<ProcessoJuridicoRow[]>([]);
+  // Formato OBJETO {id: true}, não array: com dataKey, o PrimeReact emite e consome o
+  // mapa por id (datatable.cjs L3139). A v1 assumia array — e clique nenhum abria
+  // (bug relatado pelo @R com captura 27/08 11:33).
+  const [linhaExpandida, setLinhaExpandida] = useState<Record<number, boolean>>({});
 
   const carregarDados = () => {
     setLoading(true);
@@ -302,8 +305,9 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           expandedRows={linhaExpandida}
           onRowToggle={(e) => {
             // Só a última aberta permanece: 1 consulta por vez (ver comentário no estado).
-            const abertas = e.data as ProcessoJuridicoRow[];
-            setLinhaExpandida(abertas.length ? [abertas[abertas.length - 1]] : []);
+            const mapa = (e.data ?? {}) as Record<number, boolean>;
+            const nova = Object.keys(mapa).find((id) => !linhaExpandida[Number(id)]);
+            setLinhaExpandida(nova ? { [Number(nova)]: true } : {});
           }}
           rowExpansionTemplate={(rowData: ProcessoJuridicoRow) => (
             <PainelPrecos

@@ -157,3 +157,31 @@ body.dark-theme .p-multiselect {
   color: var(--mc-ink, #e6eef6);
   border-color: var(--mc-border, #1e2d42);
 }
+
+/* ============================================================================
+   MODO NOTEBOOK (task #209, 27/08 — @R viu a equipe do jurídico rolando de lado):
+   as tabelas declaram minWidth fixo de 90-110rem (censo: 10 telas) + soma de
+   mínimos por coluna >2000px. Num notebook de 1366px isso FORÇA rolagem lateral
+   por construção. Abaixo de 1600px o trade-off certo é o inverso: deixar o texto
+   QUEBRAR LINHA dentro da célula (como os nomes de fornecedor já fazem) em vez
+   de empurrar colunas pra fora da tela.
+   !important é necessário: os minWidth vêm INLINE do tableStyle/Column de cada
+   página — sem tocar nas 10 telas uma a uma, esta regra única neutraliza todos.
+   Em monitor largo (>1600px) nada muda. */
+@media (max-width: 1600px) {
+  .p-datatable > .p-datatable-wrapper > .p-datatable-table {
+    min-width: 0 !important;            /* mata o tableStyle minWidth:9Xrem */
+  }
+  .p-datatable .p-datatable-thead > tr > th,
+  .p-datatable .p-datatable-tbody > tr > td {
+    min-width: 0 !important;            /* mata o minWidth por coluna */
+    overflow-wrap: anywhere;            /* nome/procedimento longo quebra, ¬estoura */
+  }
+  /* densidade compacta: mais conteúdo na área visível do notebook */
+  .p-datatable .p-datatable-thead > tr > th,
+  .p-datatable .p-datatable-tbody > tr > td {
+    padding: 8px 10px;
+    font-size: 0.82rem;
+  }
+  .p-datatable .p-column-filter { font-size: 0.8rem; }
+}
