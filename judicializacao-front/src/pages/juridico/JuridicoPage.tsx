@@ -105,6 +105,8 @@ export function JuridicoPage() {
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     idade: { value: '', matchMode: FilterMatchMode.CONTAINS },
     procedimento: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    nprocesso: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    numeroSei: { value: '', matchMode: FilterMatchMode.CONTAINS },
     dias: { value: '', matchMode: FilterMatchMode.CONTAINS },
   });
 
@@ -379,6 +381,17 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           />
           <Column field="procedimento" className="col-procedimento-upper" header="Procedimento" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '18rem' }} />
+          {/* CNJ e SEI nas colunas (@R 27/08 12:59): os dois números do pedido, buscáveis e copiáveis */}
+          <Column field="nprocesso" header="Nº CNJ" sortable filter
+            filterElement={(o) => filterElement(o, 'Buscar CNJ')} style={{ minWidth: '14rem' }}
+            body={(r: ProcessoJuridicoRow) => r.nprocesso
+              ? <code className="juridico-numero" title="Número CNJ do processo">{r.nprocesso}</code>
+              : <span className="juridico-geo-vazio">—</span>} />
+          <Column field="numeroSei" header="Nº SEI" sortable filter
+            filterElement={(o) => filterElement(o, 'Buscar SEI')} style={{ minWidth: '12rem' }}
+            body={(r: ProcessoJuridicoRow) => r.numeroSei
+              ? <code className="juridico-numero" title={r.familiaSei ? `Família ${r.familiaSei}` : 'Número SEI'}>{r.numeroSei}</code>
+              : <span className="juridico-geo-vazio">—</span>} />
           <Column field="comarca" header="Comarca" sortable style={{ minWidth: '11rem' }}
             body={(r: ProcessoJuridicoRow) => {
               // @R 27/08: "quando for federal aí não temos distância" — dizer isso na cara,

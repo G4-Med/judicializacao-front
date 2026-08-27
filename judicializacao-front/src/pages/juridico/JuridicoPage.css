@@ -405,3 +405,6 @@ body.dark-theme .juridico-table .p-datatable-tbody > tr > td {
 .juridico-geo-vazio { color: #94a3b8; font-size: 0.8rem; font-style: italic; }
 
 .juridico-acoes { display: inline-flex; gap: 4px; }
+
+/* Nº CNJ / Nº SEI (27/08): monoespaçado + tabular, selecionável para copiar */
+.juridico-numero { font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; font-size: 0.78rem; font-variant-numeric: tabular-nums; user-select: all; white-space: nowrap; color: var(--mc-ink-2, #33414f); }
