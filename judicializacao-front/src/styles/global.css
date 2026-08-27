@@ -188,12 +188,26 @@ body.dark-theme .p-multiselect {
   .p-datatable .p-column-filter { font-size: 0.8rem; }
 }
 
-/* Task #227 (@R 19:45): campos de busca com LARGURA PADRÃO em toda tabela —
-   o input ocupa a largura da própria coluna (nem mirrado nem gigante). */
+/* Task #227 (@R 19:45 + 19:43, DOM medido): campos de busca com LARGURA PADRÃO.
+   Causa real da desigualdade: os botões filter-menu (funil) e clear do PrimeReact
+   comiam ~4rem FIXOS dentro de cada célula — em coluna de 16rem sobrava caixa
+   grande, em coluna de 7rem sobrava um toco. O app filtra por digitação (contains);
+   o menu de match-modes não é usado → botões saem, input ocupa 100% da coluna
+   (decisão 4f50e8d572; reversível removendo esta regra). */
+.p-datatable .p-column-filter-menu-button,
+.p-datatable .p-column-filter-clear-button {
+  display: none !important;
+}
+.p-datatable .p-filter-column .p-column-filter-row,
+.p-datatable .p-filter-column .p-column-filter-element {
+  width: 100%;
+}
 .p-datatable .p-filter-column .p-column-filter,
 .p-datatable .p-filter-column .p-inputtext {
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
 }
 .botao-exportar-excel { margin-left: auto; }
