@@ -295,7 +295,7 @@ export function MonitorIntegracaoPage() {
           rowHover
           paginator
           rows={100}
-          rowsPerPageOptions={[10, 20, 50, 100]}
+          rowsPerPageOptions={[10, 20, 50, 100, 200]}
           emptyMessage="Nenhuma integração cadastrada."
           onRowClick={(e) => abrirExecucoes(e.data as Integracao)}
           className="monitor-tabela"
@@ -323,7 +323,7 @@ export function MonitorIntegracaoPage() {
           dataKey="id"
           paginator
           rows={100}
-          rowsPerPageOptions={[10, 20, 50, 100]}
+          rowsPerPageOptions={[10, 20, 50, 100, 200]}
           emptyMessage="Nenhuma execução registrada."
         >
           <Column field="id" header="Id" style={{ width: '6rem' }} />

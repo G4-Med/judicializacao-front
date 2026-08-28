@@ -413,7 +413,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             />
           )}
           paginator
-          rowsPerPageOptions={[10, 20, 50, 100]}
+          rowsPerPageOptions={[10, 20, 50, 100, 200]}
           rows={rows}
           first={first}
           onPage={(e: DataTablePageEvent) => { setFirst(e.first); setRows(e.rows); }}
