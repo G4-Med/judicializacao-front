@@ -27,6 +27,8 @@ import { colunaSolicitante, tagTipoPaciente, colunaSegredo, colunaCnj, colunaSei
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
+import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 
 // Meta desta fase (orçamento) — espelha backend/funil.py FASES['orcamento'].meta_dias.
 // "96 horas — é o prazo que sustenta o contrato com o Estado".
@@ -88,6 +90,8 @@ function calcularIdade(dataNascimento: string | null): number {
 
 
 export function OrcamentoMedicoPage() {
+  // @R 28/08 03:37: painel do pedido abre ABAIXO da linha, em toda fase.
+  const [expandidas, setExpandidas] = useState<any>(undefined);
   const { isReadOnly } = useAccess();
   const readOnly = isReadOnly('orcamentoMedico');
   const [loading, setLoading] = useState(false);
@@ -586,6 +590,8 @@ ${blocos}
             {colunasCfg.botao}
           </AcoesTabela>
         <DataTable
+          expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
+          rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Pedidos aguardando orçamento médico"
           value={dataComMedico} dataKey="id" paginator rowsPerPageOptions={[10, 20, 50, 100, 200]} rows={rows} first={first}
           onValueChange={(value) => setVisibleProcessos(value as typeof dataComMedico)}
@@ -601,6 +607,7 @@ ${blocos}
           className="orcamento-table"
         >
           {colunasCfg.filtrar(<>
+          <Column expander style={{ width: '3rem' }} />
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
           <Column field="paciente" header="Paciente" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }}
@@ -663,6 +670,7 @@ ${blocos}
               style={{ minWidth: '9rem' }}
               bodyStyle={{ textAlign: 'center' }}
             />
+          {colunaExcluirAdmin(carregarDados)}
         </>)}
         </DataTable>
       </div>

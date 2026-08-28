@@ -27,6 +27,8 @@ import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, 
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
+import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 
 interface ProcessoResumo {
   id: number;
@@ -54,6 +56,8 @@ interface MedicoOption {
 }
 
 export function SelecionarMedicoPage() {
+  // @R 28/08 03:37: o painel do pedido abre ABAIXO da linha, em toda fase.
+  const [expandidas, setExpandidas] = useState<any>(undefined);
   const { isReadOnly, filterMedicosByAccess } = useAccess();
   const readOnly = isReadOnly('selecionarMedico');
   const [loading, setLoading] = useState(false);
@@ -61,7 +65,7 @@ export function SelecionarMedicoPage() {
   const [selectedProcessos, setSelectedProcessos] = useState<ProcessoResumoTableRow[]>([]);
   const [medicosOptions, setMedicosOptions] = useState<MedicoOption[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(50);
+  const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -400,6 +404,8 @@ export function SelecionarMedicoPage() {
             {colunasCfg.botao}
           </AcoesTabela>
         <DataTable
+          expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
+          rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Pedidos aguardando seleção de médico"
           value={dataComCamposCalculados}
           onValueChange={(value) => setVisibleProcessos(value as ProcessoResumoTableRow[])}
@@ -428,6 +434,7 @@ export function SelecionarMedicoPage() {
           emptyMessage="Nenhum processo encontrado."
         >
           {colunasCfg.filtrar(<>
+          <Column expander style={{ width: '3rem' }} />
           {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
           <Column
@@ -536,6 +543,7 @@ export function SelecionarMedicoPage() {
               bodyStyle={{ textAlign: 'center' }}
             />
           )}
+          {colunaExcluirAdmin(carregarDados)}
         </>)}
         </DataTable>
       </div>

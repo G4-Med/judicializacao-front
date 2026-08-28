@@ -27,6 +27,8 @@ import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExp
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
+import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -84,7 +86,7 @@ export function ProtocoladosPage() {
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<Protocolado[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(50);
+  const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
@@ -543,47 +545,7 @@ export function ProtocoladosPage() {
         <DataTable
           aria-label="Pedidos protocolados"
           expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
-          rowExpansionTemplate={(r: any) => (
-            <div style={{ padding: '12px 24px' }}>
-              <h4 style={{ margin: '0 0 8px' }}><i className="pi pi-wallet" /> Pagamentos do Estado neste CNJ (base 548)</h4>
-              {(!r.empenhos || r.empenhos.length === 0)
-                ? <p style={{ opacity: 0.6, margin: 0 }}>Nenhum empenho localizado para este CNJ.</p>
-                : <>
-                    <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-                      <thead>
-                        <tr style={{ textAlign: 'left' }}>
-                          <th style={{ padding: '4px 8px' }}>Nº referência</th>
-                          <th style={{ padding: '4px 8px' }}>Data empenho</th>
-                          <th style={{ padding: '4px 8px' }}>Data pagamento</th>
-                          <th style={{ padding: '4px 8px' }}>Empenhado</th>
-                          <th style={{ padding: '4px 8px' }}>Pago</th>
-                          <th style={{ padding: '4px 8px' }}>Favorecido</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {r.empenhos.map((e: any, i: number) => (
-                          <tr key={i} style={{ borderTop: '1px solid var(--surface-border, #e2e8f0)' }}>
-                            <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>{e.numEmpenho}/{e.ano ?? '—'}</td>
-                            <td style={{ padding: '4px 8px' }}>{e.dataEmpenho ? e.dataEmpenho.split('-').reverse().join('/') : '—'}</td>
-                            <td style={{ padding: '4px 8px' }}>
-                              {e.dataPagamento
-                                ? <Tag value={e.dataPagamento.split('-').reverse().join('/')} severity="success" />
-                                : <Tag value="Não pago" severity="warning" />}
-                            </td>
-                            <td style={{ padding: '4px 8px' }}>{e.valorEmpenhado ? e.valorEmpenhado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'}</td>
-                            <td style={{ padding: '4px 8px' }}>{e.valorPago ? e.valorPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'}</td>
-                            <td style={{ padding: '4px 8px', fontSize: '0.85em' }}>{e.favorecido ?? '—'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    <p style={{ fontSize: '0.8em', opacity: 0.7, marginTop: '6px' }}>
-                      ⚠ Valor do EMPENHO do Estado (favorecido costuma ser o Tribunal — depósito
-                      judicial), não o que o prestador recebeu. Sinal para investigar, nunca repasse.
-                    </p>
-                  </>}
-            </div>
-          )}
+          rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           value={dataComCamposCalculados}
           onValueChange={(value) => setVisibleProcessos(value as ProtocoladoTableRow[])}
           dataKey="id"
@@ -718,6 +680,7 @@ export function ProtocoladosPage() {
             style={{ minWidth: '10rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
+          {colunaExcluirAdmin(carregarDados)}
         </>)}
         </DataTable>
       </div>

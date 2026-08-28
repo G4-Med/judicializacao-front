@@ -29,6 +29,8 @@ import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExp
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
+import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 
 interface ParaProtocolar {
   id: number;
@@ -60,12 +62,14 @@ interface ParaProtocolarTableRow extends ParaProtocolar {
 type NaoProtocolarOpcao = 'perda' | 'segredo' | 'diretoria' | 'sem_protocolo' | '';
 
 export function ParaProtocolarPage() {
+  // @R 28/08 03:37: o painel do pedido abre ABAIXO da linha, em toda fase.
+  const [expandidas, setExpandidas] = useState<any>(undefined);
   const { isReadOnly } = useAccess();
   const readOnly = isReadOnly('paraProtocolar');
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<ParaProtocolar[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(50);
+  const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const [dataProtocolo, setDataProtocolo] = useState('');
@@ -632,6 +636,8 @@ const handleConfirmarProtocolacao = async () => {
             {colunasCfg.botao}
           </AcoesTabela>
         <DataTable
+          expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
+          rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Pedidos para protocolar"
           value={dataComCamposCalculados}
           onValueChange={(value) => setVisibleProcessos(value as ParaProtocolarTableRow[])}
@@ -654,6 +660,7 @@ const handleConfirmarProtocolacao = async () => {
           className="para-protocolar-table"
         >
           {colunasCfg.filtrar(<>
+          <Column expander style={{ width: '3rem' }} />
           {!readOnly && (
             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
           )}
@@ -777,6 +784,7 @@ const handleConfirmarProtocolacao = async () => {
             style={{ minWidth: '12rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />}
+          {colunaExcluirAdmin(carregarDados)}
         </>)}
         </DataTable>
       </div>

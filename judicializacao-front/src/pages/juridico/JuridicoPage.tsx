@@ -24,6 +24,7 @@ import { useNavigate } from 'react-router-dom';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 
 // Meta desta fase (triagem jurídica) — espelha backend/funil.py FASES['triagem'].meta_dias.
 // "a análise sai no dia seguinte — libera para mim até meio-dia" (fala do @R na reunião).
@@ -510,6 +511,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             body={editarBodyTemplate}
             style={{ minWidth: '7rem' }} 
             bodyStyle={{ textAlign: 'center' }} />
+          {colunaExcluirAdmin(carregarDados)}
         </>)}
         </DataTable>
       </div>

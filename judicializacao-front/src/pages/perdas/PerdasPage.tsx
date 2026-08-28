@@ -18,6 +18,8 @@ import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExp
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
+import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 
 interface PerdaProcesso {
   id: number;
@@ -47,11 +49,13 @@ interface PerdaProcessoTableRow extends PerdaProcesso {
 }
 
 export function PerdasPage() {
+  // @R 28/08 03:37: o painel do pedido abre ABAIXO da linha, em toda fase.
+  const [expandidas, setExpandidas] = useState<any>(undefined);
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<PerdaProcesso[]>([]);
   const [selectedRegistros, setSelectedRegistros] = useState<PerdaProcessoTableRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(50);
+  const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
@@ -316,6 +320,8 @@ export function PerdasPage() {
             {colunasCfg.botao}
           </AcoesTabela>
         <DataTable
+          expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
+          rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Pedidos perdidos — motivo e fase em que a perda ocorreu"
           value={dataComCamposCalculados}
           dataKey="id"
@@ -340,6 +346,7 @@ export function PerdasPage() {
           className="perdas-table"
         >
           {colunasCfg.filtrar(<>
+          <Column expander style={{ width: '3rem' }} />
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
 
           <Column
@@ -439,6 +446,7 @@ export function PerdasPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '24rem' }}
           />
+          {colunaExcluirAdmin(carregarDados)}
         </>)}
         </DataTable>
       </div>

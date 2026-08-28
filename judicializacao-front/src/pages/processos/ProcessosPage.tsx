@@ -32,6 +32,7 @@ import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, 
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
 
 const STATUS_PROCESSO_FALLBACK = [
   'Aguardando Juridico',
@@ -217,6 +218,8 @@ const escapeHtml = (value: string | number | null | undefined) =>
     .replace(/'/g, '&#39;');
 
 export function ProcessosPage() {
+  // @R 28/08 03:37: o painel do pedido abre ABAIXO da linha, em toda fase.
+  const [expandidas, setExpandidas] = useState<any>(undefined);
   const { isReadOnly, profile } = useAccess();
   const ehAdmin = profile.group === 'ADMIN';
   const excluirLancamento = async (r: any) => {
@@ -234,7 +237,7 @@ export function ProcessosPage() {
   const [visibleProcessos, setVisibleProcessos] = useState<ProcessoTableRow[]>([]);
   const [selectedProcessos, setSelectedProcessos] = useState<ProcessoTableRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(50);
+  const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const massActionMenuRef = useRef<TieredMenu>(null);
@@ -2035,6 +2038,8 @@ ${linhasAnexos}
             {colunasCfg.botao}
           </AcoesTabela>
         <DataTable
+          expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
+          rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Todos os processos — status, valor de referência e responsável por cada etapa"
           value={dataComCamposCalculados}
           dataKey="id"
@@ -2061,6 +2066,7 @@ ${linhasAnexos}
           className="processos-table"
         >
           {colunasCfg.filtrar(<>
+          <Column expander style={{ width: '3rem' }} />
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
 
           <Column

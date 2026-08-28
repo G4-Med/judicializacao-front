@@ -34,6 +34,8 @@ import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExp
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
+import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -88,11 +90,13 @@ interface ResultadoProcessoTableRow extends ResultadoProcesso {
 }
 
 export function ResultadosPage() {
+  // @R 28/08 03:37: o painel do pedido abre ABAIXO da linha, em toda fase.
+  const [expandidas, setExpandidas] = useState<any>(undefined);
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<ResultadoProcesso[]>([]);
   const [selectedRegistros, setSelectedRegistros] = useState<ResultadoProcessoTableRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(50);
+  const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
@@ -558,6 +562,8 @@ const kpis = useMemo(() => {
             {colunasCfg.botao}
           </AcoesTabela>
         <DataTable
+          expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
+          rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Processos finalizados — resultado (ganho ou perda), valor e tempo de tramitação"
           value={dataComCamposCalculados}
           dataKey="id"
@@ -582,6 +588,7 @@ const kpis = useMemo(() => {
           className="resultados-table"
         >
           {colunasCfg.filtrar(<>
+          <Column expander style={{ width: '3rem' }} />
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
 
           <Column
@@ -667,6 +674,7 @@ const kpis = useMemo(() => {
             style={{ minWidth: '10rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
+          {colunaExcluirAdmin(carregarDados)}
         </>)}
         </DataTable>
       </div>

@@ -24,6 +24,8 @@ import {
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
+import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
 
 /**
@@ -186,92 +188,6 @@ export function EnviadoSesPage() {
     empenho: kpisEmpenho(visiveis),
   }), [visiveis]);
 
-  const NOMES_TIPO_ANEXO: Record<string, string> = {
-    ORCAMENTO: 'Orçamento', EMAIL_ORIGINAL: 'E-mail original', PROCESSO: 'Processo',
-    RELATORIO: 'Relatório', PROTOCOLO: 'Protocolo', ACOMPANHAMENTO: 'Acompanhamento',
-    DECISAO_INTEIRO_TEOR: 'Decisão — inteiro teor', OUTRO: 'Outro',
-  };
-
-  const fmtDataBr = (iso: string | null) => {
-    if (!iso) return '—';
-    const [a, m, d] = iso.split('-');
-    return `${d}/${m}/${a}`;
-  };
-
-  const detalhePedido = (r: LinhaEnviadoSes) => {
-    const orcamentos = r.anexos.filter((a) => a.tipo === 'ORCAMENTO');
-    const demais = r.anexos.filter((a) => a.tipo !== 'ORCAMENTO');
-    return (
-      <div style={{ padding: '12px 24px', display: 'grid', gap: '16px',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
-        <div>
-          <h4 style={{ margin: '0 0 8px' }}><i className="pi pi-user-md" /> Médico e orçamento</h4>
-          <p style={{ margin: '0 0 8px' }}><strong>{r.medico ?? 'Sem médico designado'}</strong>
-            {r.valorOrcamento ? <> · enviado {fmtBRL(r.valorOrcamento)}</> : null}</p>
-          {orcamentos.length === 0 && <p style={{ opacity: 0.6, margin: 0 }}>Nenhum PDF de orçamento anexado.</p>}
-          {orcamentos.map((a) => (
-            <p key={a.id} style={{ margin: '2px 0' }}>
-              <a href={a.link} target="_blank" rel="noreferrer">
-                <i className="pi pi-download" /> Baixar orçamento ({fmtDataBr(a.data)})
-              </a>
-            </p>
-          ))}
-        </div>
-        <div>
-          <h4 style={{ margin: '0 0 8px' }}><i className="pi pi-paperclip" /> E-mail e anexos</h4>
-          {demais.length === 0 && <p style={{ opacity: 0.6, margin: 0 }}>Sem outros anexos.</p>}
-          {demais.map((a) => (
-            <p key={a.id} style={{ margin: '2px 0' }}>
-              <a href={a.link} target="_blank" rel="noreferrer">
-                <i className="pi pi-file" /> {NOMES_TIPO_ANEXO[a.tipo] ?? a.tipo} ({fmtDataBr(a.data)})
-              </a>
-            </p>
-          ))}
-        </div>
-        <div style={{ gridColumn: '1 / -1' }}>
-          <h4 style={{ margin: '0 0 8px' }}><i className="pi pi-wallet" /> Pagamentos do Estado neste CNJ (base 548)</h4>
-          {r.empenhos.length === 0
-            ? <p style={{ opacity: 0.6, margin: 0 }}>Nenhum empenho localizado para este CNJ.</p>
-            : <>
-                <table className="mc-tabela-detalhe" style={{ borderCollapse: 'collapse', width: '100%' }}>
-                  <thead>
-                    <tr style={{ textAlign: 'left' }}>
-                      <th style={{ padding: '4px 8px' }}>Nº referência</th>
-                      <th style={{ padding: '4px 8px' }}>Data empenho</th>
-                      <th style={{ padding: '4px 8px' }}>Data pagamento</th>
-                      <th style={{ padding: '4px 8px' }}>Empenhado</th>
-                      <th style={{ padding: '4px 8px' }}>Pago</th>
-                      <th style={{ padding: '4px 8px' }}>Favorecido</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {r.empenhos.map((e, i) => (
-                      <tr key={i} style={{ borderTop: '1px solid var(--surface-border, #e2e8f0)' }}>
-                        <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>{e.numEmpenho}/{e.ano ?? '—'}</td>
-                        <td style={{ padding: '4px 8px' }}>{fmtDataBr(e.dataEmpenho)}</td>
-                        <td style={{ padding: '4px 8px' }}>
-                          {e.dataPagamento
-                            ? <Tag value={fmtDataBr(e.dataPagamento)} severity="success" />
-                            : <Tag value="Não pago" severity="warning" />}
-                        </td>
-                        <td style={{ padding: '4px 8px' }}>{e.valorEmpenhado ? fmtBRL(e.valorEmpenhado) : '—'}</td>
-                        <td style={{ padding: '4px 8px' }}>{e.valorPago ? fmtBRL(e.valorPago) : '—'}</td>
-                        <td style={{ padding: '4px 8px', fontSize: '0.85em' }}>{e.favorecido ?? '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <p style={{ fontSize: '0.8em', opacity: 0.7, marginTop: '6px' }}>
-                  ⚠ Valor do EMPENHO do Estado (o favorecido costuma ser o Tribunal — depósito
-                  judicial), não o que o prestador recebeu. Use como sinal para investigar o
-                  desfecho, nunca como valor de repasse.
-                </p>
-              </>}
-        </div>
-      </div>
-    );
-  };
-
   const filterElement = (options: any, placeholder: string) => (
     <InputText value={options.value || ''} onChange={(e) => options.filterApplyCallback(e.target.value)}
       placeholder={placeholder} className="p-column-filter" />
@@ -316,7 +232,7 @@ export function EnviadoSesPage() {
           selection={selecionadas} selectionMode="checkbox"
           onSelectionChange={(e) => setSelecionadas(e.value as LinhaEnviadoSes[])}
           expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
-          rowExpansionTemplate={detalhePedido}
+          rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           onValueChange={(v) => setVisiveis(v as LinhaEnviadoSes[])}
           filters={filters} onFilter={(e) => setFilters(e.filters)} filterDisplay="row"
           sortField="dias" sortOrder={-1}
@@ -371,6 +287,7 @@ export function EnviadoSesPage() {
             body={(r: LinhaEnviadoSes) => (!readOnly
               ? <Button label="Registrar" icon="pi pi-flag" size="small" outlined onClick={() => abrirResultado(r)} />
               : null)} />
+            {colunaExcluirAdmin(carregar)}
           </>)}
         </DataTable>
       </div>
