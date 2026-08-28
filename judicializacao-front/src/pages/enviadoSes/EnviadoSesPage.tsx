@@ -24,7 +24,7 @@ import {
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
-import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
 
 /**
  * Enviado à SES (task #235, @R 28/08 00:2x): SÓ os pedidos cujo orçamento foi ao
@@ -363,6 +363,7 @@ export function EnviadoSesPage() {
                 ? <Tag value={`${r.dias}d`} severity="warning" icon="pi pi-clock"
                     title={`${SLA_VERIFICACAO_1}+ dias sem retorno — primeira verificação baixa`} />
                 : <span>{r.dias}d</span>)} />
+          {colunaBaixarOrcamento()}
           {colunaEmpenhoEstado()}
           {colunaPagoEm()}
           {colunaDiferenca()}

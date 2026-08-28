@@ -26,7 +26,7 @@ import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, 
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
-import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -687,6 +687,7 @@ export function ProtocoladosPage() {
                 : <span title="Dentro do SLA de 15 dias">{r.diasSemAtualizacao ?? '—'}d</span>)}
           />
 
+          {colunaBaixarOrcamento()}
           {colunaEmpenhoEstado()}
           {colunaPagoEm()}
           {colunaDiferenca()}
