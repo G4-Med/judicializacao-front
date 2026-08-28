@@ -24,6 +24,7 @@ import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './EmailsPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { cabecalhoComHint } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 type TipoEmail = 'ENVIAR_ORCAMENTO' | 'PEDIR_EXAMES' | 'DAR_PERDA';
 
@@ -125,7 +126,7 @@ export function EmailsPage() {
     darPerda: 0,
   });
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(50);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const [enviandoId, setEnviandoId] = useState<number | null>(null);
@@ -624,7 +625,7 @@ export function EmailsPage() {
           value={dataComSequencial}
           dataKey="id"
           paginator
-          rowsPerPageOptions={[10, 20, 50, 100]}
+          rowsPerPageOptions={[10, 20, 50, 100, 200]}
           rows={rows}
           first={first}
           totalRecords={dataComSequencial.length}
@@ -655,7 +656,7 @@ export function EmailsPage() {
 
           <Column
             field="paciente"
-            header="Paciente"
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -664,7 +665,7 @@ export function EmailsPage() {
 
           <Column
             field="procedimento" className="col-procedimento-upper"
-            header="Procedimento"
+            header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -673,7 +674,7 @@ export function EmailsPage() {
 
           <Column
             field="medico"
-            header="Médico"
+            header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -682,7 +683,7 @@ export function EmailsPage() {
 
           <Column
             field="dias"
-            header="Dias"
+            header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -692,7 +693,7 @@ export function EmailsPage() {
 
           <Column
             field="tipoEmail"
-            header="Tipo"
+            header={cabecalhoComHint('Tipo', 'Pediátrico (<18) · Adulto · Idoso (60+). Muda o médico certo e o risco de segredo.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -702,7 +703,7 @@ export function EmailsPage() {
 
           <Column
             field="status"
-            header="Status"
+            header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}

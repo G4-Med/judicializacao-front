@@ -29,6 +29,10 @@ import { TabView, TabPanel } from 'primereact/tabview';
 import { useAccess } from '../../access/AccessContext';
 import './ClientesPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { cabecalhoComHint } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 interface Cliente {
   id: number;
@@ -206,7 +210,7 @@ export function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [selectedClientes, setSelectedClientes] = useState<ClienteTableRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(50);
   const [sortField, setSortField] = useState<string | undefined>('createDate');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(-1);
   const [createDialogVisible, setCreateDialogVisible] = useState(false);
@@ -256,6 +260,8 @@ export function ClientesPage() {
   const [previewUrl, setPreviewUrl] = useState('');
   const [previewNome, setPreviewNome] = useState('');
   const [previewTipo, setPreviewTipo] = useState<'pdf' | 'image' | 'other'>('other');
+
+  const colunasCfg = useColunasVisiveis('clientes');
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
     razaoSocial: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -1519,12 +1525,16 @@ const handleSalvarEdicao = async () => {
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Médicos cadastrados como cliente — dados, contrato e procuração</h2>
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComSequencial} nome="clientes" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
           aria-label="Médicos cadastrados como cliente — dados, contrato e procuração"
           value={dataComSequencial}
           dataKey="id"
           paginator
-          rowsPerPageOptions={[10, 20, 50, 100]}
+          rowsPerPageOptions={[10, 20, 50, 100, 200]}
           rows={rows}
           first={first}
           totalRecords={dataComSequencial.length}
@@ -1543,6 +1553,7 @@ const handleSalvarEdicao = async () => {
           emptyMessage="Nenhum cliente encontrado."
           className="clientes-table"
         >
+          {colunasCfg.filtrar(<>
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
 
           <Column
@@ -1602,7 +1613,7 @@ const handleSalvarEdicao = async () => {
 
           <Column
             field="status"
-            header="Status"
+            header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
             sortable
             filter
             showFilterMenu={false}
@@ -1639,6 +1650,7 @@ const handleSalvarEdicao = async () => {
             style={{ minWidth: '4rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
+        </>)}
         </DataTable>
 
       </div>
@@ -1653,7 +1665,7 @@ const handleSalvarEdicao = async () => {
         className="cliente-edit-dialog"
       >
         <TabView>
-          <TabPanel header="Médico">
+          <TabPanel header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}>
             <div className="cliente-form-grid">
               <div className="field field-span-2">
                 <label>Nome Médico</label>
@@ -1845,7 +1857,7 @@ const handleSalvarEdicao = async () => {
         {clienteEditando && (
           <fieldset disabled={readOnly} className="cliente-edit-fieldset">
             <TabView>
-              <TabPanel header="Médico">
+              <TabPanel header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}>
                 <div className="cliente-form-grid">
                   <div className="field field-span-2"><label>Nome Médico</label><InputText value={clienteEditando.nomeMedico} onChange={(e) => updateClienteEditando('nomeMedico', e.target.value)} /></div>
                   <div className="field field-span-2"><label>Nome Sistema</label><InputText value={clienteEditando.nomeSistema} onChange={(e) => updateClienteEditando('nomeSistema', e.target.value)} /></div>

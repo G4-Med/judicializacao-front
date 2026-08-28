@@ -25,6 +25,7 @@ import {
 import { getMedicosCompleto } from '../../services/api/orders';
 import './UsuariosPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { cabecalhoComHint } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 interface ApiUsuario {
   id: number;
@@ -127,7 +128,7 @@ export function UsuariosPage() {
 
   const [selectedUsuarios, setSelectedUsuarios] = useState<UsuarioRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(50);
   const [sortField, setSortField] = useState<string | undefined>('lastLogin');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(-1);
 
@@ -493,7 +494,7 @@ export function UsuariosPage() {
           value={usuarios}
           dataKey="id"
           paginator
-          rowsPerPageOptions={[10, 20, 50, 100]}
+          rowsPerPageOptions={[10, 20, 50, 100, 200]}
           rows={rows}
           first={first}
           totalRecords={usuarios.length}
@@ -554,7 +555,7 @@ export function UsuariosPage() {
 
           <Column
             field="isActive"
-            header="Status"
+            header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
             sortable
             body={statusBody}
             style={{ minWidth: '8rem' }}

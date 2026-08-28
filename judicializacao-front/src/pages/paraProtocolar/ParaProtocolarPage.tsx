@@ -16,12 +16,21 @@ import { Calendar } from 'primereact/calendar';
 import { FilterMatchMode } from 'primereact/api';
 import { Dialog } from 'primereact/dialog';
 import { RadioButton } from 'primereact/radiobutton';
+import { Dropdown } from 'primereact/dropdown';
 import { getStatusTagStyle } from '../../utils/statusTag';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import { useAccess } from '../../access/AccessContext';
 import './ParaProtocolarPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
+import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
+import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 
 interface ParaProtocolar {
   id: number;
@@ -50,15 +59,17 @@ interface ParaProtocolarTableRow extends ParaProtocolar {
   dias: number;
 }
 
-type NaoProtocolarOpcao = 'perda' | 'segredo' | 'diretoria' | '';
+type NaoProtocolarOpcao = 'perda' | 'segredo' | 'diretoria' | 'sem_protocolo' | '';
 
 export function ParaProtocolarPage() {
+  // @R 28/08 03:37: o painel do pedido abre ABAIXO da linha, em toda fase.
+  const [expandidas, setExpandidas] = useState<any>(undefined);
   const { isReadOnly } = useAccess();
   const readOnly = isReadOnly('paraProtocolar');
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<ParaProtocolar[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const [dataProtocolo, setDataProtocolo] = useState('');
@@ -75,7 +86,11 @@ export function ParaProtocolarPage() {
   const [previewNome, setPreviewNome] = useState('');
   const [copiandoId, setCopiandoId] = useState<number | null>(null);
 
+  const colunasCfg = useColunasVisiveis('protocolar');
+
   const [filters, setFilters] = useState<DataTableFilterMeta>({
+    ...FILTRO_PAGAMENTO,   // filtrar por exato · não exato · empenhado · sem pagamento
+    ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     cliente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     valor: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -96,6 +111,7 @@ export function ParaProtocolarPage() {
 
   const [naoProtocolarOpcao, setNaoProtocolarOpcao] = useState<NaoProtocolarOpcao>('');
   const [naoProtocolarObs, setNaoProtocolarObs] = useState('');
+  const [motivoPerdaCat, setMotivoPerdaCat] = useState<string | null>(null);  // task #223
 
   const carregarDados = () => {
     setLoading(true);
@@ -113,6 +129,7 @@ export function ParaProtocolarPage() {
             const medico = medicosRes.data.find((item: any) => item.id === medicoId);
 
             return {
+          ...o,   // preserva ident (SEI/comarca/cadastro/segredo/solicitante) — classe do bug 27/08
               id: o.id,
               paciente: o.paciente ?? '',
               dataNascimento: o.dataNascimento,
@@ -557,12 +574,14 @@ const handleConfirmarProtocolacao = async () => {
       return;
     }
 
-    const acao = naoProtocolarOpcao === 'segredo' ? 'segredo' : 'perda';
+    const acao = naoProtocolarOpcao === 'segredo' ? 'segredo'
+      : naoProtocolarOpcao === 'sem_protocolo' ? 'recusar_protocolo' : 'perda';
 
     try {
       await salvarProtocolar(registroNaoProtocolar.id, {
         acao,
-        obs: naoProtocolarObs
+        obs: naoProtocolarObs,
+        motivoPerdaCategoria: motivoPerdaCat ?? undefined,   // task #223 (opcional)
       });
       carregarDados();
       setNaoProtocolarDialogVisible(false);
@@ -575,10 +594,8 @@ const handleConfirmarProtocolacao = async () => {
     <div className="para-protocolar-page">
       <PrimeiraVisitaInfo etapaId="para-protocolar" />
       <div className="page-header">
-        <div>
-          <h1>Para Protocolar</h1>
-          <p>Gestão dos processos prontos para protocolação</p>
-        </div>
+        <CabecalhoFase nome="Protocolar" slaDias={1} screen="paraProtocolar"
+          subtitulo="Gestão dos processos prontos para protocolação" />
 
 
       </div>
@@ -615,13 +632,19 @@ const handleConfirmarProtocolacao = async () => {
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos para protocolar</h2>
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="protocolar" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
+          expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
+          rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Pedidos para protocolar"
           value={dataComCamposCalculados}
           onValueChange={(value) => setVisibleProcessos(value as ParaProtocolarTableRow[])}
           dataKey="id"
           paginator
-          rowsPerPageOptions={[10, 20, 50, 100]}
+          rowsPerPageOptions={[10, 20, 50, 100, 200]}
           rows={rows}
           first={first}
           totalRecords={dataComCamposCalculados.length}
@@ -637,6 +660,8 @@ const handleConfirmarProtocolacao = async () => {
           emptyMessage="Nenhum processo encontrado."
           className="para-protocolar-table"
         >
+          {colunasCfg.filtrar(<>
+          <Column expander style={{ width: '3rem' }} />
           {!readOnly && (
             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
           )}
@@ -650,17 +675,29 @@ const handleConfirmarProtocolacao = async () => {
           />
 
           <Column
-            field="paciente"
-            header="Paciente"
+            field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+          {colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
+          {colunaSolicitante()}
 
           <Column
             field="cliente"
-            header="Cliente"
+            header={cabecalhoComHint('Cliente', 'Empresa/prestador que responde pelo orçamento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -669,7 +706,7 @@ const handleConfirmarProtocolacao = async () => {
 
           <Column
             field="valor"
-            header="Valor"
+            header={cabecalhoComHint('Valor', 'Valor do orçamento que enviamos ao Estado por este pedido.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -679,7 +716,7 @@ const handleConfirmarProtocolacao = async () => {
 
           <Column
             field="dataEnvioOrcamento"
-            header="Data Envio Orçamento"
+            header={cabecalhoComHint('Data Envio Orçamento', 'Data em que o orçamento foi enviado ao Estado.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -689,7 +726,7 @@ const handleConfirmarProtocolacao = async () => {
 
           <Column
             field="dias"
-            header="Dias"
+            header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -698,7 +735,7 @@ const handleConfirmarProtocolacao = async () => {
           />
 
           <Column
-            header="Orçamento"
+            header={cabecalhoComHint('Orçamento', 'Verde = PDF do orçamento anexado (clique para baixar). "Não enviado" = nunca cotamos.')}
             body={anexoBodyTemplate}
             style={{ minWidth: '7rem' }}
             bodyStyle={{ textAlign: 'center' }}
@@ -713,7 +750,7 @@ const handleConfirmarProtocolacao = async () => {
 
           <Column
             field="status"
-            header="Status"
+            header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -748,6 +785,8 @@ const handleConfirmarProtocolacao = async () => {
             style={{ minWidth: '12rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />}
+          {colunaExcluirAdmin(carregarDados)}
+        </>)}
         </DataTable>
       </div>
 
@@ -1308,6 +1347,17 @@ const handleConfirmarProtocolacao = async () => {
 
                 <div className="radio-item">
                   <RadioButton
+                    inputId="opcaoSemProtocolo"
+                    name="naoProtocolarOpcao"
+                    value="sem_protocolo"
+                    onChange={(e) => setNaoProtocolarOpcao(e.value)}
+                    checked={naoProtocolarOpcao === 'sem_protocolo'}
+                  />
+                  <label htmlFor="opcaoSemProtocolo">Já enviado à SES — recusar protocolo (perda de prazo de protocolação)</label>
+                </div>
+
+                <div className="radio-item">
+                  <RadioButton
                     inputId="opcaoDiretoria"
                     name="naoProtocolarOpcao"
                     value="diretoria"
@@ -1318,6 +1368,24 @@ const handleConfirmarProtocolacao = async () => {
                 </div>
               </div>
             </div>
+
+            {(naoProtocolarOpcao === 'perda') && (
+              <div className="field field-span-4">
+                <label>Motivo da perda (opcional — o texto abaixo continua obrigatório)</label>
+                <Dropdown value={motivoPerdaCat} onChange={(e) => setMotivoPerdaCat(e.value)}
+                  options={[
+                    { label: 'Decidimos não cotar', value: 'NAO_COTAR' },
+                    { label: 'Não localizamos o médico', value: 'MEDICO_NAO_LOCALIZADO' },
+                    { label: 'Não conseguimos o orçamento', value: 'ORCAMENTO_NAO_OBTIDO' },
+                    { label: 'O médico recusou o pedido', value: 'MEDICO_RECUSOU' },
+                    { label: 'Orçamento não chegou em tempo hábil', value: 'ORCAMENTO_FORA_DO_PRAZO' },
+                        { label: 'Sem exames — médico não quis cotar', value: 'SEM_EXAMES' },
+                        { label: 'Perda por segredo de justiça', value: 'SEGREDO_DE_JUSTICA' },
+                    { label: 'Outro (ver justificativa)', value: 'OUTRO' },
+                  ]}
+                  placeholder="Escolha, se algum se aplicar" showClear />
+              </div>
+            )}
 
             <div className="field field-span-4">
               <label>

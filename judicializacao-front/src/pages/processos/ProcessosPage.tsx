@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { DataTable } from 'primereact/datatable';
-import { getOrders, getStatusOrders, atualizarOrder, getMedicosCompleto, getAnexosOrder, uploadAnexoOrder, criarOrderProcess, processarOrderProcess, salvarJuridico, uploadArquivoIntegracao, marcarSemProfissional, analisarEmpenho, extrairEmail } from '../../services/api/orders';
+import { excluirOrder, getOrders, getStatusOrders, atualizarOrder, getMedicosCompleto, getAnexosOrder, uploadAnexoOrder, criarOrderProcess, processarOrderProcess, salvarJuridico, uploadArquivoIntegracao, marcarSemProfissional, analisarEmpenho, extrairEmail } from '../../services/api/orders';
 import type {
   DataTableFilterMeta,
   DataTablePageEvent,
@@ -13,6 +13,7 @@ import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { FilterMatchMode } from 'primereact/api';
+import { useSearchParams } from 'react-router-dom';
 import { TieredMenu } from 'primereact/tieredmenu';
 import type { MenuItem } from 'primereact/menuitem';
 import { useRef } from 'react';
@@ -22,10 +23,16 @@ import { InputNumber } from 'primereact/inputnumber';
 import { getStatusTagStyle } from '../../utils/statusTag';
 import { EnviarOrcamentoDialog } from '../orcamentoMedico/EnviarOrcamentoDialog';
 import { useAccess } from '../../access/AccessContext';
+import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import './ProcessosPage.css';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
 
 const STATUS_PROCESSO_FALLBACK = [
   'Aguardando Juridico',
@@ -211,14 +218,26 @@ const escapeHtml = (value: string | number | null | undefined) =>
     .replace(/'/g, '&#39;');
 
 export function ProcessosPage() {
-  const { isReadOnly } = useAccess();
+  // @R 28/08 03:37: o painel do pedido abre ABAIXO da linha, em toda fase.
+  const [expandidas, setExpandidas] = useState<any>(undefined);
+  const { isReadOnly, profile } = useAccess();
+  const ehAdmin = profile.group === 'ADMIN';
+  const excluirLancamento = async (r: any) => {
+    if (!window.confirm(`EXCLUIR o lançamento #${r.id} (${r.paciente})? O backend guarda backup JSON antes — mas o registro some das telas.`)) return;
+    try {
+      await excluirOrder(r.id);
+      await carregarDados();
+    } catch {
+      alert('Erro ao excluir — só Admin pode, e o pedido precisa existir.');
+    }
+  };
   const readOnly = isReadOnly('processos');
   const [loading, setLoading] = useState(false);
   const [processos, setProcessos] = useState<Processo[]>([]);
   const [visibleProcessos, setVisibleProcessos] = useState<ProcessoTableRow[]>([]);
   const [selectedProcessos, setSelectedProcessos] = useState<ProcessoTableRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const massActionMenuRef = useRef<TieredMenu>(null);
@@ -278,8 +297,14 @@ export function ProcessosPage() {
   const [jsonBatchInput, setJsonBatchInput] = useState('');
   const [jsonBatchItems, setJsonBatchItems] = useState<JsonBatchProcessItem[]>([]);
 
+  // Prefiltro por URL (task #211): as telas de fase mandam o usuário para cá com
+  // ?paciente=<nome> pelo botão "Processo" — a tabela abre já filtrada nele.
+  const [searchParams] = useSearchParams();
+  const colunasCfg = useColunasVisiveis('base-processos');
   const [filters, setFilters] = useState<DataTableFilterMeta>({
-    paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    ...FILTRO_PAGAMENTO,   // filtrar por exato · não exato · empenhado · sem pagamento
+    ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
+    paciente: { value: searchParams.get('paciente') ?? '', matchMode: FilterMatchMode.CONTAINS },
     idade: { value: '', matchMode: FilterMatchMode.CONTAINS },
     procedimento: { value: '', matchMode: FilterMatchMode.CONTAINS },
     refPreco: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -321,6 +346,7 @@ export function ProcessosPage() {
 
   const mapOrdersToProcessos = (ordersData: any[], medicosData: any[]) => (
     ordersData.map((o: any) => ({
+        ...o,   // preserva ident (SEI/comarca/cadastro/segredo/solicitante) — classe do bug 27/08
       id: o.id,
       paciente: o.paciente ?? '',
       idade: o.dataNascimento ? calcularIdade(o.dataNascimento) : 0,
@@ -2008,12 +2034,18 @@ ${linhasAnexos}
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Todos os processos — status, valor de referência e responsável por cada etapa</h2>
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="base-processos" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
+          expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
+          rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Todos os processos — status, valor de referência e responsável por cada etapa"
           value={dataComCamposCalculados}
           dataKey="id"
           paginator
-          rowsPerPageOptions={[10, 20, 50, 100]}
+          rowsPerPageOptions={[10, 20, 50, 100, 200]}
           lazy={false}
           rows={rows}
           first={first}
@@ -2034,6 +2066,8 @@ ${linhasAnexos}
           emptyMessage="Nenhum processo encontrado."
           className="processos-table"
         >
+          {colunasCfg.filtrar(<>
+          <Column expander style={{ width: '3rem' }} />
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
 
           <Column
@@ -2053,17 +2087,33 @@ ${linhasAnexos}
           />}
 
           <Column
-            field="paciente"
-            header="Paciente"
+            field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+          {colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
+          <Column field="valorGanho" header={cabecalhoComHint('Ganho', 'Valor do ganho declarado por nós neste pedido.')} sortable style={{ minWidth: '8rem' }}
+            body={(r: any) => (r.valorGanho > 0
+              ? <span style={{ color: '#16a34a', fontWeight: 600 }}>{r.valorGanho.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+              : <span style={{ opacity: 0.4 }}>—</span>)} />
+          {colunaSolicitante()}
 
           {/* <Column
             field="idade"
-            header="Idade"
+            header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -2072,7 +2122,7 @@ ${linhasAnexos}
 
           <Column
             field="procedimento"
-            header="Procedimento"
+            header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -2082,7 +2132,7 @@ ${linhasAnexos}
 
           <Column
             field="refPreco"
-            header="Ref. Preço"
+            header={cabecalhoComHint('Ref. Preço', 'Preço de referência do procedimento — base de comparação, não é o orçamento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -2092,7 +2142,7 @@ ${linhasAnexos}
 
           <Column
             field="medico"
-            header="Médico"
+            header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}
             sortable
             filter
             filterElement={(options) => dropdownFilterElement(options, 'Selecione', medicosFilterOptions)}
@@ -2120,7 +2170,7 @@ ${linhasAnexos}
 
           <Column
             field="dias"
-            header="Dias"
+            header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -2130,7 +2180,7 @@ ${linhasAnexos}
 
           <Column
             field="status"
-            header="Status"
+            header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
             sortable
             filter
             filterElement={(options) => dropdownFilterElement(options, 'Selecione', statusProcessoOpts)}
@@ -2165,12 +2215,20 @@ ${linhasAnexos}
             style={{ minWidth: '7rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
+          {ehAdmin && <Column header={cabecalhoComHint('Excluir', 'Só Admin. Apaga o lançamento (backup automático no servidor antes).')} style={{ width: '5rem' }} bodyStyle={{ textAlign: 'center' }}
+            body={(r: any) => (
+              <Button icon="pi pi-trash" severity="danger" outlined size="small"
+                onClick={() => excluirLancamento(r)}
+                tooltip="Excluir lançamento (só Admin — backup automático antes)"
+                aria-label={`Excluir processo ${r.id}`} />
+            )} />}
+        </>)}
         </DataTable>
 
         <Dialog
           header="Novo Processo"
           visible={novoProcessoTipoVisible}
-          style={{ width: '34rem', maxWidth: '96vw' }}
+          style={{ width: '60rem', maxWidth: '96vw' }}
           modal
           onHide={() => setNovoProcessoTipoVisible(false)}
         >

@@ -1,0 +1,45 @@
+.logs-page { display: flex; flex-direction: column; gap: 16px; }
+
+.logs-head h1 { margin: 0 0 4px; font-size: 22px; color: #0f2236; }
+.logs-head p { margin: 0; color: #5b6b7a; font-size: 13.5px; }
+
+.logs-filtros { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.logs-filtro-campo { min-width: 220px; }
+.logs-filtro-order { width: 140px; }
+
+.logs-total { margin: 0; color: #5b6b7a; font-size: 12.5px; }
+
+.logs-vazio {
+  border: 1px dashed #cfd8df; border-radius: 12px; background: #f9fbfc;
+  padding: 28px; color: #5b6b7a; font-size: 13.5px; text-align: center;
+}
+.logs-vazio--erro { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+
+.logs-lista { display: flex; flex-direction: column; gap: 10px; }
+.logs-item {
+  border: 1px solid #e3eaef; border-radius: 12px; background: #fff; padding: 12px 16px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.logs-item__topo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.logs-item__topo strong { color: #0f2236; font-size: 13.5px; }
+.logs-item__topo span { color: #5b6b7a; font-size: 12.5px; }
+.logs-tag-campo { font-size: 10.5px; }
+.logs-item__data { margin-left: auto; color: #94a3b8 !important; font-size: 12px !important; }
+
+.logs-item__mudanca { display: flex; align-items: center; gap: 10px; }
+.logs-valor {
+  padding: 3px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600;
+}
+.logs-valor--antes { background: #fef2f2; color: #b91c1c; }
+.logs-valor--depois { background: #f0fdf4; color: #15803d; }
+.logs-item__mudanca i { color: #94a3b8; font-size: 12px; }
+
+.logs-item__rodape { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.logs-item__rodape span { color: #5b6b7a; font-size: 12px; }
+
+body.dark-theme .logs-head h1 { color: #fff; }
+body.dark-theme .logs-vazio { background: #0f172a; border-color: #1f2937; color: #94a3b8; }
+body.dark-theme .logs-item { background: #111827; border-color: #1f2937; }
+body.dark-theme .logs-item__topo strong { color: #fff; }
+body.dark-theme .logs-valor--antes { background: rgba(239,68,68,.15); color: #fca5a5; }
+body.dark-theme .logs-valor--depois { background: rgba(34,197,94,.15); color: #86efac; }

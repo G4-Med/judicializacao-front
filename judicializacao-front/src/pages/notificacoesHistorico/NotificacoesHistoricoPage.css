@@ -1,0 +1,51 @@
+.nh-page { display: flex; flex-direction: column; gap: 18px; }
+
+.nh-head { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.nh-head h1 { margin: 0 0 4px; font-size: 22px; color: #0f2236; }
+.nh-head p { margin: 0; color: #5b6b7a; font-size: 13.5px; }
+
+.nh-filtros { display: flex; gap: 6px; }
+.nh-filtro {
+  border: 1px solid #e3eaef; background: #fff; color: #374151;
+  border-radius: 999px; padding: 6px 14px; font-size: 12.5px; cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+.nh-filtro:hover { background: #f2f6f8; }
+.nh-filtro--ativo { background: #00a651; border-color: #00a651; color: #fff; }
+
+.nh-vazio {
+  border: 1px dashed #cfd8df; border-radius: 12px; background: #f9fbfc;
+  padding: 28px; color: #5b6b7a; font-size: 13.5px; text-align: center;
+}
+.nh-vazio--erro { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+
+.nh-lista { display: flex; flex-direction: column; gap: 10px; }
+.nh-item {
+  display: flex; gap: 12px; align-items: flex-start;
+  border: 1px solid #e3eaef; border-radius: 12px; background: #fff; padding: 14px 16px;
+}
+.nh-item--sla_estourado { border-left: 4px solid #ef4444; }
+.nh-item--aguardando_juridico { border-left: 4px solid #00a651; }
+
+.nh-item__icone {
+  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #f2f6f8; color: #0a3d62; font-size: 15px;
+}
+.nh-item--sla_estourado .nh-item__icone { background: #fef2f2; color: #b91c1c; }
+
+.nh-item__corpo { flex: 1; min-width: 0; }
+.nh-item__topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.nh-item__topo strong { color: #0f2236; font-size: 14px; }
+.nh-item__data { color: #94a3b8; font-size: 12px; white-space: nowrap; }
+.nh-item__corpo p { margin: 4px 0; color: #374151; font-size: 13px; }
+.nh-item__pedido { color: #5b6b7a; font-size: 12px; }
+
+body.dark-theme .nh-head h1 { color: #fff; }
+body.dark-theme .nh-filtro { background: #111827; border-color: #1f2937; color: #cbd5e1; }
+body.dark-theme .nh-filtro:hover { background: #1f2937; }
+body.dark-theme .nh-vazio { background: #0f172a; border-color: #1f2937; color: #94a3b8; }
+body.dark-theme .nh-item { background: #111827; border-color: #1f2937; }
+body.dark-theme .nh-item__icone { background: #0f172a; color: #cbd5e1; }
+body.dark-theme .nh-item__topo strong { color: #fff; }
+body.dark-theme .nh-item__corpo p { color: #cbd5e1; }

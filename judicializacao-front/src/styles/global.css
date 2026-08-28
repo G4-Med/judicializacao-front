@@ -78,6 +78,7 @@ body.dark-theme .p-datatable .linha-fora-sla:hover > td {
 .mc-tabela-titulo {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;   /* o contador de registros (à direita) desce inteiro em tela estreita */
   gap: 10px;
   margin: 0;
   padding: 16px 20px;
@@ -155,4 +156,105 @@ body.dark-theme .p-multiselect {
   background: var(--mc-surface, #0f1f33);
   color: var(--mc-ink, #e6eef6);
   border-color: var(--mc-border, #1e2d42);
+}
+
+/* ============================================================================
+   MODO NOTEBOOK (task #209, 27/08 — @R viu a equipe do jurídico rolando de lado):
+   as tabelas declaram minWidth fixo de 90-110rem (censo: 10 telas) + soma de
+   mínimos por coluna >2000px. Num notebook de 1366px isso FORÇA rolagem lateral
+   por construção. Abaixo de 1600px o trade-off certo é o inverso: deixar o texto
+   QUEBRAR LINHA dentro da célula (como os nomes de fornecedor já fazem) em vez
+   de empurrar colunas pra fora da tela.
+   !important é necessário: os minWidth vêm INLINE do tableStyle/Column de cada
+   página — sem tocar nas 10 telas uma a uma, esta regra única neutraliza todos.
+   Teto 1920px (27/08, achado do responsividade_scanner): 3 telas exigem >2000px
+   (Processos 2432 · ParaProtocolar 2016 · OrcamentoMedico 2000) — rolavam de lado
+   ATÉ em monitor full-HD. Acima de 1920px (ultrawide) as larguras originais valem. */
+@media (max-width: 1920px) {
+  .p-datatable > .p-datatable-wrapper > .p-datatable-table {
+    min-width: 0 !important;            /* mata o tableStyle minWidth:9Xrem */
+  }
+  .p-datatable .p-datatable-thead > tr > th,
+  .p-datatable .p-datatable-tbody > tr > td {
+    min-width: 0 !important;            /* mata o minWidth por coluna */
+    overflow-wrap: anywhere;            /* nome/procedimento longo quebra, ¬estoura */
+  }
+  /* densidade compacta: mais conteúdo na área visível do notebook */
+  .p-datatable .p-datatable-thead > tr > th,
+  .p-datatable .p-datatable-tbody > tr > td {
+    padding: 8px 10px;
+    font-size: 0.82rem;
+  }
+  .p-datatable .p-column-filter { font-size: 0.8rem; }
+}
+
+/* Task #227 (@R 19:45 + 19:43, DOM medido): campos de busca com LARGURA PADRÃO.
+   Causa real da desigualdade: os botões filter-menu (funil) e clear do PrimeReact
+   comiam ~4rem FIXOS dentro de cada célula — em coluna de 16rem sobrava caixa
+   grande, em coluna de 7rem sobrava um toco. O app filtra por digitação (contains);
+   o menu de match-modes não é usado → botões saem, input ocupa 100% da coluna
+   (decisão 4f50e8d572; reversível removendo esta regra). */
+.p-datatable .p-column-filter-menu-button,
+.p-datatable .p-column-filter-clear-button {
+  display: none !important;
+}
+.p-datatable .p-filter-column .p-column-filter-row,
+.p-datatable .p-filter-column .p-column-filter-element {
+  width: 100%;
+}
+.p-datatable .p-filter-column .p-column-filter,
+.p-datatable .p-filter-column .p-inputtext {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+}
+/* Botão "Colunas" (task #228) — o TAMANHO (altura/padding) é do container
+   .mc-acoes-tabela (AcoesTabela.css); aqui a IDENTIDADE visual (cor/borda).
+   !important DELIBERADO nestas 3 propriedades: várias páginas têm regra própria
+   tipo `.<pagina>-page .p-button.p-button-secondary { background: navy; ... }`
+   pensada pro botão editar (quadrado/navy) — mesma especificidade da minha
+   (3 classes), empate resolvido por ordem de import, então o botão Colunas saía
+   ora cinza-outline ora azul-sólido dependendo da página (achado ProcessosPage,
+   print @R). O contrato deste componente é: SEMPRE outline cinza, em QUALQUER
+   página — por isso a garantia aqui, não uma exceção por página. */
+.p-button.botao-colunas {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.p-button.botao-colunas:hover {
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+  border-color: #94a3b8 !important;
+}
+
+/* Dropdown de filtro (ex: Status) alinhado à MESMA altura do input de busca —
+   antes o dropdown não tinha regra própria e herdava um tamanho maior do
+   componente PrimeReact (47px × 33px do input, print @R 27/08 21:03). */
+.p-datatable .p-filter-column .p-dropdown {
+  width: 100%;
+  min-width: 0;
+  height: 2.0651rem;
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+.p-datatable .p-filter-column .p-dropdown .p-dropdown-label {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+  box-sizing: border-box;
+}
+.p-datatable .p-filter-column .p-dropdown .p-dropdown-trigger {
+  width: 2rem;
 }

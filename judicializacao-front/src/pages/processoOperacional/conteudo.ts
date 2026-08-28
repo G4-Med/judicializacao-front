@@ -34,11 +34,11 @@ export const DONOS = {
 export const ETAPAS: Etapa[] = [
   {
     id: 'juridico',
+    prazo: 'SLA 1 dia — a análise sai no dia seguinte ("libera para mim até meio-dia")',
     numero: 1,
     titulo: 'Jurídico — a triagem',
     dono: 'INSTITUTO',
     rota: '/juridico',
-    prazo: 'Todo dia de manhã · liberado até 11h/meio-dia',
     oQueFaz:
       'Aqui chegam os pedidos que a Secretaria de Estado mandou por e-mail. O sistema cadastra sozinho. ' +
       'A análise decide se aquele pedido merece virar cotação.',
@@ -58,10 +58,11 @@ export const ETAPAS: Etapa[] = [
   },
   {
     id: 'selecionar-medico',
+    prazo: '24h para o médico dizer SE vai cotar (sem data própria no sistema — o relógio medido é o das 96h do orçamento)',
     numero: 2,
     titulo: 'Selecionar médico',
     dono: 'G4MED',
-    prazo: '24 horas para o médico dizer SE vai cotar',
+    rota: '/selecionar-medico',
     oQueFaz:
       'A G4MED escolhe para qual médico o pedido vai. Esta etapa não aparece para o Instituto — ' +
       'mas é aqui que a rede de vocês entra.',
@@ -78,10 +79,11 @@ export const ETAPAS: Etapa[] = [
   },
   {
     id: 'orcamento-medico',
+    prazo: 'SLA 4 dias (96 horas) — é o prazo que sustenta o contrato com o Estado',
     numero: 3,
     titulo: 'Orçamento médico — a cobrança',
     dono: 'G4MED',
-    prazo: '96 horas (4 dias) para o orçamento voltar',
+    rota: '/orcamento-medico',
     oQueFaz:
       'Lista tudo que foi pedido ao médico e ainda não voltou. É a fila que mede se estamos ' +
       'cumprindo o prazo com o Estado.',
@@ -98,6 +100,7 @@ export const ETAPAS: Etapa[] = [
   },
   {
     id: 'para-protocolar',
+    prazo: 'SLA 1 dia — "esta é a área que você ZERA todo dia"',
     numero: 4,
     titulo: 'Para protocolar — juntar aos autos',
     dono: 'INSTITUTO',
@@ -122,6 +125,7 @@ export const ETAPAS: Etapa[] = [
   },
   {
     id: 'protocolados',
+    prazo: 'A decisão é do juiz (sem prazo nosso), mas o acompanhamento tem: atualizar a cada 15 dias',
     numero: 5,
     titulo: 'Protocolados — acompanhar até a decisão',
     dono: 'INSTITUTO',
@@ -141,22 +145,29 @@ export const ETAPAS: Etapa[] = [
       'A análise da perda não é burocracia: é o que ensina o sistema quais procedimentos e quais ' +
       'médicos convertem.',
   },
+  // Task #238 (@R 28/08 01:43): "o canal 6 não existe" — segredo de justiça não é fase,
+  // é marca do pedido. Segredo que mata a cotação vira PERDA com o motivo
+  // 'Perda por segredo de justiça'; segredo enviado à SES vive na etapa 6 abaixo.
   {
-    id: 'segredo-justica',
+    id: 'enviado-ses',
+    prazo: 'A resposta é do Estado; nossa verificação tem prazo: checar em 120 dias, cobrar em 180',
     numero: 6,
-    titulo: 'Segredo de justiça',
-    dono: 'INSTITUTO',
-    rota: '/segredo-justica',
+    titulo: 'Enviado à SES sem protocolo — aguardando retorno técnico',
+    dono: 'G4MED',
+    rota: '/enviado-ses',
     oQueFaz:
-      'Processos com acesso restrito — na maioria das vezes, crianças. Só chegam aqui os que já ' +
-      'tiveram orçamento enviado.',
+      'O orçamento já foi ao Estado, mas NÃO acompanhamos nos autos: os sem-protocolo (o prazo de ' +
+      'protocolar passou) e os segredos de justiça. Aqui só se aguarda o retorno técnico da SES.',
     comoFazer: [
-      'Como não temos acesso aos autos, é preciso pedir à Secretaria o contato do advogado ou das partes.',
-      'Com o contato, dá para obter as informações que o médico precisa para cotar.',
+      'Nada a fazer proativamente — a fase é de espera declarada.',
+      'Chegou o retorno técnico: clique Registrar e marque GANHO (com o valor) ou PERDA (com o motivo).',
+      'Perda sem motivo escrito não salva — é esse texto que ensina o sistema.',
     ],
     falaDoRapha:
-      'Eu pediria pra Secretaria do Estado mandar o e-mail da advogada para que a gente possa entrar ' +
-      'em contato e obter maiores informações para ajudar o paciente.',
+      'Não temos que acompanhar e só podemos aguardar um retorno técnico para sabermos se ganhos.',
+    atencao:
+      'Não confundir com Protocolados (fase 5): lá nós estamos DENTRO do processo e acompanhamos; ' +
+      'aqui o orçamento foi entregue e a bola está com o Estado.',
   },
 ];
 

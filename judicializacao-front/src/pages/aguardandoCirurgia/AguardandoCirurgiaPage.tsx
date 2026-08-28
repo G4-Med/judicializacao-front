@@ -21,6 +21,10 @@ import type {
 } from '../../services/api/financeiro';
 import './AguardandoCirurgiaPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 interface Anexo {
   id: number;
@@ -249,7 +253,10 @@ export function AguardandoCirurgiaPage() {
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
+  const colunasCfg = useColunasVisiveis('aguardando-cirurgia');
+
   const [filters, setFilters] = useState<DataTableFilterMeta>({
+    ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     medico: { value: '', matchMode: FilterMatchMode.CONTAINS },
     valor: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -518,14 +525,18 @@ export function AguardandoCirurgiaPage() {
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos aguardando confirmação de cirurgia</h2>
+          <AcoesTabela>
+            <BotaoExportarExcel todos={linhas} nome="aguardando-cirurgia" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
           aria-label="Pedidos aguardando confirmação de cirurgia"
           value={linhas}
           loading={loading}
           dataKey="id"
           paginator
-          rows={100}
-          rowsPerPageOptions={[10, 20, 50, 100]}
+          rows={50}
+          rowsPerPageOptions={[10, 20, 50, 100, 200]}
           sortField={sortField}
           sortOrder={sortOrder}
           onSort={(e: DataTableSortEvent) => { setSortField(e.sortField); setSortOrder(e.sortOrder); }}
@@ -535,18 +546,27 @@ export function AguardandoCirurgiaPage() {
           emptyMessage="Nenhum pedido aguardando cirurgia."
           className="ag-cir-table"
         >
+          {colunasCfg.filtrar(<>
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
           <Column
-            field="paciente"
-            header="Paciente"
+            field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+          {colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaSolicitante()}
           <Column
             field="medico"
-            header="Médico"
+            header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -554,7 +574,7 @@ export function AguardandoCirurgiaPage() {
           />
           <Column
             field="valor"
-            header="Valor"
+            header={cabecalhoComHint('Valor', 'Valor do orçamento que enviamos ao Estado por este pedido.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -571,13 +591,14 @@ export function AguardandoCirurgiaPage() {
           />
           <Column
             field="dias"
-            header="Dias"
+            header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '7rem' }}
           />
           <Column header="Confirmar" body={renderConfirmar} style={{ minWidth: '10rem', textAlign: 'center' }} />
+        </>)}
         </DataTable>
       </div>
 

@@ -1,0 +1,41 @@
+/* Colunas de identificação (CNJ · SEI · Comarca) — task #214 */
+.ident-numero { font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; font-size: 0.78rem; font-variant-numeric: tabular-nums; user-select: all; white-space: nowrap; color: var(--mc-ink-2, #33414f); }
+.ident-vazio { color: #94a3b8; font-size: 0.8rem; font-style: italic; }
+.ident-geo { display: flex; flex-direction: column; line-height: 1.2; }
+.ident-geo small { color: #64748b; font-size: 0.75rem; }
+body.dark-theme .ident-numero { color: #c6d2df; }
+
+/* Chip cadastro (4 pontos) — task #217 peça 1 */
+.chip-cadastro { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--mc-border, #e3eaef); background: var(--mc-surface-2, #f9fbfc); cursor: help; }
+.chip-cadastro--completo { border-color: #bfe6cf; background: #f0faf4; }
+.chip-cadastro small { font-size: 0.72rem; color: var(--mc-muted, #5b6b7a); font-variant-numeric: tabular-nums; margin-left: 2px; }
+.cc-ponto { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.cc-ponto--ok { background: var(--mc-green-500, #00a651); }
+.cc-ponto--acao { background: #f59e0b; }
+.cc-ponto--humano { background: #9aa7a1; }
+body.dark-theme .chip-cadastro--completo { background: rgba(28,122,72,0.16); border-color: rgba(28,122,72,0.4); }
+
+/* Hint de coluna (?) — abre modal explicando a coluna */
+.cabecalho-hint { display: inline-flex; align-items: center; gap: 6px; }
+.hint-coluna { width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--mc-border, #cbd5e1); background: var(--mc-surface-2, #f8fafc); color: var(--mc-muted, #64748b); font-size: 0.68rem; font-weight: 700; line-height: 1; cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.hint-coluna:hover { background: var(--mc-green-500, #00a651); color: #fff; border-color: var(--mc-green-500, #00a651); }
+.hint-coluna:focus-visible { outline: 2px solid var(--mc-green-500, #00a651); outline-offset: 1px; }
+.hint-coluna__corpo { font-size: 0.92rem; line-height: 1.6; color: var(--mc-ink-2, #334155); }
+.hint-coluna__corpo p { margin: 0 0 10px; }
+.hint-coluna__corpo code { background: var(--mc-surface-2, #f1f5f9); padding: 1px 6px; border-radius: 4px; font-size: 0.85em; }
+
+/* botão de anexar a peça de inteiro teor direto na linha (qualquer fase) */
+.inteiro-teor-anexar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px dashed #f59e0b;
+  border-radius: 6px;
+  color: #b45309;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.inteiro-teor-anexar:hover { background: #fffbeb; }

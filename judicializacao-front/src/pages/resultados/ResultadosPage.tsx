@@ -29,6 +29,13 @@ import './ResultadosPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 // Reaproveita estilos do dialog Atualizar (timeline, update-section, anexo, etc).
 import '../protocolados/ProtocoladosPage.css';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
+import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -83,15 +90,21 @@ interface ResultadoProcessoTableRow extends ResultadoProcesso {
 }
 
 export function ResultadosPage() {
+  // @R 28/08 03:37: o painel do pedido abre ABAIXO da linha, em toda fase.
+  const [expandidas, setExpandidas] = useState<any>(undefined);
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<ResultadoProcesso[]>([]);
   const [selectedRegistros, setSelectedRegistros] = useState<ResultadoProcessoTableRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
+  const colunasCfg = useColunasVisiveis('resultados');
+
   const [filters, setFilters] = useState<DataTableFilterMeta>({
+    ...FILTRO_PAGAMENTO,   // filtrar por exato · não exato · empenhado · sem pagamento
+    ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     cliente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     valor: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -121,6 +134,7 @@ const carregarDados = async (): Promise<ResultadoProcesso[]> => {
         const valorOrcamento = o.valorOrcamento ?? orderCompleta?.valorOrcamento ?? 0;
 
         return {
+          ...o,   // preserva ident (SEI/comarca/cadastro/segredo/solicitante) — classe do bug 27/08
           id: o.id,
           paciente: o.paciente ?? '',
           nprocesso: o.nprocesso ?? '',
@@ -358,7 +372,20 @@ const kpis = useMemo(() => {
   const ganhosPercentual = valorTotal > 0 ? (ganhosValor / valorTotal) * 100 : 0;
   const perdasPercentual = valorTotal > 0 ? (perdasValor / valorTotal) * 100 : 0;
 
+  // @R 28/08 02:46: "quero os ganhos exatos e os ganhos não exatos" — exato =
+  // pagamento do Estado bate com o valor do ganho/orçado (±0,5%): confirmação
+  // independente de que o Estado pagou exatamente o que declaramos ganhar.
+  const ehGanhoExato = (item: any) => {
+    const pago = item.empenho548?.pago ?? 0;
+    const base = item.valorGanho || item.valorOrcamento || 0;
+    return pago > 0 && base > 0 && Math.abs(pago - base) / base < 0.005;
+  };
+  const ganhosExatos = ganhos.filter(ehGanhoExato).length;
+  const ganhosNaoExatos = ganhos.length - ganhosExatos;
+
   return {
+    ganhosExatos,
+    ganhosNaoExatos,
     totalProcessos,
     mediaProcessos,
     valorTotal,
@@ -498,13 +525,24 @@ const kpis = useMemo(() => {
           <div className="kpi-value">{formatarMoeda(kpis.valorTotal)}</div>
         </div>
 
-        <div className="kpi-card">
+        <div className="kpi-card" title="Somatório do que o Estado já PAGOU (empenho, base 548) nos CNJs desta tela · nº de pedidos com pagamento — sinal para conferir o desfecho, não repasse ao prestador">
+          <div className="kpi-header">
+            <span>Pago pelo Estado (548)</span>
+            <i className="pi pi-check-circle"></i>
+          </div>
+          <div className="kpi-value">{formatarMoeda(kpisEmpenho(dataComCamposCalculados).somaPago)} · {kpisEmpenho(dataComCamposCalculados).nPagos}</div>
+          <div className="kpi-subvalue">sinal forte · +{kpisEmpenho(dataComCamposCalculados).nHistorico} histórico ñ-atribuível</div>
+        </div>
+
+        <div className="kpi-card" title="Ganhos cujo pagamento do Estado BATE com o orçado (±0,5%) × ganhos ainda sem confirmação exata de valor — inteligência de conferência">
           <div className="kpi-header">
             <span>Ganhos</span>
             <i className="pi pi-check-circle"></i>
           </div>
           <div className="kpi-value kpi-value-success">{formatarMoeda(kpis.ganhosValor)}</div>
-          <div className="kpi-subvalue">{formatarPercentual(kpis.ganhosPercentual)}</div>
+          <div className="kpi-subvalue">
+            {formatarPercentual(kpis.ganhosPercentual)} · {kpis.ganhosExatos} exatos (pago = orçado) · {kpis.ganhosNaoExatos} não exatos
+          </div>
         </div>
 
         <div className="kpi-card">
@@ -520,12 +558,18 @@ const kpis = useMemo(() => {
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Processos finalizados — resultado (ganho ou perda), valor e tempo de tramitação</h2>
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComCamposCalculados} nome="resultados" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
+          expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
+          rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Processos finalizados — resultado (ganho ou perda), valor e tempo de tramitação"
           value={dataComCamposCalculados}
           dataKey="id"
           paginator
-          rowsPerPageOptions={[10, 20, 50, 100]}
+          rowsPerPageOptions={[10, 20, 50, 100, 200]}
           rows={rows}
           first={first}
           totalRecords={dataComCamposCalculados.length}
@@ -544,6 +588,8 @@ const kpis = useMemo(() => {
           emptyMessage="Nenhum resultado encontrado."
           className="resultados-table"
         >
+          {colunasCfg.filtrar(<>
+          <Column expander style={{ width: '3rem' }} />
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
 
           <Column
@@ -555,17 +601,29 @@ const kpis = useMemo(() => {
           />
 
           <Column
-            field="paciente"
-            header="Paciente"
+            field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+          {colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
+          {colunaSolicitante()}
 
           <Column
             field="cliente"
-            header="Cliente"
+            header={cabecalhoComHint('Cliente', 'Empresa/prestador que responde pelo orçamento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -574,7 +632,7 @@ const kpis = useMemo(() => {
 
           <Column
             field="valor"
-            header="Valor"
+            header={cabecalhoComHint('Valor', 'Valor do orçamento que enviamos ao Estado por este pedido.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -593,7 +651,7 @@ const kpis = useMemo(() => {
 
           <Column
             field="dias"
-            header="Dias"
+            header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -603,7 +661,7 @@ const kpis = useMemo(() => {
 
           <Column
             field="resultado"
-            header="Resultado"
+            header={cabecalhoComHint('Resultado', 'Desfecho registrado: ganho, perda ou em andamento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -617,6 +675,8 @@ const kpis = useMemo(() => {
             style={{ minWidth: '10rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
+          {colunaExcluirAdmin(carregarDados)}
+        </>)}
         </DataTable>
       </div>
 

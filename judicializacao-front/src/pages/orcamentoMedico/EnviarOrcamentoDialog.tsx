@@ -8,7 +8,7 @@ import html2canvas from 'html2canvas';
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { getBaseOrcamento, getDadosMedico, type TipoBaseOrcamento } from '../../services/api/client';
-import { salvarOrcamentoMedico, uploadAnexoOrder } from '../../services/api/orders';
+import { salvarOrcamentoMedico, uploadAnexoOrder, getInteligenciaPedido } from '../../services/api/orders';
 import './OrcamentoMedicoPage.css';
 
 GlobalWorkerOptions.workerSrc = pdfWorker;
@@ -164,6 +164,125 @@ export function EnviarOrcamentoDialog({
 
   const previewDocumentoRef = useRef<HTMLDivElement>(null);
   const basePdfCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Loop de inteligência do pedido (task #203, 27/08): antes de orçar, o sistema abre a
+  // "pasta" — já respondemos ESTE pedido (duplicata)? o que já cobramos por ESTA cirurgia
+  // (experiência, com data)? Fail-soft: erro na dica NUNCA impede o envio do orçamento.
+  interface IntelDesfecho { tipo: 'ganho' | 'perda' | 'andamento'; rotulo: string; valor_ganho: number | null }
+  interface IntelAnexo { tipo: string; url: string }
+  interface IntelItem {
+    order_id: number; score: number; exato: boolean; procedimento: string;
+    mesmo_medico: boolean; medico_nome?: string | null; data_pedido: string | null;
+    valor_respondido: number | null; data_resposta: string | null;
+    desfecho?: IntelDesfecho; mesmo_cnj?: boolean; anexos?: IntelAnexo[];
+  }
+  interface Inteligencia {
+    duplicata: IntelItem[]; experiencia: IntelItem[]; media_18m?: number | null;
+    n_similares: number; piso_estado?: number | null; referencia_mercado?: number | null;
+  }
+  const [inteligencia, setInteligencia] = useState<Inteligencia | null>(null);
+
+  useEffect(() => {
+    if (!visible || !processo?.id) { setInteligencia(null); return; }
+    let cancelado = false;
+    getInteligenciaPedido(processo.id)
+      .then((resp) => { if (!cancelado) setInteligencia(resp.data); })
+      .catch(() => { if (!cancelado) setInteligencia(null); });
+    return () => { cancelado = true; };
+  }, [visible, processo?.id]);
+
+  const fmtBRL = (v: number) =>
+    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+  const fmtData = (iso: string | null) => {
+    if (!iso) return '';
+    const [y, m] = iso.split('-');
+    return `${m}/${y?.slice(2)}`;
+  };
+
+  // Juiz virgem 28/08 (furo MEMORIA-SEM-MEDIDOR): consulta quebrada era
+  // indistinguível de "caso inédito" — agora a falha se declara na tela.
+  const cardIntelErro = inteligencia && (inteligencia as any).erro ? (
+    <div style={{
+      marginBottom: '12px', padding: '8px 12px', borderRadius: '8px',
+      background: '#fffbeb', border: '1px solid #fcd34d', fontSize: '0.8rem', color: '#92400e',
+    }}>
+      ⚠ A memória de casos anteriores está indisponível agora ({(inteligencia as any).erro}) —
+      isto NÃO significa que o caso é inédito. Confira manualmente se já respondemos.
+    </div>
+  ) : null;
+
+  const cardInteligencia = inteligencia
+    && (inteligencia.duplicata.length > 0 || inteligencia.experiencia.length > 0) ? (
+      <div style={{ marginBottom: '12px' }}>
+        {inteligencia.duplicata.length > 0 && (
+          <div style={{
+            background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px',
+            padding: '10px 14px', marginBottom: '8px', fontSize: '0.875rem', color: '#991b1b',
+          }}>
+            {/* @R 28/08: "sabermos se já respondemos o caso antes e quais médicos
+                responderam e os respectivos valores... e vermos os anexos do pedido
+                anterior" — cada caso anterior vira uma linha completa: médico, valor,
+                desfecho (a cirurgia aconteceu?) e os arquivos clicáveis. */}
+            <strong>⚠ Já respondemos este caso antes</strong>
+            {inteligencia.duplicata.map((d) => (
+              <div key={d.order_id} style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #fecaca' }}>
+                <div>
+                  Pedido <strong>#{d.order_id}</strong>
+                  {d.mesmo_cnj ? ' (mesmo processo/CNJ)' : ' (mesmo paciente + cirurgia)'}
+                  {d.medico_nome ? <> · médico: <strong>{d.medico_nome}</strong></> : null}
+                  {d.valor_respondido
+                    ? <> · enviamos <strong>{fmtBRL(d.valor_respondido)}</strong> em {fmtData(d.data_resposta)}</>
+                    : ' · sem orçamento registrado'}
+                </div>
+                {d.desfecho && (
+                  <div style={{ marginTop: '2px' }}>
+                    Situação: <strong>{d.desfecho.rotulo}</strong>
+                    {d.desfecho.tipo === 'ganho' && d.desfecho.valor_ganho
+                      ? <> — valor ganho {fmtBRL(d.desfecho.valor_ganho)}</> : null}
+                  </div>
+                )}
+                {(d.anexos?.length ?? 0) > 0 && (
+                  <div style={{ marginTop: '4px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {(d.anexos ?? []).map((a, i) => (
+                      <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          padding: '2px 8px', borderRadius: '6px', border: '1px solid #fca5a5',
+                          background: '#fff', color: '#991b1b', fontSize: '0.8rem', textDecoration: 'none',
+                        }}>
+                        <i className="pi pi-paperclip" style={{ fontSize: '0.75rem' }} />
+                        {a.tipo.toLowerCase().replace(/_/g, ' ')} {i + 1}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            <div style={{ marginTop: '6px' }}>Confira antes de enviar um valor diferente.</div>
+          </div>
+        )}
+        {inteligencia.experiencia.length > 0 && (
+          <div style={{
+            background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px',
+            padding: '10px 14px', fontSize: '0.875rem', color: '#1e3a5f',
+          }}>
+            <strong>🧠 Já orçamos esta cirurgia:</strong>{' '}
+            {inteligencia.experiencia
+              .filter((e) => e.valor_respondido)
+              .slice(0, 3)
+              .map((e) => (
+                <span key={e.order_id} title={e.procedimento}>
+                  {fmtBRL(e.valor_respondido as number)} ({fmtData(e.data_resposta)}
+                  {e.mesmo_medico ? ', mesmo médico' : ''}){' · '}
+                </span>
+              ))}
+            {inteligencia.media_18m ? (
+              <span>média 18m: <strong>{fmtBRL(inteligencia.media_18m)}</strong></span>
+            ) : null}
+          </div>
+        )}
+      </div>
+    ) : null;
 
   useEffect(() => {
     if (!visible) return;
@@ -559,10 +678,12 @@ export function EnviarOrcamentoDialog({
       <Dialog
         header="Como deseja enviar o orçamento?"
         visible={visible && modo === 'escolha'}
-        style={{ width: '40rem', maxWidth: '96vw' }}
+        style={{ width: '60rem', maxWidth: '96vw' }}
         modal
         onHide={handleClose}
       >
+        {cardIntelErro}
+        {cardInteligencia}
         <div style={{ display: 'flex', gap: '16px', padding: '8px 0 16px' }}>
           <button
             onClick={() => setModo('arquivo')}
@@ -615,7 +736,7 @@ export function EnviarOrcamentoDialog({
       <Dialog
         header="Enviar Orçamento"
         visible={visible && modo === 'arquivo'}
-        style={{ width: '38rem', maxWidth: '96vw' }}
+        style={{ width: '60rem', maxWidth: '96vw' }}
         modal
         onHide={handleClose}
       >

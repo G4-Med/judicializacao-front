@@ -39,6 +39,18 @@ api.interceptors.response.use(
   },
   async (error) => {
     const original = error.config;
+
+    // Sessão única (26/08): outro login com o mesmo usuário derrubou esta sessão.
+    // NÃO tenta refresh — o refresh token também carrega o session_token velho,
+    // então "funcionaria" e só adiaria o mesmo 401 pra próxima chamada, sem o
+    // usuário nunca entender por quê. Avisa e manda pro login direto.
+    if (error.response?.status === 401 && error.response?.data?.code === 'sessao_revogada') {
+      localStorage.clear();
+      alert('Sua sessão foi encerrada porque outro acesso foi feito com este usuário.');
+      window.location.href = '/login';
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
       try {

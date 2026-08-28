@@ -22,6 +22,14 @@ import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './SelecionarMedicoPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
+import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
+import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
+import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
 
 interface ProcessoResumo {
   id: number;
@@ -49,6 +57,8 @@ interface MedicoOption {
 }
 
 export function SelecionarMedicoPage() {
+  // @R 28/08 03:37: o painel do pedido abre ABAIXO da linha, em toda fase.
+  const [expandidas, setExpandidas] = useState<any>(undefined);
   const { isReadOnly, filterMedicosByAccess } = useAccess();
   const readOnly = isReadOnly('selecionarMedico');
   const [loading, setLoading] = useState(false);
@@ -56,7 +66,7 @@ export function SelecionarMedicoPage() {
   const [selectedProcessos, setSelectedProcessos] = useState<ProcessoResumoTableRow[]>([]);
   const [medicosOptions, setMedicosOptions] = useState<MedicoOption[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -72,7 +82,11 @@ export function SelecionarMedicoPage() {
   const [iaOrderId, setIaOrderId] = useState<number | null>(null);
   const [iaAplicando, setIaAplicando] = useState(false);
 
+  const colunasCfg = useColunasVisiveis('selecionar-medico');
+
   const [filters, setFilters] = useState<DataTableFilterMeta>({
+    ...FILTRO_PAGAMENTO,   // @R 28/08: pedir cotação para caso JÁ PAGO é trabalho perdido
+    ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     procedimento: { value: '', matchMode: FilterMatchMode.CONTAINS },
     area: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -320,10 +334,8 @@ export function SelecionarMedicoPage() {
     <div className="selecionar-medico-page">
       <PrimeiraVisitaInfo etapaId="selecionar-medico" />
       <div className="page-header">
-        <div>
-          <h1>Selecionar Médico</h1>
-          <p>Defina o médico responsável para os processos pendentes.</p>
-        </div>
+        <CabecalhoFase nome="Selecionar Médico" screen="selecionarMedico"
+          subtitulo="Defina o médico responsável para os processos pendentes." />
         {!readOnly && (
           <div className="page-actions">
             <Button
@@ -389,7 +401,13 @@ export function SelecionarMedicoPage() {
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos aguardando seleção de médico</h2>
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="selecionar-medico" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
+          expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
+          rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Pedidos aguardando seleção de médico"
           value={dataComCamposCalculados}
           onValueChange={(value) => setVisibleProcessos(value as ProcessoResumoTableRow[])}
@@ -398,7 +416,7 @@ export function SelecionarMedicoPage() {
           }
           dataKey="id"
           paginator
-          rowsPerPageOptions={[10, 20, 50, 100]}
+          rowsPerPageOptions={[10, 20, 50, 100, 200]}
           rows={rows}
           first={first}
           totalRecords={dataComCamposCalculados.length}
@@ -417,19 +435,29 @@ export function SelecionarMedicoPage() {
           className="selecionar-medico-table"
           emptyMessage="Nenhum processo encontrado."
         >
+          {colunasCfg.filtrar(<>
+          <Column expander style={{ width: '3rem' }} />
           {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
           <Column
-            field="paciente"
-            header="Paciente"
+            field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+          {colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaSolicitante()}
           <Column
             field="procedimento" className="col-procedimento-upper"
-            header="Procedimento"
+            header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -453,7 +481,7 @@ export function SelecionarMedicoPage() {
           />
           <Column
             field="medico"
-            header="Médico"
+            header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -461,7 +489,7 @@ export function SelecionarMedicoPage() {
           />
           <Column
             field="dias"
-            header="Dias"
+            header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -517,13 +545,19 @@ export function SelecionarMedicoPage() {
               bodyStyle={{ textAlign: 'center' }}
             />
           )}
+          {colunaExcluirAdmin(carregarDados)}
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
+        </>)}
         </DataTable>
       </div>
 
       <Dialog
         header="Selecionar Médico"
         visible={dialogVisible}
-        style={{ width: '42rem', maxWidth: '96vw' }}
+        style={{ width: '60rem', maxWidth: '96vw' }}
         modal
         onHide={() => setDialogVisible(false)}
         className="selecionar-medico-dialog"
@@ -579,7 +613,7 @@ export function SelecionarMedicoPage() {
       <Dialog
         header="Selecionar Médico em Massa"
         visible={dialogMassaVisible}
-        style={{ width: '36rem', maxWidth: '96vw' }}
+        style={{ width: '60rem', maxWidth: '96vw' }}
         modal
         onHide={() => setDialogMassaVisible(false)}
         className="selecionar-medico-dialog"
@@ -624,7 +658,7 @@ export function SelecionarMedicoPage() {
       <Dialog
         header="Sugestão da IA"
         visible={iaDialogVisible}
-        style={{ width: '36rem', maxWidth: '96vw' }}
+        style={{ width: '60rem', maxWidth: '96vw' }}
         modal
         onHide={fecharIaDialog}
       >

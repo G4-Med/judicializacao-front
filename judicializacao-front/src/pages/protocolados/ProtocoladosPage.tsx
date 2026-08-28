@@ -21,6 +21,14 @@ import { useAccess } from '../../access/AccessContext';
 import './ProtocoladosPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
+import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
+import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -71,15 +79,22 @@ type ResultadoType = 'ganho' | 'perda' | '';
 
 export function ProtocoladosPage() {
   const { isReadOnly } = useAccess();
+  // @R 28/08 02:1x: "vamos buscar os pagamentos do 5" — expander com os empenhos
+  // pagos do Estado (base 548) também nos Protocolados.
+  const [expandidas, setExpandidas] = useState<any>(undefined);
   const readOnly = isReadOnly('protocolados');
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<Protocolado[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
+  const colunasCfg = useColunasVisiveis('protocolados');
+
   const [filters, setFilters] = useState<DataTableFilterMeta>({
+    ...FILTRO_PAGAMENTO,   // filtrar por exato · não exato · empenhado · sem pagamento
+    ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     cliente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     valor: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -159,6 +174,7 @@ export function ProtocoladosPage() {
         const nomeCliente = medico?.razaoSocial || medico?.nomeMedico || medico?.nomeSistema || '';
 
         return {
+          ...o,   // preserva ident (SEI/comarca/cadastro/segredo/solicitante) — classe do bug 27/08
           id: o.id,
           paciente: o.paciente ?? '',
           nprocesso: o.nprocesso ?? '',
@@ -453,10 +469,8 @@ export function ProtocoladosPage() {
     <div className="protocolados-page">
       <PrimeiraVisitaInfo etapaId="protocolados" />
       <div className="page-header">
-        <div>
-          <h1>Protocolados</h1>
-          <p>Gestão dos processos protocolados</p>
-        </div>
+        <CabecalhoFase nome="Protocolados" slaTexto="atualizar a cada 15 dias" screen="protocolados"
+          subtitulo="Protocolados nos autos — acompanhamento até a decisão" />
 
         <div className="page-actions">
           {!readOnly && <Button
@@ -502,18 +516,42 @@ export function ProtocoladosPage() {
           <div className="kpi-value">{formatarMoeda(kpis.mediaValorProcessos)}</div>
         </div>
 
+        <div className="kpi-card" title="Só sinal FORTE (pago depois do pedido ou valor compatível) — régua anti-inflação da 548. Valor do empenho, não repasse">
+          <div className="kpi-header">
+            <span>Pago pelo Estado (sinal forte)</span>
+            <i className="pi pi-check-circle"></i>
+          </div>
+          <div className="kpi-value">{formatarMoeda(kpisEmpenho(visibleProcessos).somaPago)}</div>
+          <div className="kpi-subvalue">{kpisEmpenho(visibleProcessos).nPagos} pedidos · {kpisEmpenho(visibleProcessos).nExatos} exatos · {kpisEmpenho(visibleProcessos).nHistorico} histórico ñ-atribuível</div>
+        </div>
+
+        <div className="kpi-card" title="Pedidos SEM pagamento atribuível — o que ainda esperamos do Estado (soma do orçado)">
+          <div className="kpi-header">
+            <span>Em aberto</span>
+            <i className="pi pi-hourglass"></i>
+          </div>
+          <div className="kpi-value">{formatarMoeda(kpisEmpenho(visibleProcessos).somaAberto)}</div>
+          <div className="kpi-subvalue">{kpisEmpenho(visibleProcessos).nAbertos} pedidos</div>
+        </div>
+
       </div>
       </PainelKpis>
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos protocolados</h2>
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="protocolados" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
           aria-label="Pedidos protocolados"
+          expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
+          rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           value={dataComCamposCalculados}
           onValueChange={(value) => setVisibleProcessos(value as ProtocoladoTableRow[])}
           dataKey="id"
           paginator
-          rowsPerPageOptions={[10, 20, 50, 100]}
+          rowsPerPageOptions={[10, 20, 50, 100, 200]}
           rows={rows}
           first={first}
           totalRecords={dataComCamposCalculados.length}
@@ -529,7 +567,9 @@ export function ProtocoladosPage() {
           emptyMessage="Nenhum processo encontrado."
           className="protocolados-table"
         >
+          {colunasCfg.filtrar(<>
           {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
+          <Column expander style={{ width: '3rem' }} />
 
           <Column
             field="sequencial"
@@ -540,17 +580,25 @@ export function ProtocoladosPage() {
           />
 
           <Column
-            field="paciente"
-            header="Paciente"
+            field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+          {colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaSolicitante()}
 
           <Column
             field="cliente"
-            header="Cliente"
+            header={cabecalhoComHint('Cliente', 'Empresa/prestador que responde pelo orçamento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -559,7 +607,7 @@ export function ProtocoladosPage() {
 
           <Column
             field="valor"
-            header="Valor"
+            header={cabecalhoComHint('Valor', 'Valor do orçamento que enviamos ao Estado por este pedido.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -578,17 +626,38 @@ export function ProtocoladosPage() {
 
           <Column
             field="dias"
-            header="Dias"
+            header={cabecalhoComHint('Dias protocolo', 'Dias desde a data em que a peça foi protocolada nos autos.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             body={diasBodyTemplate}
-            style={{ minWidth: '7rem' }}
+            style={{ minWidth: '8rem' }}
           />
+
+          {/* @R 28/08 02:0x: "quantos dias desde a última atualização... pelo menos
+              de 15 em 15 dias o processo precisa ser atualizado" — SLA de acompanhamento */}
+          <Column
+            field="diasSemAtualizacao"
+            header={cabecalhoComHint('Sem atualização', 'Dias desde o último acompanhamento registrado. SLA: atualizar a cada 15 dias.')}
+            sortable
+            style={{ minWidth: '9rem' }}
+            body={(r: any) => (r.diasSemAtualizacao >= 30
+              ? <Tag value={`${r.diasSemAtualizacao}d`} severity="danger" icon="pi pi-exclamation-triangle"
+                  title="30+ dias sem atualização — 2 ciclos de SLA vencidos (o processo deve ser atualizado a cada 15 dias)" />
+              : r.diasSemAtualizacao >= 15
+                ? <Tag value={`${r.diasSemAtualizacao}d`} severity="warning" icon="pi pi-clock"
+                    title="15+ dias sem atualização — SLA de acompanhamento vencido (atualizar a cada 15 dias)" />
+                : <span title="Dentro do SLA de 15 dias">{r.diasSemAtualizacao ?? '—'}d</span>)}
+          />
+
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
 
           <Column
             field="status"
-            header="Status"
+            header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -598,7 +667,7 @@ export function ProtocoladosPage() {
 
           <Column
             field="resultado"
-            header="Resultado"
+            header={cabecalhoComHint('Resultado', 'Desfecho registrado: ganho, perda ou em andamento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -612,6 +681,8 @@ export function ProtocoladosPage() {
             style={{ minWidth: '10rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
+          {colunaExcluirAdmin(carregarDados)}
+        </>)}
         </DataTable>
       </div>
 

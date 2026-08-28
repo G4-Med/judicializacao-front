@@ -1,0 +1,34 @@
+/* Cabeçalho padrão das telas de fase (task #211). Reusa .page-header das páginas. */
+.cabecalho-fase { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.cabecalho-fase h1 {
+  margin: 0;
+  font-family: var(--mc-font-heading, "Poppins", sans-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--mc-navy-900, #062a45);
+  letter-spacing: -0.01em;
+}
+.cabecalho-fase p { margin: 6px 0 0; color: var(--mc-muted, #5b6b7a); font-size: 0.92rem; }
+.cabecalho-fase__chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.cabecalho-fase__acoes { display: flex; gap: 8px; align-items: center; }
+
+.cf-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 11px; border-radius: 999px; font-size: 0.78rem;
+  border: 1px solid var(--mc-border, #e3eaef); background: var(--mc-surface-2, #f9fbfc);
+  color: var(--mc-muted, #5b6b7a);
+}
+.cf-chip i { font-size: 0.8rem; }
+.cf-chip strong { color: var(--mc-ink-2, #33414f); font-weight: 600; }
+.cf-chip--opera { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+.cf-chip--opera strong { color: #1e3a8a; }
+.cf-chip--sla { border-color: #bfe6cf; background: #f0faf4; color: #1c7a48; }
+.cf-chip--sla strong { color: #14653a; }
+.cf-chip--sem-sla { font-style: italic; }
+
+body.dark-theme .cabecalho-fase h1 { color: #e6eef6; }
+body.dark-theme .cabecalho-fase p { color: #94a3b8; }
+body.dark-theme .cf-chip--opera { background: rgba(29,78,216,0.18); color: #93c5fd; border-color: rgba(29,78,216,0.4); }
+body.dark-theme .cf-chip--opera strong { color: #bfdbfe; }
+body.dark-theme .cf-chip--sla { background: rgba(28,122,72,0.16); color: #7fd8a6; border-color: rgba(28,122,72,0.4); }
+body.dark-theme .cf-chip--sla strong { color: #a7ecc4; }

@@ -2,18 +2,30 @@
 import { DataTable } from 'primereact/datatable';
 import type { DataTableFilterMeta, DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { Dropdown } from 'primereact/dropdown';
 import { Dialog } from 'primereact/dialog';
 import { FilterMatchMode } from 'primereact/api';
-import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder } from '../../services/api/orders';
+import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder, getCnjCandidatos, confirmarCnj, uploadAnexoOrder, getInteligenciaPedido } from '../../services/api/orders';
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './JuridicoPage.css';
+import { colunaSolicitante, tagTipoPaciente , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
+import { PainelPrecos } from '../../components/PainelPrecos/PainelPrecos';
+import { ContadorRegistros } from '../../components/ContadorRegistros/ContadorRegistros';
+import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
+import { BotaoCopiar } from '../../components/BotaoCopiar/BotaoCopiar';
+import { useNavigate } from 'react-router-dom';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
+import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
 
 // Meta desta fase (triagem jurídica) — espelha backend/funil.py FASES['triagem'].meta_dias.
 // "a análise sai no dia seguinte — libera para mim até meio-dia" (fala do @R na reunião).
@@ -34,6 +46,13 @@ interface ProcessoJuridico {
   familiaSei: string | null;
   solicitacao: string;
   emailSolicitante: string;
+  possivelMenorIdade?: boolean;
+  qtdAnexos?: number;
+  // Geografia do processo, derivada do CNJ no backend (task #212): federal não tem comarca.
+  comarca?: string | null;
+  distanciaKm?: number | null;
+  esfera?: 'estadual' | 'federal' | 'trabalhista' | 'stf' | 'stj' | 'outra' | null;
+  geoMotivo?: string | null;
 }
 
 interface ProcessoJuridicoRow extends ProcessoJuridico {
@@ -60,12 +79,16 @@ function calcularIdade(dataNascimento: string | null): number {
 
 
 export function JuridicoPage() {
-  const { isReadOnly } = useAccess();
+  const { isReadOnly, profile } = useAccess();
   const readOnly = isReadOnly('juridico');
+  // Equipe g4med (Admin/Gerente) pode decidir SEM a peça de inteiro teor
+  // (@R 27/08 20:27; decisão procurador a4183eff70) — o escritório jurídico não.
+  const equipeG4med = profile.group === 'ADMIN' || profile.group === 'GERENTE';
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [processos, setProcessos] = useState<ProcessoJuridico[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(50);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const [editDialogVisible, setEditDialogVisible] = useState(false);
@@ -87,15 +110,40 @@ export function JuridicoPage() {
   const [previewUrl, setPreviewUrl] = useState<string>('')
   const [previewTipo, setPreviewTipo] = useState<'pdf' | 'imagem' | 'outro'>('outro')
   const [previewNome, setPreviewNome] = useState<string>('')
+  // Candidatos a CNJ (task #217 peça 3): o batch noturno extrai dos anexos e PROPÕE;
+  // o humano confirma aqui vendo a origem — o sistema nunca grava CNJ sozinho (F1/G4).
+  const [candidatosCnj, setCandidatosCnj] = useState<{ cnj: string; origem?: string }[]>([])
+  const [confirmandoCnj, setConfirmandoCnj] = useState(false)
+  // Inteligência do pedido NA CHEGADA (/sc:desenho 28/08: "como estamos produzindo
+  // inteligência para cada pedido que chega novo") — a memória de casos anteriores
+  // aparece ANTES da decisão de cotar, não só na hora de orçar (fase 3).
+  const [intel, setIntel] = useState<any | null>(null)
+  // Peça de inteiro teor (@R 27/08): obrigatória ao decidir Cotar OU Não Cotar.
+  const [inteiroTeorFile, setInteiroTeorFile] = useState<File | null>(null)
+  const [inteiroTeorJaAnexado, setInteiroTeorJaAnexado] = useState(false)
+  const [inteiroTeorObrigatorio, setInteiroTeorObrigatorio] = useState(false)
+
+  const colunasCfg = useColunasVisiveis('analise-juridica');
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
+    ...FILTRO_PAGAMENTO,   // já pago no CNJ? decide se vale cotar
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     idade: { value: '', matchMode: FilterMatchMode.CONTAINS },
     procedimento: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    nprocesso: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    numeroSei: { value: '', matchMode: FilterMatchMode.CONTAINS },
     dias: { value: '', matchMode: FilterMatchMode.CONTAINS },
   });
 
   const [visibleProcessos, setVisibleProcessos] = useState<ProcessoJuridicoRow[]>([]);
+
+  // Preços do procedimento (task #207): UMA linha aberta por vez. A consulta é pesada
+  // (~5s na 1ª vez, cache de 6h no backend) — deixar N linhas abertas dispararia N
+  // consultas simultâneas e travaria a tela que o painel deveria ajudar.
+  // Formato OBJETO {id: true}, não array: com dataKey, o PrimeReact emite e consome o
+  // mapa por id (datatable.cjs L3139). A v1 assumia array — e clique nenhum abria
+  // (bug relatado pelo @R com captura 27/08 11:33).
+  const [linhaExpandida, setLinhaExpandida] = useState<Record<number, boolean>>({});
 
   const carregarDados = () => {
     setLoading(true);
@@ -159,7 +207,44 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
     .then((res: any) => setAnexos(res.data.anexos))
     .catch(() => setAnexos([]))
     .finally(() => setLoadingAnexos(false))
+
+  // memória de casos anteriores — fail-soft: erro nunca trava a triagem
+  setIntel(null)
+  getInteligenciaPedido(rowData.id)
+    .then((res: any) => setIntel(res.data))
+    .catch(() => setIntel(null))
+
+  // inteiro teor: se o pedido JÁ tem a peça, não exigir de novo
+  setInteiroTeorFile(null)
+  setInteiroTeorObrigatorio(false)
+  setInteiroTeorJaAnexado(false)
+  getAnexosOrder(rowData.id, 'DECISAO_INTEIRO_TEOR')
+    .then((res: any) => setInteiroTeorJaAnexado((res.data.anexos ?? []).length > 0))
+    .catch(() => setInteiroTeorJaAnexado(false))
+
+  // só busca candidato quando o pedido ainda não tem CNJ (senão o endpoint devolve 409)
+  setCandidatosCnj([])
+  if (!rowData.nprocesso) {
+    getCnjCandidatos(rowData.id)
+      .then((res: any) => setCandidatosCnj(res.data.candidatos ?? []))
+      .catch(() => setCandidatosCnj([]))
+  }
 };
+
+  const usarCandidatoCnj = async (cnj: string) => {
+    if (!processoEditando) return;
+    setConfirmandoCnj(true);
+    try {
+      await confirmarCnj(processoEditando.id, cnj, 'confirmar');
+      setNprocesso(cnj);
+      setCandidatosCnj([]);
+      carregarDados();
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'Não foi possível confirmar este CNJ.');
+    } finally {
+      setConfirmandoCnj(false);
+    }
+  };
 
   const handleSalvar = async () => {
     if (!processoEditando) return;
@@ -176,6 +261,14 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
       return;
     }
 
+    // Peça de inteiro teor obrigatória nos DOIS caminhos da decisão (@R 27/08).
+    // Refinamento 20:27: a equipe g4med pode seguir sem — anexa depois em outra fase.
+    const decidindo = statusJuridico === 'Cotar' || statusJuridico === 'Não Cotar';
+    if (decidindo && !equipeG4med && !inteiroTeorJaAnexado && !inteiroTeorFile) {
+      setInteiroTeorObrigatorio(true);
+      return;
+    }
+
       const payload = {
         nprocesso: nprocesso || null,
         numeroSei: numeroSei || null,
@@ -188,6 +281,11 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
       console.log('PROCESSO EDITANDO:', processoEditando);
 
     try {
+        // upload da peça ANTES do salvar — o backend confere a existência dela
+        if (decidindo && !inteiroTeorJaAnexado && inteiroTeorFile) {
+          await uploadAnexoOrder(processoEditando.id, inteiroTeorFile, 'DECISAO_INTEIRO_TEOR');
+          setInteiroTeorJaAnexado(true);
+        }
         await salvarJuridico(processoEditando.id, payload);
         carregarDados();
         setEditDialogVisible(false);
@@ -223,21 +321,31 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
   );
 
   const editarBodyTemplate = (rowData: ProcessoJuridicoRow) => (
-    <Button
-      icon="pi pi-pencil"
-      rounded outlined severity="secondary"
-      onClick={() => abrirEdicao(rowData)}
-    />
+    <span className="juridico-acoes">
+      <Button
+        icon="pi pi-pencil"
+        rounded outlined severity="secondary"
+        onClick={() => abrirEdicao(rowData)}
+        aria-label="Analisar este pedido"
+      />
+      {/* "botão para ir para o processo" (@R 27/08): abre a tela Processos já filtrada */}
+      <Button
+        icon="pi pi-external-link"
+        rounded text severity="secondary"
+        onClick={() => navigate(`/processos?paciente=${encodeURIComponent(rowData.paciente)}`)}
+        aria-label="Abrir o processo deste pedido"
+        title="Ir para o processo"
+      />
+    </span>
   );
 
   return (
     <div className="juridico-page">
       <PrimeiraVisitaInfo etapaId="juridico" />
+      {/* task #211: número da fase + quem opera + SLA ativo, derivados do SSOT (ETAPAS/permissions) */}
       <div className="page-header">
-        <div>
-          <h1>Jurídico</h1>
-          <p>Processos aguardando análise jurídica</p>
-        </div>
+        <CabecalhoFase nome="Análise Jurídica" screen="juridico" slaDias={SLA_META_DIAS_TRIAGEM}
+          subtitulo="Processos aguardando análise jurídica" />
       </div>
 
       {readOnly && <ReadOnlyBanner />}
@@ -260,7 +368,31 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
       </PainelKpis>
 
       <div className="card">
-        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos aguardando triagem jurídica</h2>
+        <h2 className="mc-tabela-titulo">
+          <i className="pi pi-table" />Pedidos aguardando triagem jurídica
+          {/* Quantos são e quantos estão fora do prazo (task #208) */}
+          <ContadorRegistros
+            total={dataComSequencial.length}
+            visiveis={visibleProcessos.length}
+            substantivo="pedidos"
+            fases={[
+              {
+                rotulo: 'no prazo',
+                quantidade: visibleProcessos.filter((p) => p.dias <= SLA_META_DIAS_TRIAGEM).length,
+                tom: 'ok',
+              },
+              {
+                rotulo: 'fora do prazo',
+                quantidade: visibleProcessos.filter((p) => p.dias > SLA_META_DIAS_TRIAGEM).length,
+                tom: 'alerta',
+              },
+            ]}
+          />
+        </h2>
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComSequencial} visiveis={visibleProcessos} nome="analise-juridica" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
           aria-label="Pedidos aguardando triagem jurídica"
           value={dataComSequencial}
@@ -269,8 +401,22 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             rowData.dias > SLA_META_DIAS_TRIAGEM ? 'linha-fora-sla' : ''
           }
           dataKey="id"
+          expandedRows={linhaExpandida}
+          onRowToggle={(e) => {
+            // Só a última aberta permanece: 1 consulta por vez (ver comentário no estado).
+            const mapa = (e.data ?? {}) as Record<number, boolean>;
+            const nova = Object.keys(mapa).find((id) => !linhaExpandida[Number(id)]);
+            setLinhaExpandida(nova ? { [Number(nova)]: true } : {});
+          }}
+          rowExpansionTemplate={(rowData: ProcessoJuridicoRow) => (
+            <PainelPrecos
+              orderId={rowData.id}
+              procedimento={rowData.procedimento}
+              nossoPreco={rowData.refPreco || null}
+            />
+          )}
           paginator
-          rowsPerPageOptions={[10, 20, 50, 100]}
+          rowsPerPageOptions={[10, 20, 50, 100, 200]}
           rows={rows}
           first={first}
           onPage={(e: DataTablePageEvent) => { setFirst(e.first); setRows(e.rows); }}
@@ -284,19 +430,77 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           emptyMessage="Nenhum processo aguardando jurídico."
           className="juridico-table"
         >
+          {colunasCfg.filtrar(<>
+          {/* Abre o painel de preços do procedimento dentro da própria linha (task #207) */}
+          <Column expander style={{ width: '3.5rem' }} headerStyle={{ width: '3.5rem' }}
+            headerClassName="col-expander" bodyClassName="col-expander" />
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
-          <Column field="paciente" header="Paciente" sortable filter
-            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }} />
+          <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
+            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }}
+            body={(r: ProcessoJuridicoRow) => (
+              <span className="juridico-paciente-cel">
+                {r.paciente}
+                <BotaoCopiar valor={r.paciente} rotulo="nome do paciente" />
+                {r.possivelMenorIdade && (
+                  <Tag value="Menor de idade — avaliar Segredo de Justiça" severity="warning"
+                    className="juridico-tag-menor-idade"
+                    title="Paciente com menos de 18 anos. Confirme se este pedido deve ser marcado Segredo de Justiça." />
+                )}
+                {!r.qtdAnexos && (
+                  <Tag value="Sem anexo" severity="danger" className="juridico-tag-sem-anexo"
+                    title="Este pedido chegou do e-mail do Estado sem nenhum anexo." />
+                )}
+              </span>
+            )} />
           <Column
             field="idade"
-            header="Idade"
+            header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento.')}
             sortable
             filter
             filterElement={(o) => filterElement(o, 'Buscar')}
             style={{ minWidth: '7rem' }}
           />
-          <Column field="procedimento" className="col-procedimento-upper" header="Procedimento" sortable filter
+          <Column field="tipoPaciente" header={cabecalhoComHint('Tipo', 'Pediátrico (<18) · Adulto · Idoso (60+). Muda o médico certo e o risco de segredo.')} sortable style={{ minWidth: '7rem' }}
+            body={(r: any) => tagTipoPaciente(r.tipoPaciente)} />
+          <Column field="procedimento" className="col-procedimento-upper" header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '18rem' }} />
+          {/* CNJ e SEI nas colunas (@R 27/08 12:59): os dois números do pedido, buscáveis e copiáveis */}
+          <Column field="nprocesso" header="Nº CNJ" sortable filter
+            filterElement={(o) => filterElement(o, 'Buscar CNJ')} style={{ minWidth: '14rem' }}
+            body={(r: ProcessoJuridicoRow) => r.nprocesso
+              ? <><code className="juridico-numero" title="Número CNJ do processo">{r.nprocesso}</code><BotaoCopiar valor={r.nprocesso} rotulo="número CNJ" /></>
+              : <span className="juridico-geo-vazio">—</span>} />
+          <Column field="numeroSei" header="Nº SEI" sortable filter
+            filterElement={(o) => filterElement(o, 'Buscar SEI')} style={{ minWidth: '12rem' }}
+            body={(r: ProcessoJuridicoRow) => r.numeroSei
+              ? <><code className="juridico-numero" title={r.familiaSei ? `Família ${r.familiaSei}` : 'Número SEI'}>{r.numeroSei}</code><BotaoCopiar valor={r.numeroSei} rotulo="número SEI" /></>
+              : <span className="juridico-geo-vazio">—</span>} />
+          <Column field="comarca" header="Comarca" sortable style={{ minWidth: '11rem' }}
+            body={(r: ProcessoJuridicoRow) => {
+              // @R 27/08: "quando for federal aí não temos distância" — dizer isso na cara,
+              // ¬deixar a célula vazia (vazio lê como 'esqueceram de preencher').
+              if (r.esfera === 'federal') return <Tag value="Federal" severity="info" title="Processo na Justiça Federal — sem comarca estadual" />;
+              if (!r.comarca) return <span className="juridico-geo-vazio" title={r.geoMotivo ?? ''}>
+                {r.geoMotivo === 'sem_cnj' ? 'sem nº do processo' : 'comarca não mapeada'}</span>;
+              return (
+                <span className="juridico-geo">
+                  <strong>{r.comarca}</strong>
+                  {r.distanciaKm !== null && r.distanciaKm !== undefined && (
+                    <small>{r.distanciaKm === 0 ? 'aqui (JF)' : `${r.distanciaKm.toLocaleString('pt-BR')} km`}</small>
+                  )}
+                </span>
+              );
+            }} />
+          {/* Selo Segredo em toda tabela (@R 27/08 16:52) — na fase 1 é onde a decisão
+              COTAR/NÃO COTAR acontece já sabendo que o processo é sigiloso. */}
+          <Column field="segredo" header="Segredo" sortable style={{ minWidth: '9rem' }}
+            body={(r: any) => {
+              if (r.segredo === 'sim') return <Tag value="Segredo de Justiça" severity="danger" icon="pi pi-lock" title={r.segredoFonte ?? 'Marcado no sistema'} />;
+              if (r.segredo === 'possivel') return <Tag value="Possível segredo" severity="warning" icon="pi pi-question-circle" title={`Sinal da consulta ao CNJ. ${r.segredoFonte ?? ''}`} />;
+              if (r.segredo === 'nao') return <Tag value="Sem segredo" severity="secondary" />;
+              return <span className="juridico-geo-vazio">—</span>;
+            }} />
+          {colunaSolicitante()}
           <Column
             field="dias"
             header="Dias Solicitados"
@@ -305,10 +509,16 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             filterElement={(o) => filterElement(o, 'Buscar')}
             style={{ minWidth: '10rem' }}
           />
-          <Column header="Editar" 
+          <Column header="Ações"
             body={editarBodyTemplate}
             style={{ minWidth: '7rem' }} 
             bodyStyle={{ textAlign: 'center' }} />
+          {colunaExcluirAdmin(carregarDados)}
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
+        </>)}
         </DataTable>
       </div>
 
@@ -423,6 +633,19 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
 
 
             {/* Campos editáveis */}
+            {candidatosCnj.length > 0 && !nprocesso && (
+              <div className="field field-span-4 candidato-cnj" role="region" aria-label="Candidato a número do processo">
+                <label>Nº do processo encontrado nos anexos — confirme antes de usar</label>
+                {candidatosCnj.map((c) => (
+                  <div key={c.cnj} className="candidato-cnj__linha">
+                    <code className="juridico-numero">{c.cnj}</code>
+                    <small>origem: {c.origem === 'ocr' ? 'OCR do anexo escaneado' : 'texto do anexo'} · dígito verificador válido</small>
+                    <Button label="Confirmar este CNJ" size="small" icon="pi pi-check"
+                      loading={confirmandoCnj} onClick={() => usarCandidatoCnj(c.cnj)} disabled={readOnly} />
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="field field-span-2">
               <label>Número do Processo</label>
               <InputText
@@ -463,6 +686,68 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
               )}
             </div>
 
+            {/* Memória de casos anteriores NA TRIAGEM (/sc:desenho 28/08): o jurídico
+                decide cotar VENDO se já respondemos este caso — não só na fase 3. */}
+            {intel && (intel.duplicata?.length > 0) && (
+              <div className="field field-span-4" style={{
+                background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px',
+                padding: '10px 14px', fontSize: '0.875rem', color: '#991b1b',
+              }}>
+                <strong>⚠ Já respondemos este caso antes</strong>
+                {intel.duplicata.map((d: any) => (
+                  <div key={d.order_id} style={{ marginTop: '4px' }}>
+                    Pedido #{d.order_id}{d.mesmo_cnj ? ' (mesmo processo/CNJ)' : ' (mesmo paciente)'}
+                    {d.medico_nome ? <> · {d.medico_nome}</> : null}
+                    {d.valor_respondido
+                      ? <> · enviamos <strong>{d.valor_respondido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</strong></>
+                      : null}
+                    {d.desfecho ? <> · {d.desfecho.rotulo}</> : null}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* @R 28/08 03:2x: "os últimos valores PAGOS para a mesma cirurgia, o valor
+                que nossos médicos enviam... com base nos envios nossos e nos resultados
+                com quem competimos, e a relação dos médicos que respondem". */}
+            {intel && (intel.precos_similares?.pagos_estado?.length > 0 || intel.precos_similares?.n_enviados > 0) && (
+              <div className="field field-span-4" style={{
+                background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '8px',
+                padding: '10px 14px', fontSize: '0.875rem', color: '#1e3a8a',
+              }}>
+                <strong>💰 Preços para cirurgia similar</strong>
+                {intel.precos_similares.pagos_estado?.length > 0 && (
+                  <div style={{ marginTop: '4px' }}>
+                    <em>O Estado pagou (resultado da competição):</em>{' '}
+                    {intel.precos_similares.pagos_estado.map((pg: any, i: number) => (
+                      <span key={i} title={pg.procedimento}>
+                        {i > 0 && ' · '}
+                        <strong>{pg.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</strong>
+                        {pg.data && <small> ({pg.data.split('-').reverse().slice(0, 2).join('/')})</small>}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {intel.precos_similares.n_enviados > 0 && (
+                  <div style={{ marginTop: '4px' }}>
+                    <em>Nossos médicos enviaram ({intel.precos_similares.n_enviados}×):</em>{' '}
+                    mediana <strong>{intel.precos_similares.mediana_enviados?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</strong>
+                    {intel.precos_similares.enviados?.length > 0 && (
+                      <small> · últimos: {intel.precos_similares.enviados.map((v: number) =>
+                        v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })).join(' · ')}</small>
+                    )}
+                  </div>
+                )}
+                {intel.experiencia?.length > 0 && (
+                  <div style={{ marginTop: '4px' }}>
+                    <em>Médicos que respondem:</em>{' '}
+                    {[...new Set(intel.experiencia.filter((e: any) => e.medico_nome).map((e: any) => e.medico_nome))]
+                      .slice(0, 4).join(' · ') || '—'}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="field field-span-2">
               <label>Status Jurídico</label>
               <Dropdown
@@ -485,6 +770,42 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                   <li><strong>Segredo de Justiça</strong> — processo sob sigilo judicial: tratamento diferenciado, com fluxo próprio de resposta.</li>
                 </ul>
               </div>
+            </div>
+
+            {/* Peça de inteiro teor — obrigatória ao decidir (Cotar OU Não Cotar),
+                porque a peça serve a uso posterior independente do rumo (@R 27/08). */}
+            <div className="field field-span-4">
+              <label>
+                Peça de inteiro teor (PDF)
+                {(statusJuridico === 'Cotar' || statusJuridico === 'Não Cotar') && !inteiroTeorJaAnexado && (
+                  equipeG4med
+                    ? <span style={{ color: '#b45309', marginLeft: '4px' }}>equipe g4med pode seguir sem — anexe depois em outra fase</span>
+                    : <span style={{ color: '#ef4444', marginLeft: '4px' }}>*obrigatório na decisão</span>
+                )}
+              </label>
+              {inteiroTeorJaAnexado ? (
+                <small style={{ color: '#16a34a' }}>
+                  <i className="pi pi-check-circle" /> Este pedido já tem a peça de inteiro teor anexada.
+                </small>
+              ) : (
+                <>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    disabled={readOnly}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0] ?? null;
+                      setInteiroTeorFile(f);
+                      if (f) setInteiroTeorObrigatorio(false);
+                    }}
+                  />
+                  {inteiroTeorObrigatorio && (
+                    <small style={{ color: '#ef4444' }}>
+                      Anexe a peça de inteiro teor da decisão — ela é obrigatória tanto para Cotar quanto para Não Cotar.
+                    </small>
+                  )}
+                </>
+              )}
             </div>
 
             <div className="field field-span-4">

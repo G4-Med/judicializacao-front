@@ -11,7 +11,7 @@ import {
 } from '../../services/api/orders';
 import './ConfiguracoesEmailsPage.css';
 
-type TipoEmail = 'DAR_PERDA' | 'PEDIR_EXAMES' | 'ENVIAR_ORCAMENTO' | 'RECEBIMENTO_PEDIDO';
+type TipoEmail = 'DAR_PERDA' | 'PEDIR_EXAMES' | 'ENVIAR_ORCAMENTO' | 'RECEBIMENTO_PEDIDO' | 'RECEBIMENTO_PEDIDO_SEGREDO';
 
 interface ConfiguracaoEmail {
   id?: number;
@@ -26,6 +26,7 @@ const CONFIG_PADRAO: Record<TipoEmail, ConfiguracaoEmail> = {
   PEDIR_EXAMES: { tipoEmail: 'PEDIR_EXAMES', assunto: '', corpo: '', ativo: true },
   ENVIAR_ORCAMENTO: { tipoEmail: 'ENVIAR_ORCAMENTO', assunto: '', corpo: '', ativo: true },
   RECEBIMENTO_PEDIDO: { tipoEmail: 'RECEBIMENTO_PEDIDO', assunto: '', corpo: '', ativo: true },
+  RECEBIMENTO_PEDIDO_SEGREDO: { tipoEmail: 'RECEBIMENTO_PEDIDO_SEGREDO', assunto: '', corpo: '', ativo: true },
 };
 
 const TIPOS_EMAIL: Array<{
@@ -57,6 +58,15 @@ const TIPOS_EMAIL: Array<{
     titulo: 'Recebimento Pedido',
     descricao: 'Configura o email de confirmação de recebimento do pedido enviado pelo estado.',
     icon: 'pi pi-inbox',
+  },
+  {
+    tipoEmail: 'RECEBIMENTO_PEDIDO_SEGREDO',
+    titulo: 'Recebimento Pedido (Segredo de Justiça)',
+    descricao: 'Usado automaticamente quando o paciente é menor de 18 anos (sugestão de segredo de ' +
+      'justiça, task #193). ⚠ Não inclua nome completo do paciente nem número de processo no corpo — ' +
+      'é justamente o e-mail que precisa proteger essa identidade. Sem configuração aqui, o sistema ' +
+      'usa o template normal de Recebimento Pedido.',
+    icon: 'pi pi-lock',
   },
 ];
 

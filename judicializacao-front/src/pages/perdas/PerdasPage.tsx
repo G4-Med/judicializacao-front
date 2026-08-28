@@ -13,6 +13,13 @@ import { getPerdas, getOrders, getMedicosCompleto } from '../../services/api/ord
 import { getStatusTagStyle } from '../../utils/statusTag';
 import './PerdasPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
+import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 
 interface PerdaProcesso {
   id: number;
@@ -28,6 +35,7 @@ interface PerdaProcesso {
   statusProcesso: string;
   statusPerda: string;
   justificativaPerda: string;
+  motivoPerdaCategoria?: string | null;
   analiseJuridicaFinal: string;
   cliente: string;
   valor: number;
@@ -41,21 +49,28 @@ interface PerdaProcessoTableRow extends PerdaProcesso {
 }
 
 export function PerdasPage() {
+  // @R 28/08 03:37: o painel do pedido abre ABAIXO da linha, em toda fase.
+  const [expandidas, setExpandidas] = useState<any>(undefined);
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<PerdaProcesso[]>([]);
   const [selectedRegistros, setSelectedRegistros] = useState<PerdaProcessoTableRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(10);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
+  const colunasCfg = useColunasVisiveis('perdas');
+
   const [filters, setFilters] = useState<DataTableFilterMeta>({
+    ...FILTRO_PAGAMENTO,   // filtrar por exato · não exato · empenhado · sem pagamento
+    ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     cliente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     valor: { value: '', matchMode: FilterMatchMode.CONTAINS },
     dias: { value: '', matchMode: FilterMatchMode.CONTAINS },
     resultado: { value: '', matchMode: FilterMatchMode.CONTAINS },
     statusPerda: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    procedimento: { value: '', matchMode: FilterMatchMode.CONTAINS },
     justificativaPerda: { value: '', matchMode: FilterMatchMode.CONTAINS }
   });
 
@@ -76,6 +91,7 @@ export function PerdasPage() {
             const valorOrcamento = o.valorOrcamento ?? orderCompleta?.valorOrcamento ?? 0;
 
             return {
+          ...o,   // preserva ident (SEI/comarca/cadastro/segredo/solicitante) — classe do bug 27/08
               id: o.id,
               paciente: o.paciente ?? '',
               nprocesso: o.nprocesso ?? '',
@@ -89,6 +105,7 @@ export function PerdasPage() {
               statusProcesso: o.statusProcesso ?? '',
               statusPerda: o.statusPerda ?? '',
               justificativaPerda: o.justificativaPerda ?? '',
+              motivoPerdaCategoria: o.motivoPerdaCategoria ?? null,
               analiseJuridicaFinal: o.analiseJuridicaFinal ?? '',
               cliente: medico?.razaoSocial ?? '',
               valor: valorOrcamento || o.refPreco || 0,
@@ -138,12 +155,26 @@ export function PerdasPage() {
     const perdaSemEspecialista = dataComCamposCalculados.filter(
       (item) => item.statusPerda === 'Perda por falta de especialista'
     ).length;
+    // Padronização 68b1f91e32 (@R 27/08): as 2 classes novas de perda parcial/tempo
+    const perdaSesSemResposta = dataComCamposCalculados.filter(
+      (item) => item.statusPerda === 'Perda sem resposta da SES'
+    ).length;
+    const perdaPrazoProtocolo = dataComCamposCalculados.filter(
+      (item) => item.statusPerda === 'Perda de prazo de protocolação'
+    ).length;
+    // Task #238 (@R 28/08): segredo que mata a cotação é PERDA com esse motivo
+    const perdaSegredo = dataComCamposCalculados.filter(
+      (item) => item.statusPerda === 'Perda por segredo de justiça'
+    ).length;
 
     return {
       totalProcessos,
       valorTotal,
       perdaJuridico,
       perdaMedico,
+      perdaSesSemResposta,
+      perdaPrazoProtocolo,
+      perdaSegredo,
       perdaSemEspecialista
     };
   }, [dataComCamposCalculados]);
@@ -242,22 +273,61 @@ export function PerdasPage() {
 
         <div className="kpi-card">
           <div className="kpi-header">
+            <span>SES sem resposta</span>
+            <i className="pi pi-clock"></i>
+          </div>
+          <div className="kpi-value">{kpis.perdaSesSemResposta}</div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>Prazo de protocolação</span>
+            <i className="pi pi-calendar-times"></i>
+          </div>
+          <div className="kpi-value">{kpis.perdaPrazoProtocolo}</div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>Segredo de justiça</span>
+            <i className="pi pi-lock"></i>
+          </div>
+          <div className="kpi-value">{kpis.perdaSegredo}</div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
             <span>Valor Total</span>
             <i className="pi pi-dollar"></i>
           </div>
           <div className="kpi-value">{formatarMoeda(kpis.valorTotal)}</div>
+        </div>
+
+        <div className="kpi-card" title="O Estado PAGOU nestes CNJs mesmo com a perda declarada — dinheiro que passou sem nós. Somatório do empenho pago (base 548)">
+          <div className="kpi-header">
+            <span>Pago pelo Estado (548)</span>
+            <i className="pi pi-check-circle"></i>
+          </div>
+          <div className="kpi-value">{formatarMoeda(kpisEmpenho(dataComCamposCalculados).somaPago)} · {kpisEmpenho(dataComCamposCalculados).nPagos}</div>
+          <div className="kpi-subvalue">sinal forte · +{kpisEmpenho(dataComCamposCalculados).nHistorico} histórico ñ-atribuível</div>
         </div>
       </div>
       </PainelKpis>
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos perdidos — motivo e fase em que a perda ocorreu</h2>
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComCamposCalculados} nome="perdas" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
+          expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
+          rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Pedidos perdidos — motivo e fase em que a perda ocorreu"
           value={dataComCamposCalculados}
           dataKey="id"
           paginator
-          rowsPerPageOptions={[10, 20, 50, 100]}
+          rowsPerPageOptions={[10, 20, 50, 100, 200]}
           rows={rows}
           first={first}
           totalRecords={dataComCamposCalculados.length}
@@ -276,6 +346,8 @@ export function PerdasPage() {
           emptyMessage="Nenhuma perda encontrada."
           className="perdas-table"
         >
+          {colunasCfg.filtrar(<>
+          <Column expander style={{ width: '3rem' }} />
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
 
           <Column
@@ -287,17 +359,37 @@ export function PerdasPage() {
           />
 
           <Column
-            field="paciente"
-            header="Paciente"
+            field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+          {colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          <Column field="procedimento" header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')} sortable filter
+            filterElement={(options: any) => (
+              <InputText value={options.value || ''} onChange={(e) => options.filterApplyCallback(e.target.value)}
+                placeholder="Buscar" className="p-column-filter" />
+            )}
+            style={{ minWidth: '16rem' }} />
+          <Column field="dataStatusPerda" header={cabecalhoComHint('Perda em', 'Data em que a perda foi registrada.')} sortable style={{ minWidth: '8rem' }}
+            body={(r: any) => (r.dataStatusPerda ? r.dataStatusPerda.split('-').reverse().join('/') : '—')} />
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
+          {colunaSolicitante()}
 
           <Column
             field="cliente"
-            header="Cliente"
+            header={cabecalhoComHint('Cliente', 'Empresa/prestador que responde pelo orçamento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -306,7 +398,7 @@ export function PerdasPage() {
 
           <Column
             field="valor"
-            header="Valor"
+            header={cabecalhoComHint('Valor', 'Valor do orçamento que enviamos ao Estado por este pedido.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -316,7 +408,7 @@ export function PerdasPage() {
 
           <Column
             field="dias"
-            header="Dias"
+            header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -326,7 +418,7 @@ export function PerdasPage() {
 
           <Column
             field="resultado"
-            header="Resultado"
+            header={cabecalhoComHint('Resultado', 'Desfecho registrado: ganho, perda ou em andamento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -344,6 +436,9 @@ export function PerdasPage() {
             style={{ minWidth: '16rem' }}
           />
 
+          <Column field="motivoPerdaCategoria" header={cabecalhoComHint('Motivo (categoria)', 'Classificação da perda — alimenta os cards e o funil.')} sortable
+            style={{ minWidth: '13rem' }}
+            body={(r: any) => r.motivoPerdaCategoria ?? <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>não classificado</span>} />
           <Column
             field="justificativaPerda"
             header="Justificativa Perda"
@@ -352,6 +447,8 @@ export function PerdasPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '24rem' }}
           />
+          {colunaExcluirAdmin(carregarDados)}
+        </>)}
         </DataTable>
       </div>
     </div>

@@ -2,8 +2,13 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAccess } from '../../access/AccessContext'
 import { buildMenuItems } from '../navigation/menuConfigClean'
+import { DONOS } from '../../pages/processoOperacional/conteudo'
 import type { MenuItem } from 'primereact/menuitem'
 import './Menu.css'
+
+interface MenuItemComDono extends MenuItem {
+  dono?: 'INSTITUTO' | 'G4MED'
+}
 
 interface Props {
   visible: boolean
@@ -35,6 +40,14 @@ function agruparPorSecao(items: MenuItem[]): Section[] {
 function hasActiveChild(item: MenuItem): boolean {
   const children = (item.items ?? []) as MenuItem[]
   return children.some((c) => /menu-active-item/.test(String(c.className ?? '')))
+}
+
+// Âncoras pro onboarding (26/08) — driver.js destaca por seletor CSS; só os
+// itens citados no tour precisam de marcação, o resto do menu fica livre.
+const TOUR_ANCHOR_BY_LABEL: Record<string, string> = {
+  Home: 'menu-home',
+  'Processo SES-MG': 'menu-protocolos',
+  Admin: 'menu-admin',
 }
 
 export function Menu({ visible, onHide }: Props) {
@@ -111,10 +124,11 @@ export function Menu({ visible, onHide }: Props) {
                       key={key}
                       type="button"
                       className={'mc-side-item' + (isActive(item) ? ' mc-side-item--active' : '')}
+                      data-tour={TOUR_ANCHOR_BY_LABEL[String(item.label ?? '')]}
                       onClick={() => handleLeafClick(item)}
                     >
                       {item.icon && <i className={String(item.icon)} />}
-                      <span>{item.label}</span>
+                      <span title={String(item.label ?? '')}>{item.label}</span>
                     </button>
                   )
                 }
@@ -128,11 +142,12 @@ export function Menu({ visible, onHide }: Props) {
                         (parentActive ? ' mc-side-item--active' : '') +
                         (isOpen ? ' mc-side-item--open' : '')
                       }
+                      data-tour={TOUR_ANCHOR_BY_LABEL[String(item.label ?? '')]}
                       onClick={() => toggle(key)}
                       aria-expanded={isOpen}
                     >
                       {item.icon && <i className={String(item.icon)} />}
-                      <span>{item.label}</span>
+                      <span title={String(item.label ?? '')}>{item.label}</span>
                       <i
                         className={
                           'pi mc-side-chevron ' + (isOpen ? 'pi-chevron-down' : 'pi-chevron-right')
@@ -142,20 +157,31 @@ export function Menu({ visible, onHide }: Props) {
 
                     {isOpen && (
                       <div className="mc-side-children">
-                        {children.map((child, j) => (
-                          <button
-                            key={`${key}-${j}`}
-                            type="button"
-                            className={
-                              'mc-side-item mc-side-item--child' +
-                              (isActive(child) ? ' mc-side-item--active' : '')
-                            }
-                            onClick={() => handleLeafClick(child)}
-                          >
-                            {child.icon && <i className={String(child.icon)} />}
-                            <span>{child.label}</span>
-                          </button>
-                        ))}
+                        {children.map((child, j) => {
+                          const dono = (child as MenuItemComDono).dono
+                          return (
+                            <button
+                              key={`${key}-${j}`}
+                              type="button"
+                              className={
+                                'mc-side-item mc-side-item--child' +
+                                (isActive(child) ? ' mc-side-item--active' : '')
+                              }
+                              onClick={() => handleLeafClick(child)}
+                            >
+                              {child.icon && <i className={String(child.icon)} />}
+                              <span title={String(child.label ?? '')}>{child.label}</span>
+                              {dono && (
+                                <span
+                                  className={`mc-side-dono mc-side-dono--${dono.toLowerCase()}`}
+                                  title={`Fase conduzida por: ${DONOS[dono].rotulo}`}
+                                >
+                                  <i className="pi pi-info-circle" />
+                                </span>
+                              )}
+                            </button>
+                          )
+                        })}
                       </div>
                     )}
                   </div>

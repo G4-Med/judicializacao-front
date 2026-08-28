@@ -31,7 +31,8 @@ export type ScreenKey =
   | 'logs'
   | 'processoOperacional'
   | 'funil'
-  | 'sla';
+  | 'sla'
+  | 'notificacoesHistorico';
 
 export type ReportKey = 'relatorioResumido' | 'relatorioConsolidado';
 
@@ -47,6 +48,7 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
     view: [
       'funil',
       'sla',
+      'notificacoesHistorico',
       'processoOperacional',
       'home',
       'dashboard',
@@ -102,6 +104,7 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
     view: [
       'funil',
       'sla',
+      'notificacoesHistorico',
       'processoOperacional',
       'home',
       'dashboard',
@@ -133,6 +136,7 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
     view: [
       'funil',
       'sla',
+      'notificacoesHistorico',
       'processoOperacional',
       'home',
       'clientes',
@@ -174,6 +178,7 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
     view: [
       'funil',
       'sla',
+      'notificacoesHistorico',
       'processoOperacional',
       'home',
       'juridico',
@@ -227,6 +232,7 @@ export const SCREEN_PATHS: Record<ScreenKey, string> = {
   processoOperacional: '/processo-operacional',
   funil: '/funil',
   sla: '/sla',
+  notificacoesHistorico: '/notificacoes-historico',
 };
 
 export const SCREEN_ORDER: ScreenKey[] = [

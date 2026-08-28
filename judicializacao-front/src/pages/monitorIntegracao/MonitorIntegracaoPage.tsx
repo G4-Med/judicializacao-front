@@ -22,6 +22,7 @@ import type {
 } from '../../services/api/integracoes';
 import './MonitorIntegracaoPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { cabecalhoComHint } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 type StatusUI = 'Aguardando' | 'Em processamento' | 'Sucesso' | 'Erro' | 'Pausado';
 
@@ -294,15 +295,15 @@ export function MonitorIntegracaoPage() {
           dataKey="id"
           rowHover
           paginator
-          rows={100}
-          rowsPerPageOptions={[10, 20, 50, 100]}
+          rows={50}
+          rowsPerPageOptions={[10, 20, 50, 100, 200]}
           emptyMessage="Nenhuma integração cadastrada."
           onRowClick={(e) => abrirExecucoes(e.data as Integracao)}
           className="monitor-tabela"
         >
           <Column field="id" header="Id" style={{ width: '6rem' }} />
           <Column field="nome" header="Processo" />
-          <Column header="Status" body={renderStatus} style={{ width: '12rem' }} />
+          <Column header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')} body={renderStatus} style={{ width: '12rem' }} />
           <Column header="Executar" body={renderExecutar} style={{ width: '8rem', textAlign: 'center' }} />
           <Column header="Modificado" body={renderModificado} style={{ width: '12rem' }} />
           <Column header="Log" body={renderLog} style={{ width: '6rem', textAlign: 'center' }} />
@@ -322,15 +323,15 @@ export function MonitorIntegracaoPage() {
           loading={carregandoExecucoes}
           dataKey="id"
           paginator
-          rows={100}
-          rowsPerPageOptions={[10, 20, 50, 100]}
+          rows={50}
+          rowsPerPageOptions={[10, 20, 50, 100, 200]}
           emptyMessage="Nenhuma execução registrada."
         >
           <Column field="id" header="Id" style={{ width: '6rem' }} />
           <Column header="Início" body={renderExecInicio} style={{ width: '12rem' }} />
           <Column header="Fim" body={renderExecFim} style={{ width: '12rem' }} />
-          <Column header="Status" body={renderExecStatus} style={{ width: '11rem' }} />
-          <Column header="Origem" body={renderExecTrigger} style={{ width: '10rem' }} />
+          <Column header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')} body={renderExecStatus} style={{ width: '11rem' }} />
+          <Column header={cabecalhoComHint('Origem', 'Por que está nesta fila: segredo de justiça ou sem protocolo (prazo perdido).')} body={renderExecTrigger} style={{ width: '10rem' }} />
           <Column field="pedidosCriados" header="Pedidos Criados" style={{ width: '9rem', textAlign: 'right' }} />
           <Column field="totalProcessados" header="Total Processados" style={{ width: '10rem', textAlign: 'right' }} />
           <Column field="erroMensagem" header="Erro" body={(r: IntegracaoExecucao) => r.erroMensagem || '-'} />
@@ -340,7 +341,7 @@ export function MonitorIntegracaoPage() {
       <Dialog
         header="Configurar Monitor de Email"
         visible={configVisible}
-        style={{ width: '36rem', maxWidth: '96vw' }}
+        style={{ width: '60rem', maxWidth: '96vw' }}
         modal
         onHide={() => setConfigVisible(false)}
       >

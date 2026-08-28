@@ -21,6 +21,15 @@ import { useAccess } from '../../access/AccessContext';
 import './OrcamentoMedicoPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
+import { ContadorRegistros, contarPorCampo } from '../../components/ContadorRegistros/ContadorRegistros';
+import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
+import { colunaSolicitante, tagTipoPaciente, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
+import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
+import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
+import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
 
 // Meta desta fase (orçamento) — espelha backend/funil.py FASES['orcamento'].meta_dias.
 // "96 horas — é o prazo que sustenta o contrato com o Estado".
@@ -52,6 +61,7 @@ interface ProcessoOrcamento {
   emailCopia?: string | null;
   emailData?: string | null;
   orcamentosJuridico: string | null;
+  qtdAnexos?: number;
   medicoId?: number;
   idMedico?: number;
   medico_id?: number;
@@ -81,12 +91,14 @@ function calcularIdade(dataNascimento: string | null): number {
 
 
 export function OrcamentoMedicoPage() {
+  // @R 28/08 03:37: painel do pedido abre ABAIXO da linha, em toda fase.
+  const [expandidas, setExpandidas] = useState<any>(undefined);
   const { isReadOnly } = useAccess();
   const readOnly = isReadOnly('orcamentoMedico');
   const [loading, setLoading] = useState(false);
   const [processos, setProcessos] = useState<ProcessoOrcamento[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(50);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const [anexos, setAnexos] = useState<Anexo[]>([])
@@ -98,6 +110,12 @@ export function OrcamentoMedicoPage() {
   // dialogs
   const [detalheVisible, setDetalheVisible] = useState(false);
   const [examesVisible, setExamesVisible] = useState(false);
+  // Perda desta fase (task #233 — "toda fase tem que ter como darmos perda e
+  // escolhermos e confirmarmos"): antes era um confirm() nativo sem motivo.
+  const [naoFacoVisible, setNaoFacoVisible] = useState(false);
+  const [motivoNaoFaco, setMotivoNaoFaco] = useState<string | null>('MEDICO_RECUSOU');
+  const [parecerNaoFaco, setParecerNaoFaco] = useState('');
+  const [salvandoNaoFaco, setSalvandoNaoFaco] = useState(false);
   const [processoSelecionado, setProcessoSelecionado] = useState<ProcessoOrcamentoRow | null>(null);
   const [ordersLookup, setOrdersLookup] = useState<Record<number, OrderLookup>>({});
   const [exames, setExames] = useState('');
@@ -125,7 +143,12 @@ export function OrcamentoMedicoPage() {
   useEffect(() => { carregarStatusPersonalizados(); }, []);
 
 
+  const colunasCfg = useColunasVisiveis('orcamento-medico');
+
+
   const [filters, setFilters] = useState<DataTableFilterMeta>({
+    ...FILTRO_PAGAMENTO,   // @R 28/08: pedir cotação para caso JÁ PAGO é trabalho perdido
+    ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     idade: { value: '', matchMode: FilterMatchMode.CONTAINS },
     procedimento: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -285,13 +308,25 @@ const abrirDetalhe = (rowData: ProcessoOrcamentoRow) => {
 
   const handleNaoFaco = async () => {
     if (!processoSelecionado) return;
-    if (!confirm('Confirma que não faz esse procedimento?')) return;
+    if (!parecerNaoFaco.trim()) {
+      alert('Escreva o motivo da perda (obrigatório).');
+      return;
+    }
+    setSalvandoNaoFaco(true);
     try {
-      await salvarOrcamentoMedico(processoSelecionado.id, { acao: 'nao_faco' });
+      await salvarOrcamentoMedico(processoSelecionado.id, {
+        acao: 'nao_faco',
+        motivoPerdaCategoria: motivoNaoFaco,
+        parecer: parecerNaoFaco,
+      });
+      setNaoFacoVisible(false);
       setDetalheVisible(false);
+      setParecerNaoFaco('');
       carregarDados();
     } catch (err) {
       alert('Erro ao registrar perda.');
+    } finally {
+      setSalvandoNaoFaco(false);
     }
   };
 
@@ -507,10 +542,8 @@ ${blocos}
     <div className="orcamento-medico-page">
       <PrimeiraVisitaInfo etapaId="orcamento-medico" />
       <div className="page-header">
-        <div>
-          <h1>Orçamento Médico</h1>
-          <p>Processos aguardando orçamento do médico</p>
-        </div>
+        <CabecalhoFase nome="Orçamento Médico" screen="orcamentoMedico" slaDias={SLA_META_DIAS_ORCAMENTO}
+          subtitulo="Processos aguardando orçamento do médico" />
         <div className="page-actions">
           <Button
             label="Cobrança"
@@ -539,10 +572,30 @@ ${blocos}
       </PainelKpis>
 
       <div className="card">
-        <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos aguardando orçamento médico</h2>
+        <h2 className="mc-tabela-titulo">
+          <i className="pi pi-table" />Pedidos aguardando orçamento médico
+          {/* Diz quantos são e em que fase estão (task #208): a tela mostrar 16 estava
+              CERTO, mas sem o contador o número virava dúvida ("cadê os outros?"). */}
+          <ContadorRegistros
+            total={dataComMedico.length}
+            visiveis={visibleProcessos.length}
+            substantivo="pedidos"
+            fases={contarPorCampo(
+              visibleProcessos,
+              (p) => p.statusOrcamento,
+              { 'Solicitado ao Medico': 'ok', 'Solicitar Exames': 'atencao' },
+            )}
+          />
+        </h2>
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComMedico} visiveis={visibleProcessos} nome="orcamento-medico" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
+          expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
+          rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Pedidos aguardando orçamento médico"
-          value={dataComMedico} dataKey="id" paginator rowsPerPageOptions={[10, 20, 50, 100]} rows={rows} first={first}
+          value={dataComMedico} dataKey="id" paginator rowsPerPageOptions={[10, 20, 50, 100, 200]} rows={rows} first={first}
           onValueChange={(value) => setVisibleProcessos(value as typeof dataComMedico)}
           rowClassName={(rowData: { dias: number }) =>
             rowData.dias > SLA_META_DIAS_ORCAMENTO ? 'linha-fora-sla' : ''
@@ -555,14 +608,35 @@ ${blocos}
           emptyMessage="Nenhum processo aguardando orçamento."
           className="orcamento-table"
         >
+          {colunasCfg.filtrar(<>
+          <Column expander style={{ width: '3rem' }} />
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
-          <Column field="paciente" header="Paciente" sortable filter
-            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }} />
-          <Column field="idade" header="Idade" sortable filter
+          <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
+            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }}
+            body={(r: ProcessoOrcamentoRow) => (
+              <span className="orcamento-paciente-cel">
+                {nomeComCopiar(r.paciente)}
+                {!r.qtdAnexos && (
+                  <Tag value="Sem anexo" severity="danger" className="orcamento-tag-sem-anexo"
+                    title="Este pedido chegou sem nenhum anexo (processo/relatório/orçamento)." />
+                )}
+              </span>
+            )} />
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+          {colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaSolicitante()}
+          <Column field="idade" header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento.')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '7rem' }} />
-          <Column field="procedimento" className="col-procedimento-upper" header="Procedimento" sortable filter
+          <Column field="tipoPaciente" header={cabecalhoComHint('Tipo', 'Pediátrico (<18) · Adulto · Idoso (60+). Muda o médico certo e o risco de segredo.')} sortable style={{ minWidth: '7rem' }}
+            body={(r: any) => tagTipoPaciente(r.tipoPaciente)} />
+          <Column field="procedimento" className="col-procedimento-upper" header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '18rem' }} />
-          <Column field="medico" header="Médico" sortable filter
+          <Column field="medico" header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')} sortable filter
             filterElement={(o) => dropdownFilterElement(o, medicosOptions)} style={{ minWidth: '14rem' }} />
           <Column field="area" header="Área" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '10rem' }} />
@@ -571,7 +645,7 @@ ${blocos}
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '12rem' }} />
           <Column field="dias" header="Dias em Aberto" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '10rem' }} />
-          <Column field="statusOrcamento" header="Status"
+          <Column field="statusOrcamento" header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
             body={(r) => <Tag value={r.statusOrcamento} style={getStatusTagStyle(r.statusOrcamento)} className="status-tag-custom" />}
             filter
             showFilterMenu={false}
@@ -598,6 +672,12 @@ ${blocos}
               style={{ minWidth: '9rem' }}
               bodyStyle={{ textAlign: 'center' }}
             />
+          {colunaExcluirAdmin(carregarDados)}
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
+        </>)}
         </DataTable>
       </div>
 
@@ -776,7 +856,8 @@ ${blocos}
                 severity="warning" outlined
                 onClick={() => { setExames(''); setExamesVisible(true); }} />}
               {!readOnly && <Button label="Não faço esse procedimento" icon="pi pi-times"
-                severity="danger" outlined onClick={handleNaoFaco} />
+                severity="danger" outlined
+                onClick={() => { setMotivoNaoFaco('MEDICO_RECUSOU'); setParecerNaoFaco(''); setNaoFacoVisible(true); }} />
               }
               {!readOnly && <Button label="Trocar médico" icon="pi pi-user-edit"
                 severity="secondary" outlined
@@ -809,7 +890,7 @@ ${blocos}
       </Dialog>
 
       {/* Cadastro rápido de status personalizado */}
-      <Dialog header="Novo status" visible={novoStatusVisible} style={{ width: '28rem' }} onHide={() => setNovoStatusVisible(false)} modal>
+      <Dialog header="Novo status" visible={novoStatusVisible} style={{ width: '28rem', maxWidth: '96vw' }} onHide={() => setNovoStatusVisible(false)} modal>
         <div className="field">
           <label>Nome do status</label>
           <InputText
@@ -827,7 +908,7 @@ ${blocos}
       </Dialog>
 
       {/* Trocar médico do pedido */}
-      <Dialog header="Trocar médico" visible={trocarMedicoVisible} style={{ width: '28rem' }} onHide={() => setTrocarMedicoVisible(false)} modal>
+      <Dialog header="Trocar médico" visible={trocarMedicoVisible} style={{ width: '28rem', maxWidth: '96vw' }} onHide={() => setTrocarMedicoVisible(false)} modal>
         <div className="field">
           <label>Novo médico</label>
           <Dropdown
@@ -858,7 +939,7 @@ ${blocos}
 
       {/* Dialog Exames */}
       <Dialog header="Solicitar Exames" visible={examesVisible}
-        style={{ width: '45rem', maxWidth: '96vw' }} modal
+        style={{ width: '60rem', maxWidth: '96vw' }} modal
         onHide={() => setExamesVisible(false)}>
         <div className="field">
           <label>Descreva os exames necessários</label>
@@ -874,6 +955,42 @@ ${blocos}
           <Button label="Cancelar" outlined onClick={() => setExamesVisible(false)} />
           <Button label="Solicitar" icon="pi pi-check" onClick={handleSolicitarExames} />
         </div>}
+      </Dialog>
+
+      {/* Dialog Não faço (perda desta fase, task #233) — motivo + parecer, mesmo
+          padrão exigido em toda outra tela (¬mais confirm() nativo cego). */}
+      <Dialog header="Não faço esse procedimento" visible={naoFacoVisible}
+        style={{ width: '60rem', maxWidth: '96vw' }} modal
+        onHide={() => setNaoFacoVisible(false)}>
+        <div className="field">
+          <label>Motivo (opcional — o parecer continua obrigatório)</label>
+          <Dropdown value={motivoNaoFaco} onChange={(e) => setMotivoNaoFaco(e.value)}
+            options={[
+              { label: 'O médico recusou o pedido', value: 'MEDICO_RECUSOU' },
+              { label: 'Não conseguimos o orçamento', value: 'ORCAMENTO_NAO_OBTIDO' },
+              { label: 'Orçamento não chegou em tempo hábil', value: 'ORCAMENTO_FORA_DO_PRAZO' },
+              { label: 'Sem exames — médico não quis cotar', value: 'SEM_EXAMES' },
+              { label: 'Perda por segredo de justiça', value: 'SEGREDO_DE_JUSTICA' },
+              { label: 'Outro (ver justificativa)', value: 'OUTRO' },
+            ]}
+            placeholder="Escolha, se algum se aplicar" showClear style={{ width: '100%', marginTop: '8px' }} />
+        </div>
+        <div className="field" style={{ marginTop: '12px' }}>
+          <label>Motivo da perda <span style={{ color: '#ef4444' }}>*obrigatório</span></label>
+          <InputTextarea
+            value={parecerNaoFaco}
+            onChange={(e) => setParecerNaoFaco(e.target.value)}
+            rows={4} autoResize
+            placeholder="Descreva com suas palavras por que este pedido não segue..."
+            style={{ width: '100%', marginTop: '8px' }}
+          />
+        </div>
+        <div className="dialog-footer-actions" style={{ marginTop: '16px' }}>
+          <Button label="Cancelar" outlined onClick={() => setNaoFacoVisible(false)} />
+          <Button label="Confirmar perda" icon="pi pi-check" severity="danger"
+            loading={salvandoNaoFaco} disabled={salvandoNaoFaco || !parecerNaoFaco.trim()}
+            onClick={handleNaoFaco} />
+        </div>
       </Dialog>
 
       <Dialog

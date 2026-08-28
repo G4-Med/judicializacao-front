@@ -124,6 +124,24 @@
 }
 .mc-side-item--child { font-size: 13px; padding: 8px 10px; }
 
+
+/* ── Formatação do rótulo (@R 28/08 08:47: "Env. à SES S/Prot ... melhore a
+   formatação") ─────────────────────────────────────────────────────────────
+   Nome comprido não pode empurrar o chevron nem quebrar em duas linhas: o texto
+   ocupa o espaço que sobra e corta com reticências. O nome inteiro fica no
+   title (hover), então nada se perde. `min-width: 0` é o que permite o flex
+   item encolher — sem ele, `text-overflow` não tem efeito dentro de flex. */
+.mc-side-item > span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mc-side-item i { flex: 0 0 auto; }          /* ícone nunca encolhe */
+.mc-side-item--child { gap: 8px; }           /* subitem mais compacto */
+.mc-side-item--child > span { font-variant-numeric: tabular-nums; }  /* "1." a "6." alinhados */
+
 /* Dark */
 body.dark-theme .mc-sidebar {
   background: #0d1b2a;
@@ -141,3 +159,20 @@ body.dark-theme .mc-side-item--active {
 }
 body.dark-theme .mc-side-item--active i { color: #4fc588; }
 body.dark-theme .mc-side-children { border-left-color: #334155; }
+
+/* Hint "quem faz esta fase" — G4MED / Instituto Mateus (26/08) */
+.mc-side-dono {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  cursor: help;
+}
+.mc-side-dono i { font-size: 12px; }
+.mc-side-dono--instituto { background: rgba(15, 118, 110, 0.14); color: #0F766E; }
+.mc-side-dono--g4med { background: rgba(124, 58, 237, 0.14); color: #7C3AED; }
+body.dark-theme .mc-side-dono--instituto { background: rgba(15, 118, 110, 0.28); color: #2dd4bf; }
+body.dark-theme .mc-side-dono--g4med { background: rgba(124, 58, 237, 0.28); color: #c4b5fd; }
