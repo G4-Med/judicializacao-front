@@ -15,6 +15,7 @@ interface MedicoOption {
 interface OrderDashboard {
   id: number;
   idMedico?: number | null;
+  area?: string | null;          // especialidade do PEDIDO (o backend já mandava)
   procedimento?: string | null;
   statusProcesso?: string | null;
   statusOrcamento?: string | null;
@@ -45,7 +46,20 @@ interface PerdaDashboard {
 interface MedicoLookup {
   id: number;
   nome: string;
+  especialidade?: string | null;
+  status?: string | null;
 }
+
+/* A mesma especialidade chega escrita de N jeitos ("Ortopedia", "ORTOPEDIA",
+   "Ginecologia e Obstetrícia" × "GINECOLOGIA E OBSTETRICIA"): em produção são
+   36 grafias cruas para 25 especialidades reais (medido 28/08). Sem normalizar,
+   o dashboard mostraria a mesma especialidade partida em duas linhas. */
+const normEsp = (s?: string | null) =>
+  (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+
+/* Só para exibir: ORTOPEDIA -> Ortopedia (mantendo siglas curtas em caixa alta). */
+const tituloEsp = (s: string) =>
+  s.toLowerCase().replace(/(^|[\s/-])([a-zà-ú])/g, (_, a, b) => a + b.toUpperCase());
 
 /* ============================================================
    MEDCHECK — paleta dos charts
@@ -233,6 +247,10 @@ export function DashboardPage() {
     { label: 'Todos os médicos', value: null }
   ]);
   const [medicoSelecionado, setMedicoSelecionado] = useState<number | null>(null);
+  // @R 28/08: "selecionar a especialidade... entender os médicos por especialidade...
+  // ou podemos escolher todos e ver todos os médicos". null = todas.
+  const [especialidadeSel, setEspecialidadeSel] = useState<string | null>(null);
+  const [medicosCompletos, setMedicosCompletos] = useState<MedicoLookup[]>([]);
   const [periodoSelecionado, setPeriodoSelecionado] = useState<PeriodoSelecionado>({
     tipo: 'atual',
     dataInicio: null,
@@ -253,7 +271,10 @@ export function DashboardPage() {
         const medicos = (medicosRes.data as any[]).map((medico) => ({
           id: medico.id,
           nome: medico.nomeSistema || medico.razaoSocial || medico.nome || `Médico ${medico.id}`,
+          especialidade: medico.especialidade ?? null,
+          status: medico.status ?? null,
         })) as MedicoLookup[];
+        setMedicosCompletos(medicos);
 
         setMedicosOptions([
           { label: 'Todos os médicos', value: null },
@@ -587,6 +608,59 @@ export function DashboardPage() {
     { titulo: 'Conversão qtde', valor: formatPercent(kpis.conversaoQtde.periodo), total: formatPercent(kpis.conversaoQtde.total), icone: 'pi pi-chart-line' },
   ];
 
+
+  /* ── ESPECIALIDADES (@R 28/08) ────────────────────────────────────────────
+     Uma linha por especialidade REAL (grafias normalizadas), com o que decide:
+     quantos pedidos chegaram, quanto vale, quanto virou ganho, e QUANTOS
+     MÉDICOS nossos atendem aquilo. A coluna que importa é a última: pedido que
+     chega numa especialidade sem médico é pedido que a gente não consegue cotar
+     — em produção há 54 pedidos de Cardiologia e nenhum cardiologista na base
+     (medido 28/08). O dashboard passa a gritar isso em vez de esconder. */
+  const especialidades = useMemo(() => {
+    const mapa = new Map<string, { chave: string; rotulo: string; pedidos: number; valor: number;
+                                   ganhos: number; valorGanho: number; medicos: MedicoLookup[] }>();
+    const pega = (chave: string) => {
+      if (!mapa.has(chave)) mapa.set(chave, { chave, rotulo: tituloEsp(chave), pedidos: 0, valor: 0,
+                                              ganhos: 0, valorGanho: 0, medicos: [] });
+      return mapa.get(chave)!;
+    };
+    orders.forEach((o) => {
+      const chave = normEsp(o.area) || 'SEM ESPECIALIDADE';
+      const e = pega(chave);
+      e.pedidos += 1;
+      e.valor += Number(o.valorOrcamento ?? 0);
+      if (o.statusProcesso === 'Ganho') { e.ganhos += 1; e.valorGanho += Number(o.valorGanho ?? o.valorOrcamento ?? 0); }
+    });
+    medicosCompletos.forEach((m) => {
+      const chave = normEsp(m.especialidade);
+      if (chave) pega(chave).medicos.push(m);
+    });
+    return [...mapa.values()].sort((a, b) => b.pedidos - a.pedidos);
+  }, [orders, medicosCompletos]);
+
+  const opcoesEspecialidade = useMemo(() => ([
+    { label: `Todas as especialidades (${especialidades.length})`, value: null },
+    ...especialidades.map((e) => ({ label: `${e.rotulo} — ${e.pedidos} pedido${e.pedidos === 1 ? '' : 's'}`, value: e.chave })),
+  ]), [especialidades]);
+
+  // Médicos da especialidade escolhida (ou todos), com os números de cada um.
+  const medicosDaEspecialidade = useMemo(() => {
+    const alvo = especialidadeSel
+      ? medicosCompletos.filter((m) => normEsp(m.especialidade) === especialidadeSel)
+      : medicosCompletos;
+    return alvo.map((m) => {
+      const meus = orders.filter((o) => o.idMedico === m.id);
+      const ganhos = meus.filter((o) => o.statusProcesso === 'Ganho');
+      return {
+        ...m,
+        pedidos: meus.length,
+        ganhos: ganhos.length,
+        valor: meus.reduce((s, o) => s + Number(o.valorOrcamento ?? 0), 0),
+        valorGanho: ganhos.reduce((s, o) => s + Number(o.valorGanho ?? o.valorOrcamento ?? 0), 0),
+      };
+    }).sort((a, b) => b.pedidos - a.pedidos);
+  }, [medicosCompletos, orders, especialidadeSel]);
+
   const verticalBarOptions = useMemo(() => createVerticalBarOptions(), []);
   const columnOptions = useMemo(() => createColumnOptions(), []);
   const doughnutOptions = useMemo(() => createDoughnutOptions(), []);
@@ -606,6 +680,18 @@ export function DashboardPage() {
             options={medicosOptions}
             onChange={(e) => setMedicoSelecionado(e.value)}
             placeholder="Selecione um médico"
+            className="dashboard-medico-dropdown"
+          />
+        </div>
+
+        <div className="dashboard-medico-filter">
+          <label>Especialidade</label>
+          <Dropdown
+            value={especialidadeSel}
+            options={opcoesEspecialidade}
+            onChange={(e) => setEspecialidadeSel(e.value)}
+            placeholder="Todas as especialidades"
+            filter showClear
             className="dashboard-medico-dropdown"
           />
         </div>
@@ -649,6 +735,71 @@ export function DashboardPage() {
           )}
         </div>
       )}
+
+      {/* ── Especialidades × médicos (@R 28/08) ───────────────────────────── */}
+      <section className="dashboard-esp">
+        <div className="dashboard-esp__head">
+          <h2>Especialidades</h2>
+          <p>
+            {especialidadeSel
+              ? `Mostrando ${tituloEsp(especialidadeSel)} — troque no seletor acima ou limpe para ver todas.`
+              : 'Cada especialidade com o que chegou, o que virou ganho e quantos médicos nossos atendem. Clique numa para ver os médicos dela.'}
+          </p>
+        </div>
+
+        <div className="dashboard-esp__grid">
+          {(especialidadeSel ? especialidades.filter((e) => e.chave === especialidadeSel) : especialidades).map((e) => {
+            const semMedico = e.medicos.length === 0 && e.chave !== 'SEM ESPECIALIDADE';
+            const ativo = especialidadeSel === e.chave;
+            return (
+              <button key={e.chave} type="button"
+                className={'dashboard-esp__card' + (ativo ? ' dashboard-esp__card--ativo' : '') + (semMedico ? ' dashboard-esp__card--alerta' : '')}
+                onClick={() => setEspecialidadeSel(ativo ? null : e.chave)}
+                title={semMedico ? 'Chegam pedidos desta especialidade e não temos nenhum médico cadastrado nela' : 'Ver os médicos desta especialidade'}>
+                <span className="dashboard-esp__nome">{e.rotulo}</span>
+                <span className="dashboard-esp__num">{e.pedidos}<small>pedidos</small></span>
+                <span className="dashboard-esp__linha">{formatCurrency(e.valor)} orçado</span>
+                <span className="dashboard-esp__linha">{e.ganhos} ganho{e.ganhos === 1 ? '' : 's'} · {formatCurrency(e.valorGanho)}</span>
+                <span className={'dashboard-esp__medicos' + (semMedico ? ' dashboard-esp__medicos--zero' : '')}>
+                  {semMedico ? '⚠ nenhum médico nesta especialidade' : `${e.medicos.length} médico${e.medicos.length === 1 ? '' : 's'}`}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <h3 className="dashboard-esp__sub">
+          {especialidadeSel ? `Médicos de ${tituloEsp(especialidadeSel)}` : 'Todos os médicos'}
+          <small> · {medicosDaEspecialidade.length}</small>
+        </h3>
+        <div className="dashboard-esp__tabela-wrap">
+          <table className="dashboard-esp__tabela">
+            <thead>
+              <tr><th>Médico</th><th>Especialidade</th><th>Situação</th>
+                  <th className="num">Pedidos</th><th className="num">Ganhos</th>
+                  <th className="num">Orçado</th><th className="num">Ganho</th></tr>
+            </thead>
+            <tbody>
+              {medicosDaEspecialidade.length === 0 && (
+                <tr><td colSpan={7} className="dashboard-esp__vazio">
+                  Nenhum médico cadastrado nesta especialidade — os pedidos que chegam aqui não têm quem cotar.
+                </td></tr>
+              )}
+              {medicosDaEspecialidade.map((m) => (
+                <tr key={m.id}>
+                  <td>{m.nome}</td>
+                  <td>{m.especialidade ? tituloEsp(normEsp(m.especialidade)) : '—'}</td>
+                  <td>{m.status || '—'}</td>
+                  <td className="num">{m.pedidos}</td>
+                  <td className="num">{m.ganhos}</td>
+                  <td className="num">{formatCurrency(m.valor)}</td>
+                  <td className="num">{formatCurrency(m.valorGanho)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <PainelKpis titulo="Indicadores">
       <div className="dashboard-kpi-grid">

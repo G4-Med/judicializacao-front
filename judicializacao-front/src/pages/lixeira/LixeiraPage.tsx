@@ -11,6 +11,7 @@ import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import { colunaCnj, colunaSei, cabecalhoComHint } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { ContadorRegistros } from '../../components/ContadorRegistros/ContadorRegistros';
+import './LixeiraPage.css';
 
 /**
  * LIXEIRA (@R 28/08): tudo que alguém excluiu, com quem/quando/de onde. Daqui o

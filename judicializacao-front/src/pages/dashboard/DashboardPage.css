@@ -641,3 +641,64 @@ body.dark-theme .dashboard-medico-performance__mini-bar { background: var(--mc-s
 .dc-card strong { font-size: 1.5rem; color: var(--mc-green-500, #00a651); font-variant-numeric: tabular-nums; }
 .dc-card small { font-size: 0.72rem; color: var(--mc-muted, #5b6b7a); }
 .dc-rodape { grid-column: 1 / -1; color: #94a3b8; font-size: 0.72rem; }
+
+/* ── Especialidades × médicos (@R 28/08 12:55) ──────────────────────────────
+   Cartão por especialidade + tabela dos médicos dela. O cartão de ALERTA
+   (borda âmbar) é o que carrega a informação nova: chegam pedidos e não há
+   médico cadastrado para cotar — em produção, Cardiologia com 54 pedidos. */
+.dashboard-esp { display: flex; flex-direction: column; gap: 14px; }
+.dashboard-esp__head h2 {
+  margin: 0;
+  font-family: var(--mc-font-heading, "Poppins", sans-serif);
+  font-size: 1.15rem; font-weight: 600; color: var(--mc-navy-900, #062a45);
+}
+.dashboard-esp__head p { margin: 4px 0 0; color: var(--mc-muted, #5b6b7a); font-size: .88rem; }
+
+.dashboard-esp__grid {
+  display: grid; gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+.dashboard-esp__card {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 12px 14px; text-align: left; cursor: pointer;
+  background: #fff; border: 1px solid var(--mc-line, #e3eaef); border-radius: 12px;
+  font-family: inherit; color: inherit;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.dashboard-esp__card:hover { border-color: #00a651; transform: translateY(-1px); box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+.dashboard-esp__card--ativo { border-color: #00a651; box-shadow: 0 0 0 2px rgba(0,166,81,.16); }
+.dashboard-esp__card--alerta { border-color: #f0b429; background: #fffbf0; }
+.dashboard-esp__nome { font-weight: 600; font-size: .92rem; color: var(--mc-navy-900, #062a45); }
+.dashboard-esp__num {
+  display: flex; align-items: baseline; gap: 6px;
+  font-size: 1.6rem; font-weight: 700; line-height: 1.1;
+  color: var(--mc-navy-900, #062a45); font-variant-numeric: tabular-nums;
+}
+.dashboard-esp__num small { font-size: .72rem; font-weight: 500; color: var(--mc-muted, #5b6b7a); }
+.dashboard-esp__linha { font-size: .8rem; color: var(--mc-muted, #5b6b7a); font-variant-numeric: tabular-nums; }
+.dashboard-esp__medicos { margin-top: 4px; font-size: .78rem; font-weight: 600; color: #0f766e; }
+.dashboard-esp__medicos--zero { color: #b45309; }
+
+.dashboard-esp__sub {
+  margin: 6px 0 0; font-size: 1rem; font-weight: 600; color: var(--mc-navy-900, #062a45);
+}
+.dashboard-esp__sub small { font-weight: 500; color: var(--mc-muted, #5b6b7a); }
+
+.dashboard-esp__tabela-wrap { overflow-x: auto; border: 1px solid var(--mc-line, #e3eaef); border-radius: 12px; background: #fff; }
+.dashboard-esp__tabela { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.dashboard-esp__tabela th, .dashboard-esp__tabela td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--mc-line, #eef2f5); white-space: nowrap; }
+.dashboard-esp__tabela th { font-size: .74rem; letter-spacing: .05em; text-transform: uppercase; color: var(--mc-muted, #5b6b7a); font-weight: 600; }
+.dashboard-esp__tabela .num { text-align: right; font-variant-numeric: tabular-nums; }
+.dashboard-esp__tabela tbody tr:last-child td { border-bottom: none; }
+.dashboard-esp__tabela tbody tr:hover { background: #f7fafc; }
+.dashboard-esp__vazio { text-align: center; color: #b45309; padding: 18px; white-space: normal; }
+
+body.dark-theme .dashboard-esp__card { background: #0f1c2b; border-color: #1e293b; }
+body.dark-theme .dashboard-esp__card--alerta { background: #2a2113; border-color: #a16207; }
+body.dark-theme .dashboard-esp__nome,
+body.dark-theme .dashboard-esp__num,
+body.dark-theme .dashboard-esp__head h2,
+body.dark-theme .dashboard-esp__sub { color: #e2e8f0; }
+body.dark-theme .dashboard-esp__tabela-wrap { background: #0f1c2b; border-color: #1e293b; }
+body.dark-theme .dashboard-esp__tabela th, body.dark-theme .dashboard-esp__tabela td { border-bottom-color: #1e293b; }
+body.dark-theme .dashboard-esp__tabela tbody tr:hover { background: #16263a; }
