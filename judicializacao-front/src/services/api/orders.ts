@@ -266,3 +266,9 @@ export const montarCotacaoMedico = (orderId: number, medico?: string) =>
 // procedimento (o que outros lugares cobraram pela MESMA cirurgia — a régua de preço).
 export const getOrcamentosTerceiros = (params: { order?: number; procedimento?: string }) =>
   api.get('/orders/orcamentos-terceiros/', { params });
+
+// Acervo de preços (@R 28/08): uma linha por procedimento, quatro lentes lado a lado —
+// o que NÓS cobramos, o que TERCEIROS cobraram, o que o ESTADO pagou, quantos DOCUMENTOS
+// temos — sempre com o N, porque mediana de um caso é um caso, não régua.
+export const getAcervoPrecos = (params: { especialidade?: string; q?: string; so_sem_orcamento?: 1 }) =>
+  api.get('/orders/acervo-precos/', { params });
