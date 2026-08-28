@@ -462,8 +462,8 @@ export function ProtocoladosPage() {
     <div className="protocolados-page">
       <PrimeiraVisitaInfo etapaId="protocolados" />
       <div className="page-header">
-        <CabecalhoFase nome="Enviado à SES" screen="protocolados"
-          subtitulo="Orçamento já mandado ao Estado — só aguardamos o retorno técnico (ganho ou perda)" />
+        <CabecalhoFase nome="Protocolados" screen="protocolados"
+          subtitulo="Protocolados nos autos — acompanhamento até a decisão" />
 
         <div className="page-actions">
           {!readOnly && <Button

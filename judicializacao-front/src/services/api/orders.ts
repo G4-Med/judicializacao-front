@@ -35,6 +35,7 @@ export const salvarResultadoProtocolado = (id: number, data: any) => api.post(`/
 export const adicionarAcompanhamento = (id: number, data: any) => api.post(`/orders/protocolados/${id}/acompanhamento/`, data);
 export const getResultados = () => api.get('/orders/resultados/');
 export const getPerdas = () => api.get('/orders/perdas/');
+export const getEnviadoSes = () => api.get('/orders/enviado-ses/');
 export const getMedicosCompleto = () => api.get('client/medico-completo/lista/');
 export const getRelatorioResumido = (medicoId: number) => api.get(`/relatorios/resumido/${medicoId}/`);
 export const enviarRelatorioResumido = (medicoId: number, destinatario?: string) =>

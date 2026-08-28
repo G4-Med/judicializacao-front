@@ -10,6 +10,7 @@ import { ProcessosPage } from '../../pages/processos/ProcessosPage';
 import { ClientesPage } from '../../pages/clientes/ClientesPage';
 import { ParaProtocolarPage } from '../../pages/paraProtocolar/ParaProtocolarPage';
 import { ProtocoladosPage } from '../../pages/protocolados/ProtocoladosPage';
+import { EnviadoSesPage } from '../../pages/enviadoSes/EnviadoSesPage';
 import { SegredoJusticaPage } from '../../pages/segredoJustica/SegredoJusticaPage';
 import { ResultadosPage } from '../../pages/resultados/ResultadosPage';
 import { AguardandoCirurgiaPage } from '../../pages/aguardandoCirurgia/AguardandoCirurgiaPage';
@@ -20,6 +21,7 @@ import { ConfiguracoesPage } from '../../pages/configuracoes/ConfiguracoesPage';
 import { LogsPage } from '../../pages/logs/LogsPage';
 import { FunilPage } from '../../pages/funil/FunilPage';
 import { SlaPage } from '../../pages/sla/SlaPage';
+import { NotificacoesHistoricoPage } from '../../pages/notificacoesHistorico/NotificacoesHistoricoPage';
 import { ProcessoOperacionalPage } from '../../pages/processoOperacional/ProcessoOperacionalPage';
 import { JuridicoPage } from '../../pages/juridico/JuridicoPage';
 import { OrcamentoMedicoPage } from '../../pages/orcamentoMedico/OrcamentoMedicoPage';
@@ -56,9 +58,11 @@ export function AppRoutes() {
 
         <Route path="/para-protocolar" element={<ProtectedScreen screen="paraProtocolar"><ParaProtocolarPage /></ProtectedScreen>} />
         <Route path="/protocolados" element={<ProtectedScreen screen="protocolados"><ProtocoladosPage /></ProtectedScreen>} />
+        <Route path="/enviado-ses" element={<ProtectedScreen screen="protocolados"><EnviadoSesPage /></ProtectedScreen>} />
         <Route path="/segredo-justica" element={<ProtectedScreen screen="segredoJustica"><SegredoJusticaPage /></ProtectedScreen>} />
         <Route path="/funil" element={<ProtectedScreen screen="funil"><FunilPage /></ProtectedScreen>} />
         <Route path="/sla" element={<ProtectedScreen screen="sla"><SlaPage /></ProtectedScreen>} />
+        <Route path="/notificacoes-historico" element={<ProtectedScreen screen="notificacoesHistorico"><NotificacoesHistoricoPage /></ProtectedScreen>} />
         <Route path="/processo-operacional" element={<ProtectedScreen screen="processoOperacional"><ProcessoOperacionalPage /></ProtectedScreen>} />
         <Route path="/juridico" element={<ProtectedScreen screen="juridico"><JuridicoPage /></ProtectedScreen>} />
         <Route path="/selecionar-medico" element={<ProtectedScreen screen="selecionarMedico"><SelecionarMedicoPage /></ProtectedScreen>} />
