@@ -61,6 +61,7 @@ export const ETAPAS: Etapa[] = [
     numero: 2,
     titulo: 'Selecionar médico',
     dono: 'G4MED',
+    rota: '/selecionar-medico',
     prazo: '24 horas para o médico dizer SE vai cotar',
     oQueFaz:
       'A G4MED escolhe para qual médico o pedido vai. Esta etapa não aparece para o Instituto — ' +
@@ -81,6 +82,7 @@ export const ETAPAS: Etapa[] = [
     numero: 3,
     titulo: 'Orçamento médico — a cobrança',
     dono: 'G4MED',
+    rota: '/orcamento-medico',
     prazo: '96 horas (4 dias) para o orçamento voltar',
     oQueFaz:
       'Lista tudo que foi pedido ao médico e ainda não voltou. É a fila que mede se estamos ' +
@@ -157,6 +159,26 @@ export const ETAPAS: Etapa[] = [
     falaDoRapha:
       'Eu pediria pra Secretaria do Estado mandar o e-mail da advogada para que a gente possa entrar ' +
       'em contato e obter maiores informações para ajudar o paciente.',
+  },
+  {
+    id: 'enviado-ses',
+    numero: 7,
+    titulo: 'Enviado à SES — aguardando retorno técnico',
+    dono: 'G4MED',
+    rota: '/enviado-ses',
+    oQueFaz:
+      'O orçamento já foi ao Estado, mas NÃO acompanhamos nos autos: os sem-protocolo (o prazo de ' +
+      'protocolar passou) e os segredos de justiça. Aqui só se aguarda o retorno técnico da SES.',
+    comoFazer: [
+      'Nada a fazer proativamente — a fase é de espera declarada.',
+      'Chegou o retorno técnico: clique Registrar e marque GANHO (com o valor) ou PERDA (com o motivo).',
+      'Perda sem motivo escrito não salva — é esse texto que ensina o sistema.',
+    ],
+    falaDoRapha:
+      'Não temos que acompanhar e só podemos aguardar um retorno técnico para sabermos se ganhos.',
+    atencao:
+      'Não confundir com Protocolados (fase 5): lá nós estamos DENTRO do processo e acompanhamos; ' +
+      'aqui o orçamento foi entregue e a bola está com o Estado.',
   },
 ];
 

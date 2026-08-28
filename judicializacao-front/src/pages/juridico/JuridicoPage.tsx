@@ -9,7 +9,7 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { Dropdown } from 'primereact/dropdown';
 import { Dialog } from 'primereact/dialog';
 import { FilterMatchMode } from 'primereact/api';
-import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder, getCnjCandidatos, confirmarCnj, uploadAnexoOrder } from '../../services/api/orders';
+import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder, getCnjCandidatos, confirmarCnj, uploadAnexoOrder, getInteligenciaPedido } from '../../services/api/orders';
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './JuridicoPage.css';
@@ -112,6 +112,10 @@ export function JuridicoPage() {
   // o humano confirma aqui vendo a origem — o sistema nunca grava CNJ sozinho (F1/G4).
   const [candidatosCnj, setCandidatosCnj] = useState<{ cnj: string; origem?: string }[]>([])
   const [confirmandoCnj, setConfirmandoCnj] = useState(false)
+  // Inteligência do pedido NA CHEGADA (/sc:desenho 28/08: "como estamos produzindo
+  // inteligência para cada pedido que chega novo") — a memória de casos anteriores
+  // aparece ANTES da decisão de cotar, não só na hora de orçar (fase 3).
+  const [intel, setIntel] = useState<any | null>(null)
   // Peça de inteiro teor (@R 27/08): obrigatória ao decidir Cotar OU Não Cotar.
   const [inteiroTeorFile, setInteiroTeorFile] = useState<File | null>(null)
   const [inteiroTeorJaAnexado, setInteiroTeorJaAnexado] = useState(false)
@@ -200,6 +204,12 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
     .then((res: any) => setAnexos(res.data.anexos))
     .catch(() => setAnexos([]))
     .finally(() => setLoadingAnexos(false))
+
+  // memória de casos anteriores — fail-soft: erro nunca trava a triagem
+  setIntel(null)
+  getInteligenciaPedido(rowData.id)
+    .then((res: any) => setIntel(res.data))
+    .catch(() => setIntel(null))
 
   // inteiro teor: se o pedido JÁ tem a peça, não exigir de novo
   setInteiroTeorFile(null)
@@ -667,6 +677,27 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                 </small>
               )}
             </div>
+
+            {/* Memória de casos anteriores NA TRIAGEM (/sc:desenho 28/08): o jurídico
+                decide cotar VENDO se já respondemos este caso — não só na fase 3. */}
+            {intel && (intel.duplicata?.length > 0) && (
+              <div className="field field-span-4" style={{
+                background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px',
+                padding: '10px 14px', fontSize: '0.875rem', color: '#991b1b',
+              }}>
+                <strong>⚠ Já respondemos este caso antes</strong>
+                {intel.duplicata.map((d: any) => (
+                  <div key={d.order_id} style={{ marginTop: '4px' }}>
+                    Pedido #{d.order_id}{d.mesmo_cnj ? ' (mesmo processo/CNJ)' : ' (mesmo paciente)'}
+                    {d.medico_nome ? <> · {d.medico_nome}</> : null}
+                    {d.valor_respondido
+                      ? <> · enviamos <strong>{d.valor_respondido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</strong></>
+                      : null}
+                    {d.desfecho ? <> · {d.desfecho.rotulo}</> : null}
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="field field-span-2">
               <label>Status Jurídico</label>
