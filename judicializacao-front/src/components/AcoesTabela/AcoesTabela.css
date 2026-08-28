@@ -33,3 +33,24 @@
 .mc-acoes-tabela .p-button .p-button-label {
   display: inline;
 }
+
+/* Botão de modo de exibição (Ajustar à tela ↔ Rolagem) — <button> cru para
+   nenhuma regra de página engolir o rótulo (virava quadrado escuro, print @R 28/08). */
+.mc-acoes-tabela .mc-modo-tabela {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 2.5rem;
+  padding: 0 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.mc-acoes-tabela .mc-modo-tabela:hover { background: #f1f5f9; }
+.mc-acoes-tabela .mc-modo-tabela[aria-pressed="true"] { background: #e0f2fe; border-color: #7dd3fc; color: #0369a1; }
+.mc-acoes-tabela .mc-modo-tabela:focus-visible { outline: 2px solid #0ea5e9; outline-offset: 2px; }
