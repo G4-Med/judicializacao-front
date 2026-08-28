@@ -513,6 +513,7 @@ const kpis = useMemo(() => {
             <i className="pi pi-check-circle"></i>
           </div>
           <div className="kpi-value">{formatarMoeda(kpisEmpenho(dataComCamposCalculados).somaPago)} · {kpisEmpenho(dataComCamposCalculados).nPagos}</div>
+          <div className="kpi-subvalue">sinal forte · +{kpisEmpenho(dataComCamposCalculados).nHistorico} histórico ñ-atribuível</div>
         </div>
 
         <div className="kpi-card">

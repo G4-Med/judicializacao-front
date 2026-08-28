@@ -301,8 +301,10 @@ export function EnviadoSesPage() {
         </h2>
         <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', margin: '4px 0 8px', fontSize: '0.95em' }}>
           <span><strong>Valor enviado (total):</strong> {kpis.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-          <span><strong>Pago pelo Estado:</strong> {kpis.empenho.somaPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} em {kpis.empenho.nPagos} pedido(s)</span>
+          <span title="Só sinal forte: pago DEPOIS do pedido ou valor compatível com o orçado"><strong>Pago pelo Estado (sinal forte):</strong> {kpis.empenho.somaPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} em {kpis.empenho.nPagos} pedido(s)</span>
           <span style={{ color: '#7c3aed' }}><strong>Pago = orçado:</strong> {kpis.empenho.nExatos} (conferir baixa)</span>
+          <span title="Pedidos SEM pagamento atribuível a eles — o que ainda esperamos"><strong>Em aberto:</strong> {kpis.empenho.somaAberto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} em {kpis.empenho.nAbertos}</span>
+          {kpis.empenho.nHistorico > 0 && <span style={{ opacity: 0.7 }} title="CNJs com pagamento anterior/valor distante — provável outro item do processo">histórico não atribuível: {kpis.empenho.nHistorico}</span>}
         </div>
         <AcoesTabela>
           <BotaoExportarExcel todos={linhas} visiveis={visiveis} nome="enviado-ses" />

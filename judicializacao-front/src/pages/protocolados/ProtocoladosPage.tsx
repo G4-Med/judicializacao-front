@@ -513,20 +513,22 @@ export function ProtocoladosPage() {
           <div className="kpi-value">{formatarMoeda(kpis.mediaValorProcessos)}</div>
         </div>
 
-        <div className="kpi-card" title="Somatório do que o Estado já PAGOU (empenho, base 548) nos CNJs desta tela — sinal, não repasse ao prestador">
+        <div className="kpi-card" title="Só sinal FORTE (pago depois do pedido ou valor compatível) — régua anti-inflação da 548. Valor do empenho, não repasse">
           <div className="kpi-header">
-            <span>Pago pelo Estado (548)</span>
+            <span>Pago pelo Estado (sinal forte)</span>
             <i className="pi pi-check-circle"></i>
           </div>
           <div className="kpi-value">{formatarMoeda(kpisEmpenho(visibleProcessos).somaPago)}</div>
+          <div className="kpi-subvalue">{kpisEmpenho(visibleProcessos).nPagos} pedidos · {kpisEmpenho(visibleProcessos).nExatos} exatos · {kpisEmpenho(visibleProcessos).nHistorico} histórico ñ-atribuível</div>
         </div>
 
-        <div className="kpi-card" title="Pedidos com pagamento do Estado no CNJ · quantos batem com o orçado (±0,5%)">
+        <div className="kpi-card" title="Pedidos SEM pagamento atribuível — o que ainda esperamos do Estado (soma do orçado)">
           <div className="kpi-header">
-            <span>Com pagamento · exatos</span>
-            <i className="pi pi-star-fill"></i>
+            <span>Em aberto</span>
+            <i className="pi pi-hourglass"></i>
           </div>
-          <div className="kpi-value">{kpisEmpenho(visibleProcessos).nPagos} · {kpisEmpenho(visibleProcessos).nExatos}</div>
+          <div className="kpi-value">{formatarMoeda(kpisEmpenho(visibleProcessos).somaAberto)}</div>
+          <div className="kpi-subvalue">{kpisEmpenho(visibleProcessos).nAbertos} pedidos</div>
         </div>
 
       </div>

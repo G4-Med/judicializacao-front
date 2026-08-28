@@ -36,8 +36,13 @@ export function colunaEmpenhoEstado() {
             ? <Tag value={`PAGO = ORÇADO ${fmtBRL(r.empenho548.pago)}`} icon="pi pi-star-fill"
                 style={{ background: '#7c3aed', color: '#fff' }}
                 title="O valor pago pelo Estado BATE com o orçamento enviado (±0,5%) — evidência forte de que é ESTE item. Conferência prioritária." />
+            : r.empenho548.sinal === 'PROVAVEL_OUTRO_ITEM'
+            // Régua da 548: pagamento ANTERIOR ao pedido com valor distante = o
+            // mesmo processo pagou OUTRO item — não conta como "este pedido pago".
+            ? <Tag value={`Histórico ${fmtBRL(r.empenho548.pago)}`} severity="secondary" icon="pi pi-history"
+                title="Este CNJ tem pagamento no Estado, mas ANTERIOR ao pedido e com valor distante do orçado — provavelmente OUTRO item do mesmo processo. Não é sinal de baixa." />
             : <Tag value={`PAGO ${fmtBRL(r.empenho548.pago)}`} severity="success" icon="pi pi-check-circle"
-                title={`O Estado já PAGOU ${r.empenho548.nEmpenhos} empenho(s) neste CNJ com valor diferente do orçado — pode ser outro item do processo. Valor do EMPENHO, não do prestador.`} />)
+                title={`O Estado PAGOU ${r.empenho548.nEmpenhos} empenho(s) neste CNJ (${r.empenho548.sinal === 'PAGO_APOS_O_PEDIDO' ? 'depois do pedido — candidato a baixa' : 'valor compatível com o orçado — conferir'}). Valor do EMPENHO, não do prestador.`} />)
           : <Tag value="Empenhado" severity="info" icon="pi pi-wallet"
               title="Há empenho no Estado para este CNJ, ainda sem pagamento registrado." />)
         : <span title="Nenhum empenho localizado para este CNJ na base do Estado (548).">—</span>)} />
@@ -53,7 +58,11 @@ export function colunaPagoEm() {
       }}
       body={(r: any) => {
         const dt = r.empenho548?.ultimoPagamento;
-        if (!dt) return <span style={{ opacity: 0.5 }}>—</span>;
+        if (!dt) {
+          return (r.empenho548?.pago ?? 0) > 0
+            ? <span style={{ opacity: 0.6 }} title="O portal registra o valor pago mas não expõe a data deste pagamento">sem data na fonte</span>
+            : <span style={{ opacity: 0.5 }}>—</span>;
+        }
         const dias = Math.floor((Date.now() - new Date(`${dt}T00:00:00`).getTime()) / 86400000);
         return <span title={`Último pagamento do Estado neste CNJ há ${dias} dia(s)`}>
           {fmtDataBr(dt)} <small style={{ opacity: 0.7 }}>({dias}d)</small>
@@ -88,9 +97,16 @@ export function colunaDiferenca() {
 /** Agregados p/ indicadores das telas: soma do pago, soma do orçado e contagens. */
 export function kpisEmpenho(linhas: any[]) {
   const pagos = linhas.filter((l) => (l.empenho548?.pago ?? 0) > 0);
+  // Régua da 548: só sinal FORTE (pago depois do pedido, ou valor compatível)
+  // conta como "este pedido pago"; o resto é histórico não atribuível.
+  const fortes = pagos.filter((l) => ['PAGO_APOS_O_PEDIDO', 'REVISAR_VALOR_BATE'].includes(l.empenho548.sinal));
+  const abertos = linhas.filter((l) => !fortes.includes(l));
   return {
-    nPagos: pagos.length,
-    somaPago: pagos.reduce((acc, l) => acc + l.empenho548.pago, 0),
+    nPagos: fortes.length,
+    somaPago: fortes.reduce((acc, l) => acc + l.empenho548.pago, 0),
+    nHistorico: pagos.length - fortes.length,
+    nAbertos: abertos.length,
+    somaAberto: abertos.reduce((acc, l) => acc + (l.valorOrcamento || 0), 0),
     somaValor: linhas.reduce((acc, l) => acc + (l.valorOrcamento || 0), 0),
     nExatos: pagos.filter(ehExato).length,
   };

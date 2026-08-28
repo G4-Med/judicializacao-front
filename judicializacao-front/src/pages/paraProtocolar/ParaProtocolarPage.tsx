@@ -28,6 +28,7 @@ import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, 
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca } from '../../components/ColunasEmpenho/colunasEmpenho';
 
 interface ParaProtocolar {
   id: number;
@@ -680,6 +681,9 @@ const handleConfirmarProtocolacao = async () => {
           {colunaCadastro()}
           {colunaSegredo()}
           {colunaInteiroTeor()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
           {colunaSolicitante()}
 
           <Column
