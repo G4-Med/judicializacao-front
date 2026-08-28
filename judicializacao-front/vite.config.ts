@@ -12,10 +12,14 @@ export default defineConfig({
     // libera o domínio do túnel zrok (preview do ambiente local)
     allowedHosts: ['.share.zrok.io', '.zrok.io', 'localhost'],
     // 1 túnel serve front + API: /api → Django local (evita CORS e 2º túnel)
+    // Alvo do proxy vem do ambiente: `VITE_PROXY_API=https://judicializacao.medchecksaude.com.br
+    // VITE_API_URL=/api npm run dev` mostra as telas novas com DADO REAL sem esbarrar em CORS
+    // (28/08: banco local fora; @R quis validar as melhorias no localhost). Default = Django local.
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: process.env.VITE_PROXY_API || 'http://127.0.0.1:8000',
         changeOrigin: true,
+        secure: true,
       },
     },
   },
