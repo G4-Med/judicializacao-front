@@ -127,10 +127,16 @@ export function PainelPrecos({ orderId, procedimento, nossoPreco }: {
   // @R 28/08 03:21: "cadê a parte para eu ver os valores NOSSOS para o procedimento
   // e quanto estamos concorrendo?" — os nossos envios vêm da memória do pedido.
   const [nossos, setNossos] = useState<any>(null);
+  const [enviosNossos, setEnviosNossos] = useState<any[]>([]);
   useEffect(() => {
     getInteligenciaPedido(orderId)
-      .then(({ data }) => setNossos(data?.precos_similares ?? null))
-      .catch(() => setNossos(null));
+      .then(({ data }) => {
+        setNossos(data?.precos_similares ?? null);
+        // @R 28/08 03:2x: "mostrar o nosso médico, valores dos envios e datas...
+        // separado, abaixo do gráfico" — a experiência similar tem tudo isso.
+        setEnviosNossos((data?.experiencia ?? []).filter((e: any) => e.valor_respondido));
+      })
+      .catch(() => { setNossos(null); setEnviosNossos([]); });
   }, [orderId]);
   const [carregando, setCarregando] = useState(!memoriaPrecos.has(orderId));
   const [falhou, setFalhou] = useState(false);
@@ -388,6 +394,35 @@ export function PainelPrecos({ orderId, procedimento, nossoPreco }: {
                 </span>
               )}
             </div>
+          )}
+          {enviosNossos.length > 0 && (
+            <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '10px', fontSize: '0.85rem' }}>
+              <caption style={{ textAlign: 'left', fontWeight: 600, padding: '4px 0' }}>
+                Nossos envios p/ cirurgia similar — médico · data · valor · desfecho
+              </caption>
+              <thead>
+                <tr style={{ textAlign: 'left', opacity: 0.7 }}>
+                  <th style={{ padding: '3px 8px' }}>Data</th>
+                  <th style={{ padding: '3px 8px' }}>Médico</th>
+                  <th style={{ padding: '3px 8px' }}>Procedimento</th>
+                  <th style={{ padding: '3px 8px', textAlign: 'right' }}>Enviamos</th>
+                  <th style={{ padding: '3px 8px' }}>Desfecho</th>
+                </tr>
+              </thead>
+              <tbody>
+                {enviosNossos.slice(0, 8).map((e: any, i: number) => (
+                  <tr key={i} style={{ borderTop: '1px solid var(--surface-border, #e2e8f0)' }}>
+                    <td style={{ padding: '3px 8px' }}>{e.data_resposta ? e.data_resposta.split('-').reverse().join('/') : '—'}</td>
+                    <td style={{ padding: '3px 8px' }}>{e.medico_nome ?? '—'}</td>
+                    <td style={{ padding: '3px 8px', opacity: 0.8 }}>{(e.procedimento ?? '').slice(0, 45)}</td>
+                    <td style={{ padding: '3px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                      <strong>{e.valor_respondido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</strong>
+                    </td>
+                    <td style={{ padding: '3px 8px' }}>{e.desfecho?.rotulo ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
           <table className="painel-precos__tabela">
             <caption>{filtroMes ? `Pagamentos de ${mesCurto(filtroMes)}` : 'Últimos pagamentos'} {dados.sem_comarca > 0 && `· ${dados.sem_comarca} sem comarca informada`}</caption>
