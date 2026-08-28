@@ -3,7 +3,13 @@
 
 export const getOrders = () => api.get('/orders/listar/');
 // Exclusão de lançamento errado — SÓ ADMIN; backend faz backup JSON antes (task #198)
-export const excluirOrder = (id: number) => api.delete(`/orders/${id}/excluir/`);
+// Excluir = lixeira, assinado com a senha do usuário (@R 28/08). DELETE com corpo:
+// o axios manda `data` no DELETE e o DRF lê em request.data.
+export const excluirOrder = (id: number, senha: string, motivo?: string) =>
+  api.delete(`/orders/${id}/excluir/`, { data: { senha, motivo } });
+export const getLixeira = () => api.get('/orders/lixeira/');
+export const restaurarOrder = (id: number, senha: string, statusProcesso?: string) =>
+  api.post(`/orders/${id}/restaurar/`, { senha, statusProcesso });
 export const getProcessosResumo = () => api.get('/orders/processos-resumo/');
 export const getStatusOrders = () => api.get('/orders/status/');
 export const atualizarOrder = (id: number, data: any) => api.patch(`/orders/${id}/atualizar/`, data);

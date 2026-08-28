@@ -32,7 +32,8 @@ export type ScreenKey =
   | 'processoOperacional'
   | 'funil'
   | 'sla'
-  | 'notificacoesHistorico';
+  | 'notificacoesHistorico'
+  | 'lixeira';
 
 export type ReportKey = 'relatorioResumido' | 'relatorioConsolidado';
 
@@ -72,8 +73,10 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'configuracoesEmails',
       'monitorIntegracao',
       'logs',
+      'lixeira',
     ],
     edit: [
+      'lixeira',
       'home',
       'dashboard',
       'processos',
@@ -122,13 +125,14 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'perdas',
       'relatorioResumido',
       'relatorioConsolidado',
+      'lixeira',
     ],
     // Gerente era 100% somente-leitura por padrão — mas na prática precisa agir na
     // tela de orçamento médico (enviar orçamento, solicitar exames, recusar o
     // procedimento), em para protocolar (editar/protocolar/não protocolar) e em
     // protocolados (acompanhamento + decisão ganho/perda), achado 26/08 ao vivo
     // em produção (modal/tela sem nenhum botão de ação).
-    edit: ['orcamentoMedico', 'paraProtocolar', 'protocolados'],
+    edit: ['orcamentoMedico', 'paraProtocolar', 'protocolados', 'lixeira'],
     exportReports: ['relatorioResumido', 'relatorioConsolidado'],
     allMedicos: true,
   },
@@ -150,8 +154,9 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'perdas',
       'relatorioResumido',
       'relatorioConsolidado',
+      'lixeira',
     ],
-    edit: ['clientes', 'juridico', 'paraProtocolar', 'protocolados', 'segredoJustica'],
+    edit: ['clientes', 'juridico', 'paraProtocolar', 'protocolados', 'segredoJustica', 'lixeira'],
     exportReports: ['relatorioResumido', 'relatorioConsolidado'],
     allMedicos: true,
   },
@@ -233,6 +238,7 @@ export const SCREEN_PATHS: Record<ScreenKey, string> = {
   funil: '/funil',
   sla: '/sla',
   notificacoesHistorico: '/notificacoes-historico',
+  lixeira: '/lixeira',
 };
 
 export const SCREEN_ORDER: ScreenKey[] = [
@@ -258,6 +264,7 @@ export const SCREEN_ORDER: ScreenKey[] = [
   'configuracoesEmails',
   'monitorIntegracao',
   'logs',
+  'lixeira',
 ];
 
 export const DEFAULT_GROUP: UserGroup = 'SECRETARIA';

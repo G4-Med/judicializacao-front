@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Button } from 'primereact/button';
 import './AcoesTabela.css';
 
 /**
@@ -41,19 +40,19 @@ export function BotaoModoTabela() {
   const [modo, setModo] = useState<Modo>(lerModo);
   useEffect(() => { aplicarModo(modo); }, [modo]);
   const justificada = modo === 'justificada';
+  // <button> cru, não <Button> do PrimeReact: regras de página (.juridico-page .p-button…)
+  // engoliam o rótulo e o botão virava um quadrado escuro (print @R 28/08 11:2x).
   return (
-    <Button
-      icon={justificada ? 'pi pi-arrows-h' : 'pi pi-window-maximize'}
-      label={justificada ? 'Rolagem' : 'Ajustar à tela'}
-      outlined severity="secondary"
+    <button type="button" className="mc-modo-tabela"
       onClick={() => setModo(justificada ? 'rolagem' : 'justificada')}
-      tooltip={justificada
+      title={justificada
         ? 'Voltar ao modo de rolagem: cada coluna com sua largura padrão, arraste ou use as barras para ver as demais'
-        : 'Ajustar à tela: todas as colunas visíveis cabem na largura da janela (texto quebra em linhas)'}
-      tooltipOptions={{ position: 'bottom' }}
+        : 'Ajustar à tela: todas as colunas visíveis cabem na largura da janela (o texto quebra em linhas)'}
       aria-pressed={justificada}
-      aria-label="Alternar modo de exibição da tabela"
-    />
+      aria-label="Alternar modo de exibição da tabela">
+      <i className={justificada ? 'pi pi-arrows-h' : 'pi pi-window-maximize'} aria-hidden="true" />
+      <span>{justificada ? 'Rolagem' : 'Ajustar à tela'}</span>
+    </button>
   );
 }
 

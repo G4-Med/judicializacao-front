@@ -222,13 +222,15 @@ export function ProcessosPage() {
   const [expandidas, setExpandidas] = useState<any>(undefined);
   const { isReadOnly, profile } = useAccess();
   const ehAdmin = profile.group === 'ADMIN';
+  // Excluir = lixeira assinada com a senha (@R 28/08). Reversível na tela Lixeira.
   const excluirLancamento = async (r: any) => {
-    if (!window.confirm(`EXCLUIR o lançamento #${r.id} (${r.paciente})? O backend guarda backup JSON antes — mas o registro some das telas.`)) return;
+    const senha = window.prompt(`Mover #${r.id} (${r.paciente}) para a LIXEIRA.\nNada é apagado — volta pela tela Lixeira.\n\nDigite a sua senha para confirmar:`);
+    if (!senha) return;
     try {
-      await excluirOrder(r.id);
+      await excluirOrder(r.id, senha);
       await carregarDados();
-    } catch {
-      alert('Erro ao excluir — só Admin pode, e o pedido precisa existir.');
+    } catch (e: any) {
+      alert(e?.response?.data?.error ?? 'Não foi possível mover para a lixeira.');
     }
   };
   const readOnly = isReadOnly('processos');

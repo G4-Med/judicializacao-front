@@ -34,7 +34,7 @@ export const DONOS = {
 export const ETAPAS: Etapa[] = [
   {
     id: 'juridico',
-    prazo: 'SLA 1 dia — a análise sai no dia seguinte ("libera para mim até meio-dia")',
+    prazo: 'Teto: 5 dias no funil — acima disso está errado (@R 28/08). Ideal: a análise sai no dia seguinte ("libera para mim até meio-dia")',
     numero: 1,
     titulo: 'Jurídico — a triagem',
     dono: 'INSTITUTO',
