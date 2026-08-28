@@ -210,41 +210,51 @@ body.dark-theme .p-multiselect {
   padding: 0.45rem 0.6rem;
   font-size: 0.85rem;
 }
-.botao-exportar-excel { margin-left: auto; }
-
-/* Botão "Colunas" (personalização por usuário, task #228): alguns cabeçalhos de
-   card têm regras de tema que esmagam o botão num pill só-ícone. Estas regras
-   garantem o formato padrão (ícone + rótulo, outline) em TODA tabela. */
+/* Botão "Colunas" (task #228) — o TAMANHO (altura/padding) é do container
+   .mc-acoes-tabela (AcoesTabela.css); aqui a IDENTIDADE visual (cor/borda).
+   !important DELIBERADO nestas 3 propriedades: várias páginas têm regra própria
+   tipo `.<pagina>-page .p-button.p-button-secondary { background: navy; ... }`
+   pensada pro botão editar (quadrado/navy) — mesma especificidade da minha
+   (3 classes), empate resolvido por ordem de import, então o botão Colunas saía
+   ora cinza-outline ora azul-sólido dependendo da página (achado ProcessosPage,
+   print @R). O contrato deste componente é: SEMPRE outline cinza, em QUALQUER
+   página — por isso a garantia aqui, não uma exceção por página. */
 .p-button.botao-colunas {
-  display: inline-flex;
+  display: inline-flex !important;
   align-items: center;
   gap: 0.4rem;
-  width: auto;
-  height: auto;
-  padding: 0.45rem 0.9rem;
-  border-radius: 6px;
-  background: transparent;
-  color: #475569;
-  border: 1px solid #cbd5e1;
+  background: transparent !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
   white-space: nowrap;
   flex: 0 0 auto;
 }
-.p-button.botao-colunas .p-button-label {
-  display: inline;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-/* ícone alinhado no centro vertical do botão (pedido @R 27/08 20:31) */
-.p-button.botao-colunas .p-button-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  font-size: 0.9rem;
-  margin: 0;
-}
 .p-button.botao-colunas:hover {
-  background: #f1f5f9;
-  color: #1e293b;
-  border-color: #94a3b8;
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+  border-color: #94a3b8 !important;
+}
+
+/* Dropdown de filtro (ex: Status) alinhado à MESMA altura do input de busca —
+   antes o dropdown não tinha regra própria e herdava um tamanho maior do
+   componente PrimeReact (47px × 33px do input, print @R 27/08 21:03). */
+.p-datatable .p-filter-column .p-dropdown {
+  width: 100%;
+  min-width: 0;
+  height: 2.0651rem;
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+.p-datatable .p-filter-column .p-dropdown .p-dropdown-label {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+  box-sizing: border-box;
+}
+.p-datatable .p-filter-column .p-dropdown .p-dropdown-trigger {
+  width: 2rem;
 }

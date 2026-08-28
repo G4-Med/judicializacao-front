@@ -173,9 +173,11 @@
   border-radius: 6px;
 }
 
-/* botão editar (mesmo estilo da ProcessosPage: navy sólido) */
+/* botão editar (mesmo estilo da ProcessosPage: navy sólido) — :not(.botao-colunas)
+   porque esta regra quadrava (36x36) TODO .p-button-secondary da página, incluindo
+   o botão "Colunas" (ícone+rótulo), esmagando o texto (print @R 27/08 21:00) */
 .juridico-table .p-button.p-button-rounded.p-button-outlined.p-button-secondary,
-.juridico-page .p-button.p-button-secondary {
+.juridico-page .p-button.p-button-secondary:not(.botao-colunas) {
   width: 36px;
   height: 36px;
   background: var(--mc-navy-700);
@@ -184,7 +186,7 @@
   border-radius: 10px;
 }
 .juridico-table .p-button.p-button-rounded.p-button-outlined.p-button-secondary:hover,
-.juridico-page .p-button.p-button-secondary:hover {
+.juridico-page .p-button.p-button-secondary:not(.botao-colunas):hover {
   background: var(--mc-navy-900, #062a45);
   border-color: var(--mc-navy-900, #062a45);
   color: #fff;

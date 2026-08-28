@@ -29,6 +29,7 @@ import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import './ProcessosPage.css';
 import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 const STATUS_PROCESSO_FALLBACK = [
@@ -2018,8 +2019,10 @@ ${linhasAnexos}
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Todos os processos — status, valor de referência e responsável por cada etapa</h2>
-          <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="base-processos" />
-          {colunasCfg.botao}
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="base-processos" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
           aria-label="Todos os processos — status, valor de referência e responsável por cada etapa"
           value={dataComCamposCalculados}

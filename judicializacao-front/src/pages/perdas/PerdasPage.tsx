@@ -15,6 +15,7 @@ import './PerdasPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 interface PerdaProcesso {
@@ -286,8 +287,10 @@ export function PerdasPage() {
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos perdidos — motivo e fase em que a perda ocorreu</h2>
-          <BotaoExportarExcel todos={dataComCamposCalculados} nome="perdas" />
-          {colunasCfg.botao}
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComCamposCalculados} nome="perdas" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
           aria-label="Pedidos perdidos — motivo e fase em que a perda ocorreu"
           value={dataComCamposCalculados}

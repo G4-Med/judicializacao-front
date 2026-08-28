@@ -30,6 +30,7 @@ import { useAccess } from '../../access/AccessContext';
 import './ClientesPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 interface Cliente {
@@ -1523,8 +1524,10 @@ const handleSalvarEdicao = async () => {
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Médicos cadastrados como cliente — dados, contrato e procuração</h2>
-          <BotaoExportarExcel todos={dataComSequencial} nome="clientes" />
-          {colunasCfg.botao}
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComSequencial} nome="clientes" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
           aria-label="Médicos cadastrados como cliente — dados, contrato e procuração"
           value={dataComSequencial}

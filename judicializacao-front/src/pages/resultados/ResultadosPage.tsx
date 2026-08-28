@@ -31,6 +31,7 @@ import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import '../protocolados/ProtocoladosPage.css';
 import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 interface HistoricoAcompanhamento {
@@ -527,8 +528,10 @@ const kpis = useMemo(() => {
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Processos finalizados — resultado (ganho ou perda), valor e tempo de tramitação</h2>
-          <BotaoExportarExcel todos={dataComCamposCalculados} nome="resultados" />
-          {colunasCfg.botao}
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComCamposCalculados} nome="resultados" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
           aria-label="Processos finalizados — resultado (ganho ou perda), valor e tempo de tramitação"
           value={dataComCamposCalculados}

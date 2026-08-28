@@ -1,0 +1,35 @@
+/* Container/frame dos botões de ação de tabela (task pós-#230, @R 27/08 21:05).
+   Especificidade alta (.mc-acoes-tabela .p-button.p-component) de propósito:
+   várias páginas têm regras de página (.orcamento-table .p-button.p-button-outlined
+   etc.) que bagunçavam o tamanho — este seletor precisa VENCER essas, não empatar. */
+.mc-acoes-tabela {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  padding: 0.3rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.mc-acoes-tabela .p-button.p-component {
+  height: 2.5rem;
+  padding: 0 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.mc-acoes-tabela .p-button .p-button-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 0.9rem;
+}
+
+.mc-acoes-tabela .p-button .p-button-label {
+  display: inline;
+}

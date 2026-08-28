@@ -25,6 +25,7 @@ import { ContadorRegistros, contarPorCampo } from '../../components/ContadorRegi
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 import { colunaSolicitante, tagTipoPaciente, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 // Meta desta fase (orçamento) — espelha backend/funil.py FASES['orcamento'].meta_dias.
@@ -562,8 +563,10 @@ ${blocos}
             )}
           />
         </h2>
-          <BotaoExportarExcel todos={dataComMedico} visiveis={visibleProcessos} nome="orcamento-medico" />
-          {colunasCfg.botao}
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComMedico} visiveis={visibleProcessos} nome="orcamento-medico" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
           aria-label="Pedidos aguardando orçamento médico"
           value={dataComMedico} dataKey="id" paginator rowsPerPageOptions={[10, 20, 50, 100]} rows={rows} first={first}

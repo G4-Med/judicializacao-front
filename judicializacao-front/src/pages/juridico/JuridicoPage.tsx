@@ -22,6 +22,7 @@ import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 import { BotaoCopiar } from '../../components/BotaoCopiar/BotaoCopiar';
 import { useNavigate } from 'react-router-dom';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 // Meta desta fase (triagem jurídica) — espelha backend/funil.py FASES['triagem'].meta_dias.
@@ -375,8 +376,10 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             ]}
           />
         </h2>
-          <BotaoExportarExcel todos={dataComSequencial} visiveis={visibleProcessos} nome="analise-juridica" />
-          {colunasCfg.botao}
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComSequencial} visiveis={visibleProcessos} nome="analise-juridica" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
           aria-label="Pedidos aguardando triagem jurídica"
           value={dataComSequencial}

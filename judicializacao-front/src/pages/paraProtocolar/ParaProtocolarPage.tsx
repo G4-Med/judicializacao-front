@@ -26,6 +26,7 @@ import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/Primeira
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 interface ParaProtocolar {
@@ -625,8 +626,10 @@ const handleConfirmarProtocolacao = async () => {
 
       <div className="card">
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />Pedidos para protocolar</h2>
-          <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="protocolar" />
-          {colunasCfg.botao}
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="protocolar" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
           aria-label="Pedidos para protocolar"
           value={dataComCamposCalculados}

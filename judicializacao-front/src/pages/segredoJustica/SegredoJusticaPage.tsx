@@ -28,6 +28,7 @@ import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/Primeira
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 import { colunaSolicitante, tagTipoPaciente, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 
 interface DocumentoProcesso {
@@ -494,8 +495,10 @@ useEffect(() => { carregarDados(); }, [fila]);
         </div>
         <h2 className="mc-tabela-titulo"><i className="pi pi-table" />
           {fila === 'ses' ? 'Segredo de justiça — enviado à SES (aguardando resposta)' : 'Pedidos em segredo de justiça'}</h2>
-          <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="segredo-justica" />
-          {colunasCfg.botao}
+          <AcoesTabela>
+            <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="segredo-justica" />
+            {colunasCfg.botao}
+          </AcoesTabela>
         <DataTable
           aria-label="Pedidos em segredo de justiça"
           value={dataComCamposCalculados}
