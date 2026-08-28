@@ -1,4 +1,5 @@
-import { ReactNode, isValidElement, useEffect, useRef, useState } from 'react';
+import { isValidElement, useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import React from 'react';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';

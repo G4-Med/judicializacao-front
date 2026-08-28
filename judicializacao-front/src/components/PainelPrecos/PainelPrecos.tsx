@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Chart } from 'primereact/chart';
-import { getPrecosProcedimento } from '../../services/api/orders';
+import { getPrecosProcedimento, getInteligenciaPedido } from '../../services/api/orders';
 import './PainelPrecos.css';
 
 /**
@@ -124,6 +124,14 @@ export function PainelPrecos({ orderId, procedimento, nossoPreco }: {
   nossoPreco?: number | null;
 }) {
   const [dados, setDados] = useState<Precos | null>(() => memoriaPrecos.get(orderId) ?? null);
+  // @R 28/08 03:21: "cadê a parte para eu ver os valores NOSSOS para o procedimento
+  // e quanto estamos concorrendo?" — os nossos envios vêm da memória do pedido.
+  const [nossos, setNossos] = useState<any>(null);
+  useEffect(() => {
+    getInteligenciaPedido(orderId)
+      .then(({ data }) => setNossos(data?.precos_similares ?? null))
+      .catch(() => setNossos(null));
+  }, [orderId]);
   const [carregando, setCarregando] = useState(!memoriaPrecos.has(orderId));
   const [falhou, setFalhou] = useState(false);
   const [filtroMes, setFiltroMes] = useState<string | null>(null);   // 'AAAA-MM' clicado na linha
@@ -362,6 +370,25 @@ export function PainelPrecos({ orderId, procedimento, nossoPreco }: {
             ))}
           </div>
 
+          {nossos && (nossos.n_enviados > 0 || (nossos.pagos_estado?.length ?? 0) > 0) && (
+            <div style={{ margin: '8px 0', padding: '8px 12px', background: '#eff6ff',
+                          border: '1px solid #93c5fd', borderRadius: '8px', fontSize: '0.85rem', color: '#1e3a8a' }}>
+              <strong>Nossos números p/ cirurgia similar:</strong>{' '}
+              {nossos.n_enviados > 0 && (
+                <span>enviamos {nossos.n_enviados}× · mediana{' '}
+                  <strong>{nossos.mediana_enviados?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</strong>
+                  {nossos.enviados?.length > 0 && <small> (últimos: {nossos.enviados.map((v: number) =>
+                    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })).join(' · ')})</small>}
+                </span>
+              )}
+              {(nossos.pagos_estado?.length ?? 0) > 0 && (
+                <span> · <strong>concorrência (Estado pagou):</strong>{' '}
+                  {nossos.pagos_estado.map((pg: any) =>
+                    pg.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })).join(' · ')}
+                </span>
+              )}
+            </div>
+          )}
           <table className="painel-precos__tabela">
             <caption>{filtroMes ? `Pagamentos de ${mesCurto(filtroMes)}` : 'Últimos pagamentos'} {dados.sem_comarca > 0 && `· ${dados.sem_comarca} sem comarca informada`}</caption>
             <thead>
