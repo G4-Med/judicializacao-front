@@ -20,7 +20,6 @@ import { PainelPrecos } from '../../components/PainelPrecos/PainelPrecos';
 import { ContadorRegistros } from '../../components/ContadorRegistros/ContadorRegistros';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 import { BotaoCopiar } from '../../components/BotaoCopiar/BotaoCopiar';
-import { useNavigate } from 'react-router-dom';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
@@ -29,7 +28,9 @@ import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, c
 
 // Meta desta fase (triagem jurídica) — espelha backend/funil.py FASES['triagem'].meta_dias.
 // "a análise sai no dia seguinte — libera para mim até meio-dia" (fala do @R na reunião).
-const SLA_META_DIAS_TRIAGEM = 1;
+// @R 28/08: "tempo máximo no funil 5 dias... passou de 5 dias tá errado" (era 1 = ideal).
+// Mesmo teto declarado em funil.py fase 'triagem' (meta_dias) — mudou lá, muda aqui.
+const SLA_META_DIAS_TRIAGEM = 5;
 
 interface ProcessoJuridico {
   id: number;
@@ -40,6 +41,8 @@ interface ProcessoJuridico {
   refPreco: number;
   dataPedido: string;
   dias: number;
+  chegouEm?: string | null;   // instante em que ENTROU no sistema (com hora)
+  horasNoFunil?: number;      // desde a data do e-mail — a métrica dos 5 dias
   statusJuridico: string;
   nprocesso: string;
   numeroSei: string | null;
@@ -84,7 +87,6 @@ export function JuridicoPage() {
   // Equipe g4med (Admin/Gerente) pode decidir SEM a peça de inteiro teor
   // (@R 27/08 20:27; decisão procurador a4183eff70) — o escritório jurídico não.
   const equipeG4med = profile.group === 'ADMIN' || profile.group === 'GERENTE';
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [processos, setProcessos] = useState<ProcessoJuridico[]>([]);
   const [first, setFirst] = useState(0);
@@ -328,14 +330,9 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
         onClick={() => abrirEdicao(rowData)}
         aria-label="Analisar este pedido"
       />
-      {/* "botão para ir para o processo" (@R 27/08): abre a tela Processos já filtrada */}
-      <Button
-        icon="pi pi-external-link"
-        rounded text severity="secondary"
-        onClick={() => navigate(`/processos?paciente=${encodeURIComponent(rowData.paciente)}`)}
-        aria-label="Abrir o processo deste pedido"
-        title="Ir para o processo"
-      />
+      {/* O botão "ir para o processo" saiu daqui (@R 28/08: "na tela 1 temos um
+          botão de ação que é abrir processos, não precisamos") — o CabecalhoFase
+          já leva à tela Processos. */}
     </span>
   );
 
@@ -501,14 +498,29 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
               return <span className="juridico-geo-vazio">—</span>;
             }} />
           {colunaSolicitante()}
-          <Column
-            field="dias"
-            header="Dias Solicitados"
-            sortable
-            filter
-            filterElement={(o) => filterElement(o, 'Buscar')}
-            style={{ minWidth: '10rem' }}
-          />
+          {/* @R 28/08: "a data que o pedido chegou e o horário e o tempo atual no funil" */}
+          <Column field="chegouEm" header={cabecalhoComHint('Chegou em',
+              'Quando o pedido ENTROU no sistema (o monitor lê o e-mail a cada 10 min). Data e hora.')}
+            sortable style={{ minWidth: '10rem' }}
+            body={(r: ProcessoJuridicoRow) => {
+              if (!r.chegouEm) return <span className="juridico-geo-vazio">—</span>;
+              const d = new Date(r.chegouEm);
+              return <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                {d.toLocaleDateString('pt-BR')} <small style={{ opacity: 0.7 }}>{d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small>
+              </span>;
+            }} />
+          <Column field="dias" header={cabecalhoComHint('Tempo no funil',
+              `Desde a data do e-mail do pedido. Teto: ${SLA_META_DIAS_TRIAGEM} dias — acima disso está errado (fica vermelho).`)}
+            sortable filter filterElement={(o) => filterElement(o, 'Buscar')}
+            style={{ minWidth: '9rem' }}
+            body={(r: ProcessoJuridicoRow) => {
+              const h = r.horasNoFunil ?? r.dias * 24;
+              const dias = Math.floor(h / 24), horas = h % 24;
+              const estourou = r.dias > SLA_META_DIAS_TRIAGEM;
+              return <Tag value={`${dias}d ${horas}h`} severity={estourou ? 'danger' : dias >= SLA_META_DIAS_TRIAGEM - 1 ? 'warning' : 'success'}
+                icon={estourou ? 'pi pi-exclamation-triangle' : 'pi pi-clock'}
+                title={estourou ? `Passou do teto de ${SLA_META_DIAS_TRIAGEM} dias` : `Dentro do teto de ${SLA_META_DIAS_TRIAGEM} dias`} />;
+            }} />
           <Column header="Ações"
             body={editarBodyTemplate}
             style={{ minWidth: '7rem' }} 

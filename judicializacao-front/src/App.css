@@ -16,3 +16,52 @@
 .p-datatable-wrapper::-webkit-scrollbar-track { background: #e2e8f0; }
 /* arrastar-para-rolar (JS em MainLayout) */
 .p-datatable-wrapper.mc-arrastando { cursor: grabbing; user-select: none; }
+
+/* ── UX das tabelas largas (@R 28/08 10:5x) ─────────────────────────────────
+   1. Barra de rolagem SUPERIOR (o JS em MainLayout cria .mc-scroll-topo antes de
+      cada .p-datatable-wrapper que transborda e sincroniza os dois scrollLeft):
+      quem chega na tabela vê logo que há colunas à direita, sem descer até o fim.
+   2. Cabeçalho FIXO ao rolar para baixo: o wrapper vira o container de rolagem
+      vertical (altura limitada à janela) e o thead gruda no topo dele.
+   3. Modo "Ajustar à tela" (body.mc-tabelas-justificadas, botão no AcoesTabela):
+      todas as colunas visíveis cabem na largura da janela, texto quebra em linhas. */
+.mc-scroll-topo {
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 14px;
+  scrollbar-width: auto;
+}
+.mc-scroll-topo > div { height: 1px; }
+.mc-scroll-topo::-webkit-scrollbar { height: 12px; }
+.mc-scroll-topo::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 6px; }
+.mc-scroll-topo::-webkit-scrollbar-thumb:hover { background: #64748b; }
+.mc-scroll-topo::-webkit-scrollbar-track { background: #e2e8f0; }
+
+.p-datatable-wrapper {
+  max-height: calc(100vh - 220px);   /* rola por dentro → o cabeçalho pode grudar */
+  overflow-y: auto !important;
+}
+.p-datatable .p-datatable-thead > tr > th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-a, #fff);
+  box-shadow: 0 1px 0 #e2e8f0;
+}
+
+body.mc-tabelas-justificadas .p-datatable-table {
+  table-layout: fixed !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+body.mc-tabelas-justificadas .p-datatable .p-datatable-thead > tr > th,
+body.mc-tabelas-justificadas .p-datatable .p-datatable-tbody > tr > td {
+  min-width: 0 !important;
+  width: auto !important;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  font-size: 0.85rem;
+}
+body.mc-tabelas-justificadas .mc-scroll-topo { display: none; }

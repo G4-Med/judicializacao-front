@@ -48,8 +48,45 @@ function usarArrastarTabelas() {
   }, [])
 }
 
+/** Barra de rolagem SUPERIOR em toda tabela que transborda (@R 28/08: "deve ter
+ *  uma barra superior para ajudar a entender que a tabela tem colunas pra o lado").
+ *  Cria uma `.mc-scroll-topo` antes do `.p-datatable-wrapper` com um espaçador da
+ *  mesma largura do conteúdo e sincroniza os dois scrollLeft. Observa o DOM porque
+ *  as tabelas montam/desmontam por rota e mudam de largura ao esconder colunas. */
+function usarBarraSuperior() {
+  useEffect(() => {
+    const ligar = (w: HTMLElement) => {
+      if ((w as any).__mcTopo) return
+      const topo = document.createElement('div')
+      topo.className = 'mc-scroll-topo'
+      const esp = document.createElement('div')
+      topo.appendChild(esp)
+      w.parentElement?.insertBefore(topo, w)
+      ;(w as any).__mcTopo = topo
+      const ajustar = () => {
+        esp.style.width = `${w.scrollWidth}px`
+        topo.style.display = w.scrollWidth > w.clientWidth + 2 ? '' : 'none'
+      }
+      let trava = false
+      topo.addEventListener('scroll', () => { if (trava) return; trava = true; w.scrollLeft = topo.scrollLeft; trava = false })
+      w.addEventListener('scroll', () => { if (trava) return; trava = true; topo.scrollLeft = w.scrollLeft; trava = false })
+      const ro = new ResizeObserver(ajustar)
+      ro.observe(w)
+      const tabela = w.querySelector('table')
+      if (tabela) ro.observe(tabela)
+      ajustar()
+    }
+    const varrer = () => document.querySelectorAll<HTMLElement>('.p-datatable-wrapper').forEach(ligar)
+    varrer()
+    const mo = new MutationObserver(varrer)
+    mo.observe(document.body, { childList: true, subtree: true })
+    return () => mo.disconnect()
+  }, [])
+}
+
 function MainLayoutInner() {
   const menu = useMenuControl()
+  usarBarraSuperior()
   usarArrastarTabelas()
 
   return (
