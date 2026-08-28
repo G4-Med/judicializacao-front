@@ -1,0 +1,41 @@
+/* Lixeira — mesmo enquadramento das telas de fase (Protocolados/Resultados):
+   sem este arquivo a página nascia sem container e colava no canto da tela
+   (print @R 28/08 12:54, já em produção). */
+.lixeira-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+  font-family: var(--mc-font-body, "Inter", sans-serif);
+  color: var(--mc-ink, #0f2236);
+}
+
+.lixeira-page .page-header h1 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mc-font-heading, "Poppins", sans-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--mc-navy-900, #062a45);
+  letter-spacing: -0.01em;
+}
+.lixeira-page .page-header h1 i { font-size: 1.4rem; color: var(--mc-muted, #5b6b7a); }
+.lixeira-page .page-header p {
+  margin: 6px 0 0;
+  max-width: 70ch;
+  color: var(--mc-muted, #5b6b7a);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+/* A tabela ganha o mesmo cartão das outras telas */
+.lixeira-page .p-datatable {
+  background: #fff;
+  border: 1px solid var(--mc-line, #e3eaef);
+  border-radius: 14px;
+  overflow: hidden;
+}
+body.dark-theme .lixeira-page .p-datatable { background: #0f1c2b; border-color: #1e293b; }
+body.dark-theme .lixeira-page .page-header h1 { color: #e2e8f0; }
