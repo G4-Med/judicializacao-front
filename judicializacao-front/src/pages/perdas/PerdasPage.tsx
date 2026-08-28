@@ -17,7 +17,7 @@ import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, 
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
-import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
 
 interface PerdaProcesso {
   id: number;
@@ -65,6 +65,7 @@ export function PerdasPage() {
     dias: { value: '', matchMode: FilterMatchMode.CONTAINS },
     resultado: { value: '', matchMode: FilterMatchMode.CONTAINS },
     statusPerda: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    procedimento: { value: '', matchMode: FilterMatchMode.CONTAINS },
     justificativaPerda: { value: '', matchMode: FilterMatchMode.CONTAINS }
   });
 
@@ -364,6 +365,15 @@ export function PerdasPage() {
           {colunaCadastro()}
           {colunaSegredo()}
           {colunaInteiroTeor()}
+          <Column field="procedimento" header="Procedimento" sortable filter
+            filterElement={(options: any) => (
+              <InputText value={options.value || ''} onChange={(e) => options.filterApplyCallback(e.target.value)}
+                placeholder="Buscar" className="p-column-filter" />
+            )}
+            style={{ minWidth: '16rem' }} />
+          <Column field="dataStatusPerda" header="Perda em" sortable style={{ minWidth: '8rem' }}
+            body={(r: any) => (r.dataStatusPerda ? r.dataStatusPerda.split('-').reverse().join('/') : '—')} />
+          {colunaBaixarOrcamento()}
           {colunaEmpenhoEstado()}
           {colunaPagoEm()}
           {colunaDiferenca()}

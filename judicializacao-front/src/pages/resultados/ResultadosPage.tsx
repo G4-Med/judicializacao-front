@@ -33,7 +33,7 @@ import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, 
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
-import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -367,7 +367,20 @@ const kpis = useMemo(() => {
   const ganhosPercentual = valorTotal > 0 ? (ganhosValor / valorTotal) * 100 : 0;
   const perdasPercentual = valorTotal > 0 ? (perdasValor / valorTotal) * 100 : 0;
 
+  // @R 28/08 02:46: "quero os ganhos exatos e os ganhos não exatos" — exato =
+  // pagamento do Estado bate com o valor do ganho/orçado (±0,5%): confirmação
+  // independente de que o Estado pagou exatamente o que declaramos ganhar.
+  const ehGanhoExato = (item: any) => {
+    const pago = item.empenho548?.pago ?? 0;
+    const base = item.valorGanho || item.valorOrcamento || 0;
+    return pago > 0 && base > 0 && Math.abs(pago - base) / base < 0.005;
+  };
+  const ganhosExatos = ganhos.filter(ehGanhoExato).length;
+  const ganhosNaoExatos = ganhos.length - ganhosExatos;
+
   return {
+    ganhosExatos,
+    ganhosNaoExatos,
     totalProcessos,
     mediaProcessos,
     valorTotal,
@@ -516,13 +529,15 @@ const kpis = useMemo(() => {
           <div className="kpi-subvalue">sinal forte · +{kpisEmpenho(dataComCamposCalculados).nHistorico} histórico ñ-atribuível</div>
         </div>
 
-        <div className="kpi-card">
+        <div className="kpi-card" title="Ganhos cujo pagamento do Estado BATE com o orçado (±0,5%) × ganhos ainda sem confirmação exata de valor — inteligência de conferência">
           <div className="kpi-header">
             <span>Ganhos</span>
             <i className="pi pi-check-circle"></i>
           </div>
           <div className="kpi-value kpi-value-success">{formatarMoeda(kpis.ganhosValor)}</div>
-          <div className="kpi-subvalue">{formatarPercentual(kpis.ganhosPercentual)}</div>
+          <div className="kpi-subvalue">
+            {formatarPercentual(kpis.ganhosPercentual)} · {kpis.ganhosExatos} exatos (pago = orçado) · {kpis.ganhosNaoExatos} não exatos
+          </div>
         </div>
 
         <div className="kpi-card">
@@ -592,6 +607,7 @@ const kpis = useMemo(() => {
           {colunaCadastro()}
           {colunaSegredo()}
           {colunaInteiroTeor()}
+          {colunaBaixarOrcamento()}
           {colunaEmpenhoEstado()}
           {colunaPagoEm()}
           {colunaDiferenca()}

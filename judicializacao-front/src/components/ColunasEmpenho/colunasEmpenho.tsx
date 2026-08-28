@@ -1,5 +1,7 @@
 import { Column } from 'primereact/column';
 import { Tag } from 'primereact/tag';
+import { Button } from 'primereact/button';
+import { getOrcamentoConsolidado } from '../../services/api/orders';
 
 /**
  * Colunas de empenho/pagamento do Estado (base 548) — compartilhadas pelas telas
@@ -110,6 +112,32 @@ export function kpisEmpenho(linhas: any[]) {
     somaValor: linhas.reduce((acc, l) => acc + (l.valorOrcamento || 0), 0),
     nExatos: pagos.filter(ehExato).length,
   };
+}
+
+/** Baixar o orçamento CONSOLIDADO enviado ao Estado (@R 28/08 02:44: "todas
+ * temos que ter o orçamento enviado ao estado para baixar"). */
+export function colunaBaixarOrcamento() {
+  const baixar = async (r: any) => {
+    try {
+      const { data } = await getOrcamentoConsolidado(r.id);
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `orcamento_${r.id}_${(r.paciente || '').replace(/\s+/g, '_').slice(0, 30)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Este pedido não tem PDF de orçamento anexado.');
+    }
+  };
+  return (
+    <Column key="baixarOrc" header="Orçamento" style={{ minWidth: '8rem' }} bodyStyle={{ textAlign: 'center' }}
+      body={(r: any) => (
+        <Button icon="pi pi-download" size="small" outlined severity="secondary"
+          tooltip="Baixar o orçamento enviado ao Estado (PDF consolidado)"
+          onClick={() => baixar(r)} aria-label="Baixar orçamento" />
+      )} />
+  );
 }
 
 export const fmtBRLEmpenho = fmtBRL;
