@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { DataTable } from 'primereact/datatable';
-import { getOrders, getStatusOrders, atualizarOrder, getMedicosCompleto, getAnexosOrder, uploadAnexoOrder, criarOrderProcess, processarOrderProcess, salvarJuridico, uploadArquivoIntegracao, marcarSemProfissional, analisarEmpenho, extrairEmail } from '../../services/api/orders';
+import { excluirOrder, getOrders, getStatusOrders, atualizarOrder, getMedicosCompleto, getAnexosOrder, uploadAnexoOrder, criarOrderProcess, processarOrderProcess, salvarJuridico, uploadArquivoIntegracao, marcarSemProfissional, analisarEmpenho, extrairEmail } from '../../services/api/orders';
 import type {
   DataTableFilterMeta,
   DataTablePageEvent,
@@ -23,6 +23,7 @@ import { InputNumber } from 'primereact/inputnumber';
 import { getStatusTagStyle } from '../../utils/statusTag';
 import { EnviarOrcamentoDialog } from '../orcamentoMedico/EnviarOrcamentoDialog';
 import { useAccess } from '../../access/AccessContext';
+import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
@@ -216,14 +217,24 @@ const escapeHtml = (value: string | number | null | undefined) =>
     .replace(/'/g, '&#39;');
 
 export function ProcessosPage() {
-  const { isReadOnly } = useAccess();
+  const { isReadOnly, profile } = useAccess();
+  const ehAdmin = profile.group === 'ADMIN';
+  const excluirLancamento = async (r: any) => {
+    if (!window.confirm(`EXCLUIR o lançamento #${r.id} (${r.paciente})? O backend guarda backup JSON antes — mas o registro some das telas.`)) return;
+    try {
+      await excluirOrder(r.id);
+      await carregarDados();
+    } catch {
+      alert('Erro ao excluir — só Admin pode, e o pedido precisa existir.');
+    }
+  };
   const readOnly = isReadOnly('processos');
   const [loading, setLoading] = useState(false);
   const [processos, setProcessos] = useState<Processo[]>([]);
   const [visibleProcessos, setVisibleProcessos] = useState<ProcessoTableRow[]>([]);
   const [selectedProcessos, setSelectedProcessos] = useState<ProcessoTableRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(50);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const massActionMenuRef = useRef<TieredMenu>(null);
@@ -2083,6 +2094,14 @@ ${linhasAnexos}
           {colunaCadastro()}
           {colunaSegredo()}
           {colunaInteiroTeor()}
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
+          <Column field="valorGanho" header="Ganho" sortable style={{ minWidth: '8rem' }}
+            body={(r: any) => (r.valorGanho > 0
+              ? <span style={{ color: '#16a34a', fontWeight: 600 }}>{r.valorGanho.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+              : <span style={{ opacity: 0.4 }}>—</span>)} />
           {colunaSolicitante()}
 
           {/* <Column
@@ -2189,6 +2208,13 @@ ${linhasAnexos}
             style={{ minWidth: '7rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
+          {ehAdmin && <Column header="Excluir" style={{ width: '5rem' }} bodyStyle={{ textAlign: 'center' }}
+            body={(r: any) => (
+              <Button icon="pi pi-trash" severity="danger" outlined size="small"
+                onClick={() => excluirLancamento(r)}
+                tooltip="Excluir lançamento (só Admin — backup automático antes)"
+                aria-label={`Excluir processo ${r.id}`} />
+            )} />}
         </>)}
         </DataTable>
 

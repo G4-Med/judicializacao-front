@@ -2,6 +2,8 @@
 
 
 export const getOrders = () => api.get('/orders/listar/');
+// Exclusão de lançamento errado — SÓ ADMIN; backend faz backup JSON antes (task #198)
+export const excluirOrder = (id: number) => api.delete(`/orders/${id}/excluir/`);
 export const getProcessosResumo = () => api.get('/orders/processos-resumo/');
 export const getStatusOrders = () => api.get('/orders/status/');
 export const atualizarOrder = (id: number, data: any) => api.patch(`/orders/${id}/atualizar/`, data);

@@ -38,6 +38,11 @@ export function colunaEmpenhoEstado() {
             ? <Tag value={`PAGO = ORÇADO ${fmtBRL(r.empenho548.pago)}`} icon="pi pi-star-fill"
                 style={{ background: '#7c3aed', color: '#fff' }}
                 title="O valor pago pelo Estado BATE com o orçamento enviado (±0,5%) — evidência forte de que é ESTE item. Conferência prioritária." />
+            : r.empenho548.sinal === 'DEPOSITO_NO_PROCESSO'
+            // Pedido AINDA NÃO PROTOCOLADO com depósito no CNJ: o Estado já pagou
+            // ALGO nesse processo antes de nós entrarmos — alerta estratégico, não desfecho.
+            ? <Tag value={`Depósito no processo ${fmtBRL(r.empenho548.pago)}`} severity="warning" icon="pi pi-exclamation-circle"
+                title="ATENÇÃO: o Estado JÁ depositou em juízo neste CNJ e nós ainda NEM protocolamos — provavelmente outro orçamento venceu ou é outro item. Conferir se ainda vale protocolar. NÃO significa que este pedido foi pago." />
             : r.empenho548.sinal === 'PROVAVEL_OUTRO_ITEM'
             // Régua da 548: pagamento ANTERIOR ao pedido com valor distante = o
             // mesmo processo pagou OUTRO item — não conta como "este pedido pago".
@@ -66,8 +71,11 @@ export function colunaPagoEm() {
             : <span style={{ opacity: 0.5 }}>—</span>;
         }
         const dias = Math.floor((Date.now() - new Date(`${dt}T00:00:00`).getTime()) / 86400000);
-        return <span title={`Último pagamento do Estado neste CNJ há ${dias} dia(s)`}>
-          {fmtDataBr(dt)} <small style={{ opacity: 0.7 }}>({dias}d)</small>
+        const ehEmpenho = r.empenho548?.ultimoPagamentoTipo === 'empenho';
+        return <span title={ehEmpenho
+            ? `O portal não expõe a data do pagamento — esta é a data do EMPENHO (o depósito judicial sai junto), há ${dias} dia(s)`
+            : `Último pagamento do Estado neste CNJ há ${dias} dia(s)`}>
+          {fmtDataBr(dt)} <small style={{ opacity: 0.7 }}>({dias}d{ehEmpenho ? ' · empenho' : ''})</small>
         </span>;
       }} />
   );

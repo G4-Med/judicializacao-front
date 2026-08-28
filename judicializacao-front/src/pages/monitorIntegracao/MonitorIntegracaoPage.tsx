@@ -294,7 +294,7 @@ export function MonitorIntegracaoPage() {
           dataKey="id"
           rowHover
           paginator
-          rows={100}
+          rows={50}
           rowsPerPageOptions={[10, 20, 50, 100, 200]}
           emptyMessage="Nenhuma integração cadastrada."
           onRowClick={(e) => abrirExecucoes(e.data as Integracao)}
@@ -322,7 +322,7 @@ export function MonitorIntegracaoPage() {
           loading={carregandoExecucoes}
           dataKey="id"
           paginator
-          rows={100}
+          rows={50}
           rowsPerPageOptions={[10, 20, 50, 100, 200]}
           emptyMessage="Nenhuma execução registrada."
         >

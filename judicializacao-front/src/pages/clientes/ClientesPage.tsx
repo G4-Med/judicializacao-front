@@ -209,7 +209,7 @@ export function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [selectedClientes, setSelectedClientes] = useState<ClienteTableRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(50);
   const [sortField, setSortField] = useState<string | undefined>('createDate');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(-1);
   const [createDialogVisible, setCreateDialogVisible] = useState(false);

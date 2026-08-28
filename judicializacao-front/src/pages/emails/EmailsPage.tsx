@@ -125,7 +125,7 @@ export function EmailsPage() {
     darPerda: 0,
   });
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(50);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
   const [enviandoId, setEnviandoId] = useState<number | null>(null);

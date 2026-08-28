@@ -1,0 +1,18 @@
+
+/* ═══ Rolagem lateral das tabelas (@R 28/08 03:0x: "barra de rolagem lateral e
+   arrastar para o lado... o botão Protocolar sumia no fim da tabela larga") ═══ */
+.p-datatable-wrapper {
+  overflow-x: auto !important;
+  scrollbar-width: auto;               /* Firefox: barra sempre presente */
+}
+.p-datatable-wrapper::-webkit-scrollbar {
+  height: 12px;                        /* barra horizontal GROSSA e visível */
+}
+.p-datatable-wrapper::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 6px;
+}
+.p-datatable-wrapper::-webkit-scrollbar-thumb:hover { background: #64748b; }
+.p-datatable-wrapper::-webkit-scrollbar-track { background: #e2e8f0; }
+/* arrastar-para-rolar (JS em MainLayout) */
+.p-datatable-wrapper.mc-arrastando { cursor: grabbing; user-select: none; }

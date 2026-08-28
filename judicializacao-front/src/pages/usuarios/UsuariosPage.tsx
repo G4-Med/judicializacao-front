@@ -127,7 +127,7 @@ export function UsuariosPage() {
 
   const [selectedUsuarios, setSelectedUsuarios] = useState<UsuarioRow[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(50);
   const [sortField, setSortField] = useState<string | undefined>('lastLogin');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(-1);
 

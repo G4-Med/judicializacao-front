@@ -128,7 +128,7 @@ export function SegredoJusticaPage() {
   // a MESMA tela em 2 filas — o menu aponta /segredo-justica?fila=ses.
   const [searchParams, setSearchParams] = useSearchParams();
   const fila: 'analisar' | 'ses' = searchParams.get('fila') === 'ses' ? 'ses' : 'analisar';
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(50);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 

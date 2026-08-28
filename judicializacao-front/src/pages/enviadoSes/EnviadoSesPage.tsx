@@ -312,7 +312,7 @@ export function EnviadoSesPage() {
         </AcoesTabela>
         <DataTable
           aria-label="Pedidos enviados à SES aguardando retorno técnico"
-          value={linhas} dataKey="id" paginator rows={100} rowsPerPageOptions={[10, 20, 50, 100, 200]}
+          value={linhas} dataKey="id" paginator rows={50} rowsPerPageOptions={[10, 20, 50, 100, 200]}
           selection={selecionadas} selectionMode="checkbox"
           onSelectionChange={(e) => setSelecionadas(e.value as LinhaEnviadoSes[])}
           expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}

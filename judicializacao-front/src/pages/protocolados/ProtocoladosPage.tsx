@@ -84,7 +84,7 @@ export function ProtocoladosPage() {
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<Protocolado[]>([]);
   const [first, setFirst] = useState(0);
-  const [rows, setRows] = useState(100);
+  const [rows, setRows] = useState(50);
   const [sortField, setSortField] = useState<string | undefined>('dias');
   const [sortOrder, setSortOrder] = useState<1 | 0 | -1 | null | undefined>(1);
 
