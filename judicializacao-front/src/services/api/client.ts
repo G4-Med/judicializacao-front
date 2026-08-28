@@ -60,3 +60,8 @@ export const uploadArquivoStorage = (file: File) => {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
 };
+
+// ── Menu de perfil / sessão única (26/08) ──────────────
+export const getMinhaSessao = () => api.get('/usuarios/minha-sessao/');
+export const trocarMinhaSenha = (senhaAtual: string, senhaNova: string) =>
+  api.post('/usuarios/trocar-minha-senha/', { senhaAtual, senhaNova });

@@ -5,6 +5,7 @@ import { Chart } from 'primereact/chart';
 import { InputText } from 'primereact/inputtext';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { useHomeOnboarding } from '../../app/onboarding/useHomeOnboarding';
 import './HomePage.css';
 
 interface OrderResumo {
@@ -15,6 +16,7 @@ interface OrderResumo {
   dataStatusPerda?: string | null;
   statusProcesso?: string | null;
   statusOrcamento?: string | null;
+  statusJuridico?: string | null;
   refPreco?: number | null;
   valorOrcamento?: number | null;
   valorGanho?: number | null;
@@ -191,6 +193,7 @@ const formatCurrencyCompact = new Intl.NumberFormat('pt-BR', {
 const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
 export function HomePage() {
+  useHomeOnboarding();
   const [loading, setLoading] = useState(false);
   const [exportando, setExportando] = useState(false);
   const [orders, setOrders] = useState<OrderResumo[]>([]);
@@ -317,6 +320,14 @@ export function HomePage() {
       },
     ];
 
+    // Taxa de Segredo de Justiça (task #194, 26/08) — classifica o banco inteiro (¬só
+    // o mês) contra o "Segredo de Justiça" já gravado em statusJuridico (censo 26/08:
+    // é texto livre marcado manualmente no Jurídico, sem enum dedicado — comparação
+    // por igualdade de string é o que o resto do sistema já faz com este campo).
+    const segredoJusticaOrders = orders.filter((item) => item.statusJuridico === 'Segredo de Justiça');
+    const segredoJusticaQtd = segredoJusticaOrders.length;
+    const segredoJusticaTaxa = pedidosVida > 0 ? (segredoJusticaQtd / pedidosVida) * 100 : 0;
+
     const cardsValorQuantidade: CardValorQuantidade[] = [
       {
         titulo: 'Valor em Aberto',
@@ -344,6 +355,14 @@ export function HomePage() {
         icone: 'pi pi-percentage',
         valorPrincipal: conversaoValor,
         quantidade: conversaoQuantidade,
+        tipo: 'info',
+        percentual: true,
+      },
+      {
+        titulo: 'Taxa Segredo de Justiça',
+        icone: 'pi pi-lock',
+        valorPrincipal: segredoJusticaTaxa,
+        quantidade: segredoJusticaQtd,
         tipo: 'info',
         percentual: true,
       },
