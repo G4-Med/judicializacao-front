@@ -1,6 +1,7 @@
 import { Column } from 'primereact/column';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
+import { Dropdown } from 'primereact/dropdown';
 import { getOrcamentoConsolidado } from '../../services/api/orders';
 
 /**
@@ -25,9 +26,31 @@ const ehExato = (r: any) =>
   (r.empenho548?.pago ?? 0) > 0 && (r.valorOrcamento ?? 0) > 0 &&
   Math.abs(r.empenho548.pago - r.valorOrcamento) / r.valorOrcamento < 0.005;
 
+/** As 4 classes de pagamento (@R 28/08 08:34) — derivadas no backend em
+ *  `classePagamento`, para a tabela poder FILTRAR por elas. */
+export const OPCOES_CLASSE_PAGAMENTO = [
+  { label: 'Pago = orçado (exato)', value: 'EXATO' },
+  { label: 'Pago, valor diferente', value: 'NAO_EXATO' },
+  { label: 'Empenhado, sem pagamento', value: 'EMPENHADO' },
+  { label: 'Sem pagamento no CNJ', value: 'SEM_REGISTRO' },
+];
+
+/** Estado inicial do filtro — espalhe no `filters` da página:
+ *  `const [filters] = useState({ ...FILTRO_PAGAMENTO, ... })` */
+export const FILTRO_PAGAMENTO = {
+  classePagamento: { value: null, matchMode: 'equals' as const },
+};
+
 export function colunaEmpenhoEstado() {
   return (
-    <Column key="empenho548" field="empenho548" header="Empenho Estado" sortable style={{ minWidth: '11rem' }}
+    <Column key="empenho548" field="classePagamento" header="Empenho Estado" sortable
+      style={{ minWidth: '11rem' }} filter showFilterMenu={false}
+      filterElement={(o: any) => (
+        <Dropdown value={o.value} options={OPCOES_CLASSE_PAGAMENTO}
+          onChange={(e) => o.filterApplyCallback(e.value)}
+          placeholder="Pagamento" showClear className="p-column-filter"
+          style={{ minWidth: '11rem' }} />
+      )}
       sortFunction={(e: any) => {
         const v = (r: any) => r.empenho548?.pago ?? -1;
         return [...e.data].sort((a: any, b: any) => (v(a) - v(b)) * (e.order ?? 1));

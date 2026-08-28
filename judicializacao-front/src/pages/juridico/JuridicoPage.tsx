@@ -25,6 +25,7 @@ import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExp
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
+import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
 
 // Meta desta fase (triagem jurídica) — espelha backend/funil.py FASES['triagem'].meta_dias.
 // "a análise sai no dia seguinte — libera para mim até meio-dia" (fala do @R na reunião).
@@ -125,6 +126,7 @@ export function JuridicoPage() {
   const colunasCfg = useColunasVisiveis('analise-juridica');
 
   const [filters, setFilters] = useState<DataTableFilterMeta>({
+    ...FILTRO_PAGAMENTO,   // já pago no CNJ? decide se vale cotar
     paciente: { value: '', matchMode: FilterMatchMode.CONTAINS },
     idade: { value: '', matchMode: FilterMatchMode.CONTAINS },
     procedimento: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -512,6 +514,10 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             style={{ minWidth: '7rem' }} 
             bodyStyle={{ textAlign: 'center' }} />
           {colunaExcluirAdmin(carregarDados)}
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
         </>)}
         </DataTable>
       </div>

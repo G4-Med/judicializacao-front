@@ -23,7 +23,7 @@ import { InputNumber } from 'primereact/inputnumber';
 import { getStatusTagStyle } from '../../utils/statusTag';
 import { EnviarOrcamentoDialog } from '../orcamentoMedico/EnviarOrcamentoDialog';
 import { useAccess } from '../../access/AccessContext';
-import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
@@ -302,6 +302,7 @@ export function ProcessosPage() {
   const [searchParams] = useSearchParams();
   const colunasCfg = useColunasVisiveis('base-processos');
   const [filters, setFilters] = useState<DataTableFilterMeta>({
+    ...FILTRO_PAGAMENTO,   // filtrar por exato · não exato · empenhado · sem pagamento
     ...FILTROS_IDENTIFICACAO,   // CNJ · SEI · Comarca (task #214)
     paciente: { value: searchParams.get('paciente') ?? '', matchMode: FilterMatchMode.CONTAINS },
     idade: { value: '', matchMode: FilterMatchMode.CONTAINS },
