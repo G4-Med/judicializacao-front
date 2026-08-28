@@ -152,7 +152,7 @@ export const ETAPAS: Etapa[] = [
     id: 'enviado-ses',
     prazo: 'A resposta é do Estado; nossa verificação tem prazo: checar em 120 dias, cobrar em 180',
     numero: 6,
-    titulo: 'Enviado à SES — aguardando retorno técnico',
+    titulo: 'Enviado à SES sem protocolo — aguardando retorno técnico',
     dono: 'G4MED',
     rota: '/enviado-ses',
     oQueFaz:

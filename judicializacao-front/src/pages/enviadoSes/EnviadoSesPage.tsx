@@ -197,7 +197,7 @@ export function EnviadoSesPage() {
   return (
     <div className="enviado-ses-page">
       <div className="page-header">
-        <CabecalhoFase nome="Enviado à SES" slaTexto="verificar em 120 dias · cobrar em 180" screen="protocolados"
+        <CabecalhoFase nome="Enviado à SES — sem protocolo" slaTexto="verificar em 120 dias · cobrar em 180" screen="protocolados"
           subtitulo="Orçamento já enviado ao Estado, sem acompanhamento nos autos — só aguardamos o retorno técnico (ganho ou perda)" />
       </div>
 

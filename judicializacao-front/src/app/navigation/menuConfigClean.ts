@@ -52,7 +52,7 @@ export const MENU_CONFIG_CLEAN: MenuConfigItem[] = [
       { label: 'Orçamento Médico', icon: 'pi pi-angle-right', path: '/orcamento-medico', screen: 'orcamentoMedico' },
       { label: 'Protocolar', icon: 'pi pi-angle-right', path: '/para-protocolar', screen: 'paraProtocolar' },
       { label: 'Protocolados', icon: 'pi pi-angle-right', path: '/protocolados', screen: 'protocolados' },
-      { label: 'Enviado à SES', icon: 'pi pi-angle-right', path: '/enviado-ses', screen: 'protocolados' },
+      { label: 'Env. à SES S/Prot', icon: 'pi pi-angle-right', path: '/enviado-ses', screen: 'protocolados' },
     ],
   },
   {
