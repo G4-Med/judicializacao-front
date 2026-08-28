@@ -3,6 +3,8 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
+import { IconField } from 'primereact/iconfield';
+import { InputIcon } from 'primereact/inputicon';
 import { Dropdown } from 'primereact/dropdown';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { Tag } from 'primereact/tag';
@@ -163,12 +165,12 @@ export function OrcamentosTerceirosPage() {
         <Dropdown value={especialidade} options={especialidades} placeholder="Todas as especialidades"
           showClear filter className="acv-especialidade" aria-label="Filtrar por especialidade"
           onChange={(e) => { setEspecialidade(e.value ?? null); aplicar(e.value ?? null); }} />
-        <span className="p-input-icon-left acv-busca">
-          <i className="pi pi-search" />
+        <IconField iconPosition="left" className="acv-busca">
+          <InputIcon className="pi pi-search" />
           <InputText value={q} onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') aplicar(); }}
             placeholder="Digite o procedimento — ex.: artroplastia de quadril" aria-label="Buscar procedimento" />
-        </span>
+        </IconField>
         <Button label="Buscar" icon="pi pi-search" onClick={() => aplicar()} />
         <Button label="Limpar" outlined onClick={limpar} disabled={!filtroAtivo && !q} />
       </div>

@@ -25,6 +25,7 @@
 .acv-especialidade { min-width: 16rem; }
 .acv-busca { flex: 1 1 22rem; }
 .acv-busca .p-inputtext { width: 100%; }
+.acv-busca { display: block; }
 
 /* KPIs: resumo antes do detalhe. */
 .acv-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: .75rem; margin-bottom: 1.1rem; }

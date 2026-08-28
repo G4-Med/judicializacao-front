@@ -4,6 +4,8 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
+import { IconField } from 'primereact/iconfield';
+import { InputIcon } from 'primereact/inputicon';
 import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 import { Tag } from 'primereact/tag';
@@ -168,11 +170,11 @@ function Processados() {
     <div>
       <div className="ce-filtros">
         <Calendar value={dia} onChange={(e) => setDia(e.value as Date)} dateFormat="dd/mm/yy" showIcon placeholder="Dia" disabled={!!q.trim()} />
-        <span className="p-input-icon-left" style={{ flex: 1 }}>
-          <i className="pi pi-search" />
+        <IconField iconPosition="left" style={{ flex: 1 }}>
+          <InputIcon className="pi pi-search" />
           <InputText value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') carregar(); }}
             placeholder="Buscar por nome do paciente, remetente ou assunto (ignora o dia)" style={{ width: '100%' }} />
-        </span>
+        </IconField>
         <Dropdown value={status} options={opcoesStatus} onChange={(e) => setStatus(e.value)} placeholder="Todos os status" showClear style={{ minWidth: '13rem' }} />
         <Button label="Buscar" icon="pi pi-search" onClick={carregar} />
       </div>
