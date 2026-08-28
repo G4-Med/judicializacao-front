@@ -144,8 +144,8 @@ export function colunaBaixarOrcamento() {
     <Column key="baixarOrc" header="Orçamento" sortable field="temOrcamentoPdf"
       style={{ minWidth: '8rem' }} bodyStyle={{ textAlign: 'center' }}
       body={(r: any) => (r.temOrcamentoPdf
-        ? <Button icon="pi pi-download" size="small" outlined severity="secondary"
-            tooltip="Baixar o orçamento enviado ao Estado (PDF consolidado)"
+        ? <Button icon="pi pi-file-pdf" size="small" severity="success"
+            tooltip="TEM orçamento anexado — clique para baixar o PDF enviado ao Estado"
             onClick={() => baixar(r)} aria-label="Baixar orçamento" />
         : <Tag value="não enviado" severity="secondary"
             title="Este pedido não tem orçamento anexado — nunca chegou a ser cotado (não é falha de upload: toda cotação tem o PDF)." />)} />

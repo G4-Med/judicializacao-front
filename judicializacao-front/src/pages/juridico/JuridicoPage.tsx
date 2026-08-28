@@ -699,6 +699,47 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
               </div>
             )}
 
+            {/* @R 28/08 03:2x: "os últimos valores PAGOS para a mesma cirurgia, o valor
+                que nossos médicos enviam... com base nos envios nossos e nos resultados
+                com quem competimos, e a relação dos médicos que respondem". */}
+            {intel && (intel.precos_similares?.pagos_estado?.length > 0 || intel.precos_similares?.n_enviados > 0) && (
+              <div className="field field-span-4" style={{
+                background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '8px',
+                padding: '10px 14px', fontSize: '0.875rem', color: '#1e3a8a',
+              }}>
+                <strong>💰 Preços para cirurgia similar</strong>
+                {intel.precos_similares.pagos_estado?.length > 0 && (
+                  <div style={{ marginTop: '4px' }}>
+                    <em>O Estado pagou (resultado da competição):</em>{' '}
+                    {intel.precos_similares.pagos_estado.map((pg: any, i: number) => (
+                      <span key={i} title={pg.procedimento}>
+                        {i > 0 && ' · '}
+                        <strong>{pg.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</strong>
+                        {pg.data && <small> ({pg.data.split('-').reverse().slice(0, 2).join('/')})</small>}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {intel.precos_similares.n_enviados > 0 && (
+                  <div style={{ marginTop: '4px' }}>
+                    <em>Nossos médicos enviaram ({intel.precos_similares.n_enviados}×):</em>{' '}
+                    mediana <strong>{intel.precos_similares.mediana_enviados?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</strong>
+                    {intel.precos_similares.enviados?.length > 0 && (
+                      <small> · últimos: {intel.precos_similares.enviados.map((v: number) =>
+                        v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })).join(' · ')}</small>
+                    )}
+                  </div>
+                )}
+                {intel.experiencia?.length > 0 && (
+                  <div style={{ marginTop: '4px' }}>
+                    <em>Médicos que respondem:</em>{' '}
+                    {[...new Set(intel.experiencia.filter((e: any) => e.medico_nome).map((e: any) => e.medico_nome))]
+                      .slice(0, 4).join(' · ') || '—'}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="field field-span-2">
               <label>Status Jurídico</label>
               <Dropdown
