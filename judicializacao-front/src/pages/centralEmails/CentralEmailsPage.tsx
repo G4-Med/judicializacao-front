@@ -8,7 +8,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 import { Tag } from 'primereact/tag';
 import { Link } from 'react-router-dom';
-import { getCentralSaude, getCentralEmails, getCentralCaixa } from '../../services/api/integracoes';
+import { getCentralSaude, getCentralEmails, getCentralCaixa, postCentralReprocessar } from '../../services/api/integracoes';
 import { cabecalhoComHint } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import './CentralEmailsPage.css';
 
@@ -37,6 +37,29 @@ const ROTULO_STATUS: Record<string, string> = {
   CRIADO: 'Virou pedido', DUPLICADO_PACIENTE: 'Re-pedido (contado)', REMETENTE_INVALIDO: 'Ignorado (remetente)',
   RESPOSTA: 'Resposta a e-mail', ERRO: 'Falhou',
 };
+
+/** "Recuperar anexos" / "Processar agora": busca o e-mail na caixa pelo Message-ID e faz o que
+ *  o monitor deveria ter feito. Idempotente no backend — clicar duas vezes não duplica. */
+function BotaoReprocessar({ messageId, rotulo, aoTerminar }: { messageId: string; rotulo: string; aoTerminar: () => void }) {
+  const [ocupado, setOcupado] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const clicar = async () => {
+    setOcupado(true); setMsg(null);
+    try {
+      const { data } = await postCentralReprocessar(messageId);
+      setMsg(data.jaFeito ? 'já feito' : data.processadoAgora ? `processado: ${data.status}` : data.jaProcessado ? 'já processado' : `${data.anexosSubidos ?? 0} anexo(s) subido(s)`);
+      aoTerminar();
+    } catch (e: any) {
+      setMsg(e?.response?.data?.error ?? 'falhou');
+    } finally { setOcupado(false); }
+  };
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <Button label={rotulo} icon="pi pi-replay" size="small" outlined loading={ocupado} onClick={clicar} />
+      {msg && <small className="ce-sub">{msg}</small>}
+    </span>
+  );
+}
 
 function Saude() {
   const [s, setS] = useState<any | null>(null);
@@ -104,6 +127,9 @@ function Processados() {
         <h4><i className="pi pi-search" /> O que aconteceu</h4>
         <p>{r.depuracao}</p>
         {r.erro && <p className="ruim">Erro: {r.erro}</p>}
+        {r.status === 'DUPLICADO_PACIENTE' && r.pedido && !(r.detalhe || '').includes('anexos recuperados') && (
+          <p><BotaoReprocessar messageId={r.messageId} rotulo="Recuperar anexos deste e-mail no pedido" aoTerminar={carregar} /></p>
+        )}
         <p className="ce-sub">Message-ID <code>{r.messageId}</code> · execução #{r.execucaoId}
           {r.pedido && <> · pedido <strong>#{r.pedido.id}</strong> ({r.pedido.status}{r.pedido.vezesPedido > 1 ? `, pedido ${r.pedido.vezesPedido}×` : ''}{r.pedido.naLixeira ? ', na lixeira' : ''})</>}
         </p>
@@ -162,6 +188,8 @@ function Processados() {
         <Column field="remetente" header="Remetente" sortable style={{ minWidth: '14rem' }} body={(r) => (r.remetente || '').replace(/<.*>/, '').trim() || r.remetente} />
         <Column field="assunto" header="Assunto" style={{ minWidth: '18rem' }} />
         <Column header="Pedido" body={(r) => r.pedido ? <>#{r.pedido.id}{r.pedido.vezesPedido > 1 && <span className="mc-repedido-badge" style={{ marginLeft: 6 }}>{r.pedido.vezesPedido}×</span>}</> : '—'} />
+        <Column field="vezesChegou" header={cabecalhoComHint('Chegou', 'Quantas vezes um e-mail deste paciente chegou (pedido + re-pedidos)')} sortable style={{ width: '6rem' }} bodyStyle={{ textAlign: 'center' }}
+          body={(r) => (r.vezesChegou ?? 1) > 1 ? <span className="mc-repedido-badge">{r.vezesChegou}×</span> : <span className="ce-sub">1×</span>} />
         <Column header={cabecalhoComHint('Resposta', 'A resposta de recebimento que o sistema mandou ao solicitante — abra a linha para ver o conteúdo')}
           body={(r) => r.resposta ? <Tag value={r.resposta.status} severity={r.resposta.status === 'ENVIADO' ? 'success' : r.resposta.status === 'ERRO' ? 'danger' : 'warning'} /> : <span className="ce-sub">—</span>} />
       </DataTable>
@@ -206,6 +234,10 @@ function Caixa() {
           ? <Tag value={ROTULO_STATUS[r.status] ?? r.status} severity={COR_STATUS[r.status] ?? 'secondary'} />
           : <Tag value={r.lido ? 'LIDA, NÃO PROCESSADA' : 'aguardando o ciclo'} severity={r.lido ? 'danger' : 'info'} />} />
         <Column header="Pedido" body={(r) => r.pedidoId ? `#${r.pedidoId}` : '—'} />
+        <Column field="chegouVezes" header={cabecalhoComHint('Chegou', 'Mesmo assunto (sem RE:/FW:) no período')} sortable style={{ width: '6rem' }} bodyStyle={{ textAlign: 'center' }}
+          body={(r) => (r.chegouVezes ?? 1) > 1 ? <span className="mc-repedido-badge">{r.chegouVezes}×</span> : <span className="ce-sub">1×</span>} />
+        <Column header="Ação" style={{ width: '12rem' }} body={(r) => r.naoVistoPeloMonitor && r.messageId
+          ? <BotaoReprocessar messageId={r.messageId} rotulo="Processar agora" aoTerminar={carregar} /> : null} />
       </DataTable>
     </div>
   );

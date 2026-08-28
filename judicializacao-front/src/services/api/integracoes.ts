@@ -86,3 +86,4 @@ export const salvarMonitorEmailConfig = (payload: Partial<{
 export const getCentralSaude = () => api.get('/integracoes/central/saude/');
 export const getCentralEmails = (params: Record<string, string>) => api.get('/integracoes/central/emails/', { params });
 export const getCentralCaixa = (dias: number) => api.get('/integracoes/central/caixa/', { params: { dias } });
+export const postCentralReprocessar = (messageId: string) => api.post('/integracoes/central/reprocessar/', { messageId });
