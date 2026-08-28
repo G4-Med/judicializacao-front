@@ -22,7 +22,7 @@ import './ProtocoladosPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
@@ -468,7 +468,7 @@ export function ProtocoladosPage() {
     <div className="protocolados-page">
       <PrimeiraVisitaInfo etapaId="protocolados" />
       <div className="page-header">
-        <CabecalhoFase nome="Protocolados" screen="protocolados"
+        <CabecalhoFase nome="Protocolados" slaTexto="atualizar a cada 15 dias" screen="protocolados"
           subtitulo="Protocolados nos autos — acompanhamento até a decisão" />
 
         <div className="page-actions">
@@ -580,7 +580,7 @@ export function ProtocoladosPage() {
 
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
-            header="Paciente"
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -597,7 +597,7 @@ export function ProtocoladosPage() {
 
           <Column
             field="cliente"
-            header="Cliente"
+            header={cabecalhoComHint('Cliente', 'Empresa/prestador que responde pelo orçamento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -606,7 +606,7 @@ export function ProtocoladosPage() {
 
           <Column
             field="valor"
-            header="Valor"
+            header={cabecalhoComHint('Valor', 'Valor do orçamento que enviamos ao Estado por este pedido.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -625,7 +625,7 @@ export function ProtocoladosPage() {
 
           <Column
             field="dias"
-            header="Dias protocolo"
+            header={cabecalhoComHint('Dias protocolo', 'Dias desde a data em que a peça foi protocolada nos autos.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -637,7 +637,7 @@ export function ProtocoladosPage() {
               de 15 em 15 dias o processo precisa ser atualizado" — SLA de acompanhamento */}
           <Column
             field="diasSemAtualizacao"
-            header="Sem atualização"
+            header={cabecalhoComHint('Sem atualização', 'Dias desde o último acompanhamento registrado. SLA: atualizar a cada 15 dias.')}
             sortable
             style={{ minWidth: '9rem' }}
             body={(r: any) => (r.diasSemAtualizacao >= 30
@@ -656,7 +656,7 @@ export function ProtocoladosPage() {
 
           <Column
             field="status"
-            header="Status"
+            header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -666,7 +666,7 @@ export function ProtocoladosPage() {
 
           <Column
             field="resultado"
-            header="Resultado"
+            header={cabecalhoComHint('Resultado', 'Desfecho registrado: ganho, perda ou em andamento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}

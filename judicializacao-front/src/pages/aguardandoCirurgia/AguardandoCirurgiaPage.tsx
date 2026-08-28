@@ -21,7 +21,7 @@ import type {
 } from '../../services/api/financeiro';
 import './AguardandoCirurgiaPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
-import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
@@ -550,7 +550,7 @@ export function AguardandoCirurgiaPage() {
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
-            header="Paciente"
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -566,7 +566,7 @@ export function AguardandoCirurgiaPage() {
           {colunaSolicitante()}
           <Column
             field="medico"
-            header="Médico"
+            header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -574,7 +574,7 @@ export function AguardandoCirurgiaPage() {
           />
           <Column
             field="valor"
-            header="Valor"
+            header={cabecalhoComHint('Valor', 'Valor do orçamento que enviamos ao Estado por este pedido.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -591,7 +591,7 @@ export function AguardandoCirurgiaPage() {
           />
           <Column
             field="dias"
-            header="Dias"
+            header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}

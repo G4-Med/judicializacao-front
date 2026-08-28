@@ -28,7 +28,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import './ProcessosPage.css';
-import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
@@ -2087,7 +2087,7 @@ ${linhasAnexos}
 
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
-            header="Paciente"
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -2104,7 +2104,7 @@ ${linhasAnexos}
           {colunaEmpenhoEstado()}
           {colunaPagoEm()}
           {colunaDiferenca()}
-          <Column field="valorGanho" header="Ganho" sortable style={{ minWidth: '8rem' }}
+          <Column field="valorGanho" header={cabecalhoComHint('Ganho', 'Valor do ganho declarado por nós neste pedido.')} sortable style={{ minWidth: '8rem' }}
             body={(r: any) => (r.valorGanho > 0
               ? <span style={{ color: '#16a34a', fontWeight: 600 }}>{r.valorGanho.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
               : <span style={{ opacity: 0.4 }}>—</span>)} />
@@ -2112,7 +2112,7 @@ ${linhasAnexos}
 
           {/* <Column
             field="idade"
-            header="Idade"
+            header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -2121,7 +2121,7 @@ ${linhasAnexos}
 
           <Column
             field="procedimento"
-            header="Procedimento"
+            header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -2131,7 +2131,7 @@ ${linhasAnexos}
 
           <Column
             field="refPreco"
-            header="Ref. Preço"
+            header={cabecalhoComHint('Ref. Preço', 'Preço de referência do procedimento — base de comparação, não é o orçamento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -2141,7 +2141,7 @@ ${linhasAnexos}
 
           <Column
             field="medico"
-            header="Médico"
+            header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}
             sortable
             filter
             filterElement={(options) => dropdownFilterElement(options, 'Selecione', medicosFilterOptions)}
@@ -2169,7 +2169,7 @@ ${linhasAnexos}
 
           <Column
             field="dias"
-            header="Dias"
+            header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -2179,7 +2179,7 @@ ${linhasAnexos}
 
           <Column
             field="status"
-            header="Status"
+            header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
             sortable
             filter
             filterElement={(options) => dropdownFilterElement(options, 'Selecione', statusProcessoOpts)}
@@ -2214,7 +2214,7 @@ ${linhasAnexos}
             style={{ minWidth: '7rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
-          {ehAdmin && <Column header="Excluir" style={{ width: '5rem' }} bodyStyle={{ textAlign: 'center' }}
+          {ehAdmin && <Column header={cabecalhoComHint('Excluir', 'Só Admin. Apaga o lançamento (backup automático no servidor antes).')} style={{ width: '5rem' }} bodyStyle={{ textAlign: 'center' }}
             body={(r: any) => (
               <Button icon="pi pi-trash" severity="danger" outlined size="small"
                 onClick={() => excluirLancamento(r)}
@@ -2227,7 +2227,7 @@ ${linhasAnexos}
         <Dialog
           header="Novo Processo"
           visible={novoProcessoTipoVisible}
-          style={{ width: '34rem', maxWidth: '96vw' }}
+          style={{ width: '60rem', maxWidth: '96vw' }}
           modal
           onHide={() => setNovoProcessoTipoVisible(false)}
         >

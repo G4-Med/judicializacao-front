@@ -32,13 +32,17 @@ interface Props {
   nome: string;
   screen: ScreenKey;
   subtitulo?: string;
-  /** meta em dias da fase (undefined = fase sem SLA) */
+  /** meta em dias da fase (undefined = fase sem SLA simples) */
   slaDias?: number;
+  /** SLA que não cabe em "N dias": cadência ou verificação escalonada.
+   *  Ex.: "atualizar a cada 15 dias" (fase 5) · "verificar em 120d, cobrar em
+   *  180d" (fase 6). Espelho de meta_atualizacao_dias/meta_verificacao_dias. */
+  slaTexto?: string;
   /** conteúdo à direita (botões da página) */
   acoes?: React.ReactNode;
 }
 
-export function CabecalhoFase({ nome, screen, subtitulo, slaDias, acoes }: Props) {
+export function CabecalhoFase({ nome, screen, subtitulo, slaDias, slaTexto, acoes }: Props) {
   const { pathname } = useLocation();
   const etapa = ETAPAS.find((e) => e.rota === pathname);
   const titulo = etapa ? `${etapa.numero}. ${nome}` : nome;
@@ -64,7 +68,11 @@ export function CabecalhoFase({ nome, screen, subtitulo, slaDias, acoes }: Props
               <i className="pi pi-user-edit" /> opera: <strong>{opera.join(' · ')}</strong>
             </span>
           )}
-          {slaDias !== undefined ? (
+          {slaTexto ? (
+            <span className="cf-chip cf-chip--sla" title="Meta desta fase — espelho de backend/funil.py">
+              <i className="pi pi-clock" /> SLA ativo: <strong>{slaTexto}</strong>
+            </span>
+          ) : slaDias !== undefined ? (
             <span className="cf-chip cf-chip--sla" title="Meta desta fase — espelho de backend/funil.py">
               <i className="pi pi-clock" /> SLA ativo: <strong>{slaDias} {slaDias === 1 ? 'dia' : 'dias'}</strong>
             </span>

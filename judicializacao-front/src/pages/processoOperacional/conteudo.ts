@@ -34,11 +34,11 @@ export const DONOS = {
 export const ETAPAS: Etapa[] = [
   {
     id: 'juridico',
+    prazo: 'SLA 1 dia — a análise sai no dia seguinte ("libera para mim até meio-dia")',
     numero: 1,
     titulo: 'Jurídico — a triagem',
     dono: 'INSTITUTO',
     rota: '/juridico',
-    prazo: 'Todo dia de manhã · liberado até 11h/meio-dia',
     oQueFaz:
       'Aqui chegam os pedidos que a Secretaria de Estado mandou por e-mail. O sistema cadastra sozinho. ' +
       'A análise decide se aquele pedido merece virar cotação.',
@@ -58,11 +58,11 @@ export const ETAPAS: Etapa[] = [
   },
   {
     id: 'selecionar-medico',
+    prazo: '24h para o médico dizer SE vai cotar (sem data própria no sistema — o relógio medido é o das 96h do orçamento)',
     numero: 2,
     titulo: 'Selecionar médico',
     dono: 'G4MED',
     rota: '/selecionar-medico',
-    prazo: '24 horas para o médico dizer SE vai cotar',
     oQueFaz:
       'A G4MED escolhe para qual médico o pedido vai. Esta etapa não aparece para o Instituto — ' +
       'mas é aqui que a rede de vocês entra.',
@@ -79,11 +79,11 @@ export const ETAPAS: Etapa[] = [
   },
   {
     id: 'orcamento-medico',
+    prazo: 'SLA 4 dias (96 horas) — é o prazo que sustenta o contrato com o Estado',
     numero: 3,
     titulo: 'Orçamento médico — a cobrança',
     dono: 'G4MED',
     rota: '/orcamento-medico',
-    prazo: '96 horas (4 dias) para o orçamento voltar',
     oQueFaz:
       'Lista tudo que foi pedido ao médico e ainda não voltou. É a fila que mede se estamos ' +
       'cumprindo o prazo com o Estado.',
@@ -100,6 +100,7 @@ export const ETAPAS: Etapa[] = [
   },
   {
     id: 'para-protocolar',
+    prazo: 'SLA 1 dia — "esta é a área que você ZERA todo dia"',
     numero: 4,
     titulo: 'Para protocolar — juntar aos autos',
     dono: 'INSTITUTO',
@@ -124,6 +125,7 @@ export const ETAPAS: Etapa[] = [
   },
   {
     id: 'protocolados',
+    prazo: 'A decisão é do juiz (sem prazo nosso), mas o acompanhamento tem: atualizar a cada 15 dias',
     numero: 5,
     titulo: 'Protocolados — acompanhar até a decisão',
     dono: 'INSTITUTO',
@@ -148,6 +150,7 @@ export const ETAPAS: Etapa[] = [
   // 'Perda por segredo de justiça'; segredo enviado à SES vive na etapa 6 abaixo.
   {
     id: 'enviado-ses',
+    prazo: 'A resposta é do Estado; nossa verificação tem prazo: checar em 120 dias, cobrar em 180',
     numero: 6,
     titulo: 'Enviado à SES — aguardando retorno técnico',
     dono: 'G4MED',

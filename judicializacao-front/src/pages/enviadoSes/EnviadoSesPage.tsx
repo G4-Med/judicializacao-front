@@ -19,7 +19,7 @@ import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 import { ContadorRegistros } from '../../components/ContadorRegistros/ContadorRegistros';
 import {
   colunaCnj, colunaSei, colunaComarca, colunaCadastro, colunaSegredo, colunaInteiroTeor,
-  colunaSolicitante, tagTipoPaciente, FILTROS_IDENTIFICACAO, nomeComCopiar,
+  colunaSolicitante, tagTipoPaciente, FILTROS_IDENTIFICACAO, nomeComCopiar, cabecalhoComHint,
 } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
@@ -196,7 +196,7 @@ export function EnviadoSesPage() {
   return (
     <div className="enviado-ses-page">
       <div className="page-header">
-        <CabecalhoFase nome="Enviado à SES" screen="protocolados"
+        <CabecalhoFase nome="Enviado à SES" slaTexto="verificar em 120 dias · cobrar em 180" screen="protocolados"
           subtitulo="Orçamento já enviado ao Estado, sem acompanhamento nos autos — só aguardamos o retorno técnico (ganho ou perda)" />
       </div>
 
@@ -243,7 +243,7 @@ export function EnviadoSesPage() {
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
           <Column expander style={{ width: '3rem' }} />
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
-          <Column field="paciente" header="Paciente" sortable filter
+          <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')}
             body={(r: LinhaEnviadoSes) => nomeComCopiar(r.paciente)} style={{ minWidth: '16rem' }} />
           {colunaCnj()}
@@ -253,24 +253,24 @@ export function EnviadoSesPage() {
           {colunaSegredo()}
           {colunaInteiroTeor()}
           {colunaSolicitante()}
-          <Column field="idade" header="Idade" sortable style={{ minWidth: '5rem' }} />
-          <Column field="tipoPaciente" header="Tipo" sortable style={{ minWidth: '7rem' }}
+          <Column field="idade" header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento.')} sortable style={{ minWidth: '5rem' }} />
+          <Column field="tipoPaciente" header={cabecalhoComHint('Tipo', 'Pediátrico (<18) · Adulto · Idoso (60+). Muda o médico certo e o risco de segredo.')} sortable style={{ minWidth: '7rem' }}
             body={(r: LinhaEnviadoSes) => tagTipoPaciente(r.tipoPaciente)} />
-          <Column field="procedimento" header="Procedimento" sortable filter
+          <Column field="procedimento" header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')} sortable filter
             filterElement={(o) => filterElement(o, 'BUSCAR')} style={{ minWidth: '18rem' }} />
-          <Column field="medico" header="Médico" sortable filter
+          <Column field="medico" header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '13rem' }}
             body={(r: LinhaEnviadoSes) => r.medico ?? <span style={{ opacity: 0.5 }}>—</span>} />
-          <Column field="origem" header="Origem" sortable style={{ minWidth: '10rem' }}
+          <Column field="origem" header={cabecalhoComHint('Origem', 'Por que está nesta fila: segredo de justiça ou sem protocolo (prazo perdido).')} sortable style={{ minWidth: '10rem' }}
             body={(r: LinhaEnviadoSes) => (r.origem === 'segredo'
               ? <Tag value="Segredo de Justiça" severity="danger" icon="pi pi-lock" />
               : <Tag value="Sem protocolo" severity="warning" icon="pi pi-file-excel"
                   title="Orçamento foi à SES, mas o protocolo nos autos ficou de fora (prazo)" />)} />
-          <Column field="valorOrcamento" header="Valor enviado" sortable style={{ minWidth: '9rem' }}
+          <Column field="valorOrcamento" header={cabecalhoComHint('Valor enviado', 'Valor do orçamento que enviamos ao Estado por este pedido.')} sortable style={{ minWidth: '9rem' }}
             body={(r: LinhaEnviadoSes) => (r.valorOrcamento ? fmtBRL(r.valorOrcamento) : '—')} />
-          <Column field="dataEnvio" header="Enviado em" sortable style={{ minWidth: '8rem' }}
+          <Column field="dataEnvio" header={cabecalhoComHint('Enviado em', 'Data em que o orçamento foi enviado ao Estado.')} sortable style={{ minWidth: '8rem' }}
             body={(r: LinhaEnviadoSes) => fmtData(r.dataEnvio)} />
-          <Column field="dias" header="Dias" sortable filter
+          <Column field="dias" header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '8rem' }}
             body={(r: LinhaEnviadoSes) => (r.dias >= SLA_VERIFICACAO_2
               ? <Tag value={`${r.dias}d`} severity="danger" icon="pi pi-exclamation-triangle"
@@ -283,7 +283,7 @@ export function EnviadoSesPage() {
           {colunaEmpenhoEstado()}
           {colunaPagoEm()}
           {colunaDiferenca()}
-          <Column header="Resultado" style={{ minWidth: '9rem' }} bodyStyle={{ textAlign: 'center' }}
+          <Column header={cabecalhoComHint('Resultado', 'Desfecho registrado: ganho, perda ou em andamento.')} style={{ minWidth: '9rem' }} bodyStyle={{ textAlign: 'center' }}
             body={(r: LinhaEnviadoSes) => (!readOnly
               ? <Button label="Registrar" icon="pi pi-flag" size="small" outlined onClick={() => abrirResultado(r)} />
               : null)} />

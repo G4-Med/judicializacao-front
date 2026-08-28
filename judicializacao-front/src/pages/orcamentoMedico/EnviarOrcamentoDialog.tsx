@@ -678,7 +678,7 @@ export function EnviarOrcamentoDialog({
       <Dialog
         header="Como deseja enviar o orçamento?"
         visible={visible && modo === 'escolha'}
-        style={{ width: '40rem', maxWidth: '96vw' }}
+        style={{ width: '60rem', maxWidth: '96vw' }}
         modal
         onHide={handleClose}
       >
@@ -736,7 +736,7 @@ export function EnviarOrcamentoDialog({
       <Dialog
         header="Enviar Orçamento"
         visible={visible && modo === 'arquivo'}
-        style={{ width: '38rem', maxWidth: '96vw' }}
+        style={{ width: '60rem', maxWidth: '96vw' }}
         modal
         onHide={handleClose}
       >

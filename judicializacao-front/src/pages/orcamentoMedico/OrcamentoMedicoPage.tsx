@@ -23,7 +23,7 @@ import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { ContadorRegistros, contarPorCampo } from '../../components/ContadorRegistros/ContadorRegistros';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaSolicitante, tagTipoPaciente, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, tagTipoPaciente, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
@@ -609,7 +609,7 @@ ${blocos}
           {colunasCfg.filtrar(<>
           <Column expander style={{ width: '3rem' }} />
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
-          <Column field="paciente" header="Paciente" sortable filter
+          <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }}
             body={(r: ProcessoOrcamentoRow) => (
               <span className="orcamento-paciente-cel">
@@ -628,13 +628,13 @@ ${blocos}
           {colunaSegredo()}
           {colunaInteiroTeor()}
           {colunaSolicitante()}
-          <Column field="idade" header="Idade" sortable filter
+          <Column field="idade" header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento.')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '7rem' }} />
-          <Column field="tipoPaciente" header="Tipo" sortable style={{ minWidth: '7rem' }}
+          <Column field="tipoPaciente" header={cabecalhoComHint('Tipo', 'Pediátrico (<18) · Adulto · Idoso (60+). Muda o médico certo e o risco de segredo.')} sortable style={{ minWidth: '7rem' }}
             body={(r: any) => tagTipoPaciente(r.tipoPaciente)} />
-          <Column field="procedimento" className="col-procedimento-upper" header="Procedimento" sortable filter
+          <Column field="procedimento" className="col-procedimento-upper" header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '18rem' }} />
-          <Column field="medico" header="Médico" sortable filter
+          <Column field="medico" header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')} sortable filter
             filterElement={(o) => dropdownFilterElement(o, medicosOptions)} style={{ minWidth: '14rem' }} />
           <Column field="area" header="Área" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '10rem' }} />
@@ -643,7 +643,7 @@ ${blocos}
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '12rem' }} />
           <Column field="dias" header="Dias em Aberto" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '10rem' }} />
-          <Column field="statusOrcamento" header="Status"
+          <Column field="statusOrcamento" header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
             body={(r) => <Tag value={r.statusOrcamento} style={getStatusTagStyle(r.statusOrcamento)} className="status-tag-custom" />}
             filter
             showFilterMenu={false}
@@ -884,7 +884,7 @@ ${blocos}
       </Dialog>
 
       {/* Cadastro rápido de status personalizado */}
-      <Dialog header="Novo status" visible={novoStatusVisible} style={{ width: '28rem' }} onHide={() => setNovoStatusVisible(false)} modal>
+      <Dialog header="Novo status" visible={novoStatusVisible} style={{ width: '28rem', maxWidth: '96vw' }} onHide={() => setNovoStatusVisible(false)} modal>
         <div className="field">
           <label>Nome do status</label>
           <InputText
@@ -902,7 +902,7 @@ ${blocos}
       </Dialog>
 
       {/* Trocar médico do pedido */}
-      <Dialog header="Trocar médico" visible={trocarMedicoVisible} style={{ width: '28rem' }} onHide={() => setTrocarMedicoVisible(false)} modal>
+      <Dialog header="Trocar médico" visible={trocarMedicoVisible} style={{ width: '28rem', maxWidth: '96vw' }} onHide={() => setTrocarMedicoVisible(false)} modal>
         <div className="field">
           <label>Novo médico</label>
           <Dropdown
@@ -933,7 +933,7 @@ ${blocos}
 
       {/* Dialog Exames */}
       <Dialog header="Solicitar Exames" visible={examesVisible}
-        style={{ width: '45rem', maxWidth: '96vw' }} modal
+        style={{ width: '60rem', maxWidth: '96vw' }} modal
         onHide={() => setExamesVisible(false)}>
         <div className="field">
           <label>Descreva os exames necessários</label>
@@ -954,7 +954,7 @@ ${blocos}
       {/* Dialog Não faço (perda desta fase, task #233) — motivo + parecer, mesmo
           padrão exigido em toda outra tela (¬mais confirm() nativo cego). */}
       <Dialog header="Não faço esse procedimento" visible={naoFacoVisible}
-        style={{ width: '40rem', maxWidth: '96vw' }} modal
+        style={{ width: '60rem', maxWidth: '96vw' }} modal
         onHide={() => setNaoFacoVisible(false)}>
         <div className="field">
           <label>Motivo (opcional — o parecer continua obrigatório)</label>

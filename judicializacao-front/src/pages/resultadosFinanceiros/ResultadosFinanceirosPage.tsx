@@ -20,6 +20,7 @@ import type {
 } from '../../services/api/financeiro';
 import './ResultadosFinanceirosPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { cabecalhoComHint } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 interface Anexo {
   id: number;
@@ -279,7 +280,7 @@ export function ResultadosFinanceirosPage() {
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
           <Column
             field="paciente"
-            header="Paciente"
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -287,7 +288,7 @@ export function ResultadosFinanceirosPage() {
           />
           <Column
             field="medico"
-            header="Médico"
+            header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -295,7 +296,7 @@ export function ResultadosFinanceirosPage() {
           />
           <Column
             field="valor"
-            header="Valor"
+            header={cabecalhoComHint('Valor', 'Valor do orçamento que enviamos ao Estado por este pedido.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -313,7 +314,7 @@ export function ResultadosFinanceirosPage() {
           />
           <Column
             field="statusCirurgia"
-            header="Status"
+            header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}

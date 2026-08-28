@@ -26,7 +26,7 @@ import './SegredoJusticaPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaSolicitante, tagTipoPaciente, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, tagTipoPaciente, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
@@ -534,7 +534,7 @@ useEffect(() => { carregarDados(); }, [fila]);
 
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
-            header="Paciente"
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -551,21 +551,21 @@ useEffect(() => { carregarDados(); }, [fila]);
               médico) e o nome do procedimento". Idade ausente = "—", nunca chute. */}
           <Column
             field="idade"
-            header="Idade"
+            header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento.')}
             sortable
             style={{ minWidth: '6rem' }}
             body={(r: any) => (r.idade ?? null) !== null ? `${r.idade} anos` : <span className="ident-vazio">—</span>}
           />
           <Column
             field="tipoPaciente"
-            header="Tipo"
+            header={cabecalhoComHint('Tipo', 'Pediátrico (<18) · Adulto · Idoso (60+). Muda o médico certo e o risco de segredo.')}
             sortable
             style={{ minWidth: '8rem' }}
             body={(r: any) => tagTipoPaciente(r.tipoPaciente)}
           />
           <Column
             field="procedimento"
-            header="Procedimento"
+            header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -575,7 +575,7 @@ useEffect(() => { carregarDados(); }, [fila]);
               de passar para médico é o "Enviar para cotação" do diálogo Atualizar. */}
           <Column
             field="medico"
-            header="Médico"
+            header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}
             sortable
             style={{ minWidth: '12rem' }}
             body={(r: any) => r.medico
@@ -619,7 +619,7 @@ useEffect(() => { carregarDados(); }, [fila]);
 
           <Column
             field="valor"
-            header="Valor"
+            header={cabecalhoComHint('Valor', 'Valor do orçamento que enviamos ao Estado por este pedido.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -629,7 +629,7 @@ useEffect(() => { carregarDados(); }, [fila]);
 
           <Column
             field="dias"
-            header="Dias"
+            header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -639,7 +639,7 @@ useEffect(() => { carregarDados(); }, [fila]);
 
           <Column
             field="statusProcesso"
-            header="Status"
+            header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}

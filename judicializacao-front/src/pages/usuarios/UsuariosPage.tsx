@@ -25,6 +25,7 @@ import {
 import { getMedicosCompleto } from '../../services/api/orders';
 import './UsuariosPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
+import { cabecalhoComHint } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 interface ApiUsuario {
   id: number;
@@ -554,7 +555,7 @@ export function UsuariosPage() {
 
           <Column
             field="isActive"
-            header="Status"
+            header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
             sortable
             body={statusBody}
             style={{ minWidth: '8rem' }}

@@ -23,7 +23,7 @@ import './SelecionarMedicoPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
@@ -439,7 +439,7 @@ export function SelecionarMedicoPage() {
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
-            header="Paciente"
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -455,7 +455,7 @@ export function SelecionarMedicoPage() {
           {colunaSolicitante()}
           <Column
             field="procedimento" className="col-procedimento-upper"
-            header="Procedimento"
+            header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -479,7 +479,7 @@ export function SelecionarMedicoPage() {
           />
           <Column
             field="medico"
-            header="Médico"
+            header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -487,7 +487,7 @@ export function SelecionarMedicoPage() {
           />
           <Column
             field="dias"
-            header="Dias"
+            header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -551,7 +551,7 @@ export function SelecionarMedicoPage() {
       <Dialog
         header="Selecionar Médico"
         visible={dialogVisible}
-        style={{ width: '42rem', maxWidth: '96vw' }}
+        style={{ width: '60rem', maxWidth: '96vw' }}
         modal
         onHide={() => setDialogVisible(false)}
         className="selecionar-medico-dialog"
@@ -607,7 +607,7 @@ export function SelecionarMedicoPage() {
       <Dialog
         header="Selecionar Médico em Massa"
         visible={dialogMassaVisible}
-        style={{ width: '36rem', maxWidth: '96vw' }}
+        style={{ width: '60rem', maxWidth: '96vw' }}
         modal
         onHide={() => setDialogMassaVisible(false)}
         className="selecionar-medico-dialog"
@@ -652,7 +652,7 @@ export function SelecionarMedicoPage() {
       <Dialog
         header="Sugestão da IA"
         visible={iaDialogVisible}
-        style={{ width: '36rem', maxWidth: '96vw' }}
+        style={{ width: '60rem', maxWidth: '96vw' }}
         modal
         onHide={fecharIaDialog}
       >

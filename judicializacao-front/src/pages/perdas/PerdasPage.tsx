@@ -13,7 +13,7 @@ import { getPerdas, getOrders, getMedicosCompleto } from '../../services/api/ord
 import { getStatusTagStyle } from '../../utils/statusTag';
 import './PerdasPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
-import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
@@ -359,7 +359,7 @@ export function PerdasPage() {
 
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
-            header="Paciente"
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -372,13 +372,13 @@ export function PerdasPage() {
           {colunaCadastro()}
           {colunaSegredo()}
           {colunaInteiroTeor()}
-          <Column field="procedimento" header="Procedimento" sortable filter
+          <Column field="procedimento" header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')} sortable filter
             filterElement={(options: any) => (
               <InputText value={options.value || ''} onChange={(e) => options.filterApplyCallback(e.target.value)}
                 placeholder="Buscar" className="p-column-filter" />
             )}
             style={{ minWidth: '16rem' }} />
-          <Column field="dataStatusPerda" header="Perda em" sortable style={{ minWidth: '8rem' }}
+          <Column field="dataStatusPerda" header={cabecalhoComHint('Perda em', 'Data em que a perda foi registrada.')} sortable style={{ minWidth: '8rem' }}
             body={(r: any) => (r.dataStatusPerda ? r.dataStatusPerda.split('-').reverse().join('/') : '—')} />
           {colunaBaixarOrcamento()}
           {colunaEmpenhoEstado()}
@@ -388,7 +388,7 @@ export function PerdasPage() {
 
           <Column
             field="cliente"
-            header="Cliente"
+            header={cabecalhoComHint('Cliente', 'Empresa/prestador que responde pelo orçamento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -397,7 +397,7 @@ export function PerdasPage() {
 
           <Column
             field="valor"
-            header="Valor"
+            header={cabecalhoComHint('Valor', 'Valor do orçamento que enviamos ao Estado por este pedido.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -407,7 +407,7 @@ export function PerdasPage() {
 
           <Column
             field="dias"
-            header="Dias"
+            header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -417,7 +417,7 @@ export function PerdasPage() {
 
           <Column
             field="resultado"
-            header="Resultado"
+            header={cabecalhoComHint('Resultado', 'Desfecho registrado: ganho, perda ou em andamento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -435,7 +435,7 @@ export function PerdasPage() {
             style={{ minWidth: '16rem' }}
           />
 
-          <Column field="motivoPerdaCategoria" header="Motivo (categoria)" sortable
+          <Column field="motivoPerdaCategoria" header={cabecalhoComHint('Motivo (categoria)', 'Classificação da perda — alimenta os cards e o funil.')} sortable
             style={{ minWidth: '13rem' }}
             body={(r: any) => r.motivoPerdaCategoria ?? <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>não classificado</span>} />
           <Column

@@ -24,7 +24,7 @@ import './ParaProtocolarPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
@@ -593,7 +593,7 @@ const handleConfirmarProtocolacao = async () => {
     <div className="para-protocolar-page">
       <PrimeiraVisitaInfo etapaId="para-protocolar" />
       <div className="page-header">
-        <CabecalhoFase nome="Protocolar" screen="paraProtocolar"
+        <CabecalhoFase nome="Protocolar" slaDias={1} screen="paraProtocolar"
           subtitulo="Gestão dos processos prontos para protocolação" />
 
 
@@ -675,7 +675,7 @@ const handleConfirmarProtocolacao = async () => {
 
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
-            header="Paciente"
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -696,7 +696,7 @@ const handleConfirmarProtocolacao = async () => {
 
           <Column
             field="cliente"
-            header="Cliente"
+            header={cabecalhoComHint('Cliente', 'Empresa/prestador que responde pelo orçamento.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -705,7 +705,7 @@ const handleConfirmarProtocolacao = async () => {
 
           <Column
             field="valor"
-            header="Valor"
+            header={cabecalhoComHint('Valor', 'Valor do orçamento que enviamos ao Estado por este pedido.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -715,7 +715,7 @@ const handleConfirmarProtocolacao = async () => {
 
           <Column
             field="dataEnvioOrcamento"
-            header="Data Envio Orçamento"
+            header={cabecalhoComHint('Data Envio Orçamento', 'Data em que o orçamento foi enviado ao Estado.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -725,7 +725,7 @@ const handleConfirmarProtocolacao = async () => {
 
           <Column
             field="dias"
-            header="Dias"
+            header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
@@ -734,7 +734,7 @@ const handleConfirmarProtocolacao = async () => {
           />
 
           <Column
-            header="Orçamento"
+            header={cabecalhoComHint('Orçamento', 'Verde = PDF do orçamento anexado (clique para baixar). "Não enviado" = nunca cotamos.')}
             body={anexoBodyTemplate}
             style={{ minWidth: '7rem' }}
             bodyStyle={{ textAlign: 'center' }}
@@ -749,7 +749,7 @@ const handleConfirmarProtocolacao = async () => {
 
           <Column
             field="status"
-            header="Status"
+            header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}

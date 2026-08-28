@@ -13,7 +13,7 @@ import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder, getCnjCan
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './JuridicoPage.css';
-import { colunaSolicitante, tagTipoPaciente } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, tagTipoPaciente , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { PainelPrecos } from '../../components/PainelPrecos/PainelPrecos';
@@ -433,7 +433,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           <Column expander style={{ width: '3.5rem' }} headerStyle={{ width: '3.5rem' }}
             headerClassName="col-expander" bodyClassName="col-expander" />
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
-          <Column field="paciente" header="Paciente" sortable filter
+          <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }}
             body={(r: ProcessoJuridicoRow) => (
               <span className="juridico-paciente-cel">
@@ -452,15 +452,15 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             )} />
           <Column
             field="idade"
-            header="Idade"
+            header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento.')}
             sortable
             filter
             filterElement={(o) => filterElement(o, 'Buscar')}
             style={{ minWidth: '7rem' }}
           />
-          <Column field="tipoPaciente" header="Tipo" sortable style={{ minWidth: '7rem' }}
+          <Column field="tipoPaciente" header={cabecalhoComHint('Tipo', 'Pediátrico (<18) · Adulto · Idoso (60+). Muda o médico certo e o risco de segredo.')} sortable style={{ minWidth: '7rem' }}
             body={(r: any) => tagTipoPaciente(r.tipoPaciente)} />
-          <Column field="procedimento" className="col-procedimento-upper" header="Procedimento" sortable filter
+          <Column field="procedimento" className="col-procedimento-upper" header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '18rem' }} />
           {/* CNJ e SEI nas colunas (@R 27/08 12:59): os dois números do pedido, buscáveis e copiáveis */}
           <Column field="nprocesso" header="Nº CNJ" sortable filter

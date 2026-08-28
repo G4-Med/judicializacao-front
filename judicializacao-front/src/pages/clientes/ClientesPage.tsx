@@ -32,6 +32,7 @@ import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { cabecalhoComHint } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 
 interface Cliente {
   id: number;
@@ -1612,7 +1613,7 @@ const handleSalvarEdicao = async () => {
 
           <Column
             field="status"
-            header="Status"
+            header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
             sortable
             filter
             showFilterMenu={false}
@@ -1664,7 +1665,7 @@ const handleSalvarEdicao = async () => {
         className="cliente-edit-dialog"
       >
         <TabView>
-          <TabPanel header="Médico">
+          <TabPanel header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}>
             <div className="cliente-form-grid">
               <div className="field field-span-2">
                 <label>Nome Médico</label>
@@ -1856,7 +1857,7 @@ const handleSalvarEdicao = async () => {
         {clienteEditando && (
           <fieldset disabled={readOnly} className="cliente-edit-fieldset">
             <TabView>
-              <TabPanel header="Médico">
+              <TabPanel header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}>
                 <div className="cliente-form-grid">
                   <div className="field field-span-2"><label>Nome Médico</label><InputText value={clienteEditando.nomeMedico} onChange={(e) => updateClienteEditando('nomeMedico', e.target.value)} /></div>
                   <div className="field field-span-2"><label>Nome Sistema</label><InputText value={clienteEditando.nomeSistema} onChange={(e) => updateClienteEditando('nomeSistema', e.target.value)} /></div>
