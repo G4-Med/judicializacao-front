@@ -179,6 +179,8 @@ export function EnviadoSesPage() {
     verificar120: visiveis.filter((l) => l.dias >= SLA_VERIFICACAO_1 && l.dias < SLA_VERIFICACAO_2).length,
     verificar180: visiveis.filter((l) => l.dias >= SLA_VERIFICACAO_2).length,
     empenhoPago: visiveis.filter((l) => (l.empenho548?.pago ?? 0) > 0).length,
+    empenhoExato: visiveis.filter((l) => (l.empenho548?.pago ?? 0) > 0 && l.valorOrcamento > 0
+      && Math.abs((l.empenho548?.pago ?? 0) - l.valorOrcamento) / l.valorOrcamento < 0.005).length,
     valorTotal: visiveis.reduce((acc, l) => acc + (l.valorOrcamento || 0), 0),
   }), [visiveis]);
 
@@ -292,6 +294,7 @@ export function EnviadoSesPage() {
               { rotulo: '≥120d — 1ª verificação', quantidade: kpis.verificar120, tom: 'alerta' },
               { rotulo: '≥180d — verificação recomendada', quantidade: kpis.verificar180, tom: 'alerta' },
               { rotulo: 'com pagamento no Estado (548)', quantidade: kpis.empenhoPago, tom: 'alerta' },
+              { rotulo: 'pago = orçado (conferir baixa)', quantidade: kpis.empenhoExato, tom: 'alerta' },
             ]} />
         </h2>
         <AcoesTabela>
@@ -358,8 +361,15 @@ export function EnviadoSesPage() {
             }}
             body={(r: LinhaEnviadoSes) => (r.empenho548
               ? (r.empenho548.pago > 0
-                ? <Tag value={`PAGO ${fmtBRL(r.empenho548.pago)}`} severity="success" icon="pi pi-check-circle"
-                    title={`O Estado já PAGOU ${r.empenho548.nEmpenhos} empenho(s) neste CNJ (último ano ${r.empenho548.anoMax ?? '—'}). Sinal de que o processo andou — investigar o desfecho. Valor do EMPENHO, não do prestador.`} />
+                // @R 28/08 02:20: "se for exato o valor colocar de uma cor diferente" —
+                // pago == orçado (±0,5%) é evidência forte de que é o MESMO item.
+                ? (r.empenho548.pago > 0 && r.valorOrcamento > 0
+                && Math.abs(r.empenho548.pago - r.valorOrcamento) / r.valorOrcamento < 0.005
+                  ? <Tag value={`PAGO = ORÇADO ${fmtBRL(r.empenho548.pago)}`} icon="pi pi-star-fill"
+                      style={{ background: '#7c3aed', color: '#fff' }}
+                      title="O valor pago pelo Estado BATE com o orçamento que enviamos (±0,5%) — evidência forte de que é ESTE item. Conferência prioritária para dar baixa." />
+                  : <Tag value={`PAGO ${fmtBRL(r.empenho548.pago)}`} severity="success" icon="pi pi-check-circle"
+                      title={`O Estado já PAGOU ${r.empenho548.nEmpenhos} empenho(s) neste CNJ (último ano ${r.empenho548.anoMax ?? '—'}) com valor DIFERENTE do orçado — pode ser outro item do mesmo processo. Investigar. Valor do EMPENHO, não do prestador.`} />)
                 : <Tag value={`Empenhado ${fmtBRL(r.empenho548.empenhado)}`} severity="info" icon="pi pi-wallet"
                     title="Há empenho no Estado para este CNJ, ainda sem pagamento registrado." />)
               : <span title="Nenhum empenho localizado para este CNJ na base do Estado (548).">—</span>)} />

@@ -675,9 +675,13 @@ export function ProtocoladosPage() {
             }}
             body={(r: any) => (r.empenho548
               ? (r.empenho548.pago > 0
-                ? <Tag value={`PAGO ${r.empenho548.pago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
-                    severity="success" icon="pi pi-check-circle"
-                    title={`O Estado já PAGOU ${r.empenho548.nEmpenhos} empenho(s) neste CNJ. Abra a linha (seta) para ver datas e nº de referência. Valor do EMPENHO, não do prestador.`} />
+                ? (r.valorOrcamento > 0 && Math.abs(r.empenho548.pago - r.valorOrcamento) / r.valorOrcamento < 0.005
+                  ? <Tag value={`PAGO = ORÇADO ${r.empenho548.pago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
+                      icon="pi pi-star-fill" style={{ background: '#7c3aed', color: '#fff' }}
+                      title="O valor pago pelo Estado BATE com o orçamento enviado (±0,5%) — evidência forte de que é ESTE item. Conferência prioritária." />
+                  : <Tag value={`PAGO ${r.empenho548.pago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
+                      severity="success" icon="pi pi-check-circle"
+                      title={`O Estado já PAGOU ${r.empenho548.nEmpenhos} empenho(s) neste CNJ com valor diferente do orçado — pode ser outro item. Abra a linha (seta) para datas e nº de referência. Valor do EMPENHO, não do prestador.`} />)
                 : <Tag value="Empenhado" severity="info" icon="pi pi-wallet"
                     title="Há empenho no Estado para este CNJ, ainda sem pagamento registrado." />)
               : <span title="Nenhum empenho localizado para este CNJ na base do Estado (548).">—</span>)} />
