@@ -168,10 +168,13 @@ export function EnviarOrcamentoDialog({
   // Loop de inteligência do pedido (task #203, 27/08): antes de orçar, o sistema abre a
   // "pasta" — já respondemos ESTE pedido (duplicata)? o que já cobramos por ESTA cirurgia
   // (experiência, com data)? Fail-soft: erro na dica NUNCA impede o envio do orçamento.
+  interface IntelDesfecho { tipo: 'ganho' | 'perda' | 'andamento'; rotulo: string; valor_ganho: number | null }
+  interface IntelAnexo { tipo: string; url: string }
   interface IntelItem {
     order_id: number; score: number; exato: boolean; procedimento: string;
-    mesmo_medico: boolean; data_pedido: string | null;
+    mesmo_medico: boolean; medico_nome?: string | null; data_pedido: string | null;
     valor_respondido: number | null; data_resposta: string | null;
+    desfecho?: IntelDesfecho; mesmo_cnj?: boolean; anexos?: IntelAnexo[];
   }
   interface Inteligencia {
     duplicata: IntelItem[]; experiencia: IntelItem[]; media_18m?: number | null;
@@ -204,15 +207,46 @@ export function EnviarOrcamentoDialog({
             background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px',
             padding: '10px 14px', marginBottom: '8px', fontSize: '0.875rem', color: '#991b1b',
           }}>
-            <strong>⚠ Já respondemos este pedido?</strong> Mesmo paciente + mesma cirurgia:{' '}
+            {/* @R 28/08: "sabermos se já respondemos o caso antes e quais médicos
+                responderam e os respectivos valores... e vermos os anexos do pedido
+                anterior" — cada caso anterior vira uma linha completa: médico, valor,
+                desfecho (a cirurgia aconteceu?) e os arquivos clicáveis. */}
+            <strong>⚠ Já respondemos este caso antes</strong>
             {inteligencia.duplicata.map((d) => (
-              <span key={d.order_id}>
-                pedido #{d.order_id}
-                {d.valor_respondido ? ` — respondido por ${fmtBRL(d.valor_respondido)} em ${fmtData(d.data_resposta)}` : ' (sem resposta registrada)'}
-                {'. '}
-              </span>
+              <div key={d.order_id} style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #fecaca' }}>
+                <div>
+                  Pedido <strong>#{d.order_id}</strong>
+                  {d.mesmo_cnj ? ' (mesmo processo/CNJ)' : ' (mesmo paciente + cirurgia)'}
+                  {d.medico_nome ? <> · médico: <strong>{d.medico_nome}</strong></> : null}
+                  {d.valor_respondido
+                    ? <> · enviamos <strong>{fmtBRL(d.valor_respondido)}</strong> em {fmtData(d.data_resposta)}</>
+                    : ' · sem orçamento registrado'}
+                </div>
+                {d.desfecho && (
+                  <div style={{ marginTop: '2px' }}>
+                    Situação: <strong>{d.desfecho.rotulo}</strong>
+                    {d.desfecho.tipo === 'ganho' && d.desfecho.valor_ganho
+                      ? <> — valor ganho {fmtBRL(d.desfecho.valor_ganho)}</> : null}
+                  </div>
+                )}
+                {(d.anexos?.length ?? 0) > 0 && (
+                  <div style={{ marginTop: '4px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {(d.anexos ?? []).map((a, i) => (
+                      <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          padding: '2px 8px', borderRadius: '6px', border: '1px solid #fca5a5',
+                          background: '#fff', color: '#991b1b', fontSize: '0.8rem', textDecoration: 'none',
+                        }}>
+                        <i className="pi pi-paperclip" style={{ fontSize: '0.75rem' }} />
+                        {a.tipo.toLowerCase().replace(/_/g, ' ')} {i + 1}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
-            Confira antes de enviar um valor diferente.
+            <div style={{ marginTop: '6px' }}>Confira antes de enviar um valor diferente.</div>
           </div>
         )}
         {inteligencia.experiencia.length > 0 && (
