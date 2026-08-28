@@ -76,6 +76,9 @@ type ResultadoType = 'ganho' | 'perda' | '';
 
 export function ProtocoladosPage() {
   const { isReadOnly } = useAccess();
+  // @R 28/08 02:1x: "vamos buscar os pagamentos do 5" — expander com os empenhos
+  // pagos do Estado (base 548) também nos Protocolados.
+  const [expandidas, setExpandidas] = useState<any>(undefined);
   const readOnly = isReadOnly('protocolados');
   const [loading, setLoading] = useState(false);
   const [registros, setRegistros] = useState<Protocolado[]>([]);
@@ -520,6 +523,48 @@ export function ProtocoladosPage() {
           </AcoesTabela>
         <DataTable
           aria-label="Pedidos protocolados"
+          expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
+          rowExpansionTemplate={(r: any) => (
+            <div style={{ padding: '12px 24px' }}>
+              <h4 style={{ margin: '0 0 8px' }}><i className="pi pi-wallet" /> Pagamentos do Estado neste CNJ (base 548)</h4>
+              {(!r.empenhos || r.empenhos.length === 0)
+                ? <p style={{ opacity: 0.6, margin: 0 }}>Nenhum empenho localizado para este CNJ.</p>
+                : <>
+                    <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                      <thead>
+                        <tr style={{ textAlign: 'left' }}>
+                          <th style={{ padding: '4px 8px' }}>Nº referência</th>
+                          <th style={{ padding: '4px 8px' }}>Data empenho</th>
+                          <th style={{ padding: '4px 8px' }}>Data pagamento</th>
+                          <th style={{ padding: '4px 8px' }}>Empenhado</th>
+                          <th style={{ padding: '4px 8px' }}>Pago</th>
+                          <th style={{ padding: '4px 8px' }}>Favorecido</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {r.empenhos.map((e: any, i: number) => (
+                          <tr key={i} style={{ borderTop: '1px solid var(--surface-border, #e2e8f0)' }}>
+                            <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>{e.numEmpenho}/{e.ano ?? '—'}</td>
+                            <td style={{ padding: '4px 8px' }}>{e.dataEmpenho ? e.dataEmpenho.split('-').reverse().join('/') : '—'}</td>
+                            <td style={{ padding: '4px 8px' }}>
+                              {e.dataPagamento
+                                ? <Tag value={e.dataPagamento.split('-').reverse().join('/')} severity="success" />
+                                : <Tag value="Não pago" severity="warning" />}
+                            </td>
+                            <td style={{ padding: '4px 8px' }}>{e.valorEmpenhado ? e.valorEmpenhado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'}</td>
+                            <td style={{ padding: '4px 8px' }}>{e.valorPago ? e.valorPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'}</td>
+                            <td style={{ padding: '4px 8px', fontSize: '0.85em' }}>{e.favorecido ?? '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <p style={{ fontSize: '0.8em', opacity: 0.7, marginTop: '6px' }}>
+                      ⚠ Valor do EMPENHO do Estado (favorecido costuma ser o Tribunal — depósito
+                      judicial), não o que o prestador recebeu. Sinal para investigar, nunca repasse.
+                    </p>
+                  </>}
+            </div>
+          )}
           value={dataComCamposCalculados}
           onValueChange={(value) => setVisibleProcessos(value as ProtocoladoTableRow[])}
           dataKey="id"
@@ -542,6 +587,7 @@ export function ProtocoladosPage() {
         >
           {colunasCfg.filtrar(<>
           {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
+          <Column expander style={{ width: '3rem' }} />
 
           <Column
             field="sequencial"
@@ -598,13 +644,43 @@ export function ProtocoladosPage() {
 
           <Column
             field="dias"
-            header="Dias"
+            header="Dias protocolo"
             sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             body={diasBodyTemplate}
-            style={{ minWidth: '7rem' }}
+            style={{ minWidth: '8rem' }}
           />
+
+          {/* @R 28/08 02:0x: "quantos dias desde a última atualização... pelo menos
+              de 15 em 15 dias o processo precisa ser atualizado" — SLA de acompanhamento */}
+          <Column
+            field="diasSemAtualizacao"
+            header="Sem atualização"
+            sortable
+            style={{ minWidth: '9rem' }}
+            body={(r: any) => (r.diasSemAtualizacao >= 30
+              ? <Tag value={`${r.diasSemAtualizacao}d`} severity="danger" icon="pi pi-exclamation-triangle"
+                  title="30+ dias sem atualização — 2 ciclos de SLA vencidos (o processo deve ser atualizado a cada 15 dias)" />
+              : r.diasSemAtualizacao >= 15
+                ? <Tag value={`${r.diasSemAtualizacao}d`} severity="warning" icon="pi pi-clock"
+                    title="15+ dias sem atualização — SLA de acompanhamento vencido (atualizar a cada 15 dias)" />
+                : <span title="Dentro do SLA de 15 dias">{r.diasSemAtualizacao ?? '—'}d</span>)}
+          />
+
+          <Column field="empenho548" header="Empenho Estado" sortable style={{ minWidth: '11rem' }}
+            sortFunction={(e: any) => {
+              const v = (r: any) => r.empenho548?.pago ?? -1;
+              return [...e.data].sort((a: any, b: any) => (v(a) - v(b)) * (e.order ?? 1));
+            }}
+            body={(r: any) => (r.empenho548
+              ? (r.empenho548.pago > 0
+                ? <Tag value={`PAGO ${r.empenho548.pago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
+                    severity="success" icon="pi pi-check-circle"
+                    title={`O Estado já PAGOU ${r.empenho548.nEmpenhos} empenho(s) neste CNJ. Abra a linha (seta) para ver datas e nº de referência. Valor do EMPENHO, não do prestador.`} />
+                : <Tag value="Empenhado" severity="info" icon="pi pi-wallet"
+                    title="Há empenho no Estado para este CNJ, ainda sem pagamento registrado." />)
+              : <span title="Nenhum empenho localizado para este CNJ na base do Estado (548).">—</span>)} />
 
           <Column
             field="status"

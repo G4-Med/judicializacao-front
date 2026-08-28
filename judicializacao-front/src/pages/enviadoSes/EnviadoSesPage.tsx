@@ -45,8 +45,20 @@ interface LinhaEnviadoSes {
   dias: number;
   origem: 'segredo' | 'sem_protocolo';
   statusProcesso: string;
+  medico: string | null;
+  anexos: { id: number; tipo: string; link: string; data: string }[];
+  empenhos: { numEmpenho: string; ano: number | null; dataEmpenho: string | null;
+    dataPagamento: string | null; valorEmpenhado: number; valorPago: number;
+    favorecido: string | null }[];
+  empenho548: { pago: number; empenhado: number; nEmpenhos: number; anoMax: number | null } | null;
+  sequencial?: number;
   [k: string]: any;
 }
+
+// SLA da espera (@R 28/08 02:0x): 120 dias = primeira verificação baixa ·
+// 180 dias = verificação recomendada. Duas cores para marcar.
+const SLA_VERIFICACAO_1 = 120;
+const SLA_VERIFICACAO_2 = 180;
 
 type Resultado = 'ganho' | 'perda' | '';
 
@@ -104,12 +116,19 @@ export function EnviadoSesPage() {
   const carregar = () => {
     setLoading(true);
     getEnviadoSes()
-      .then(({ data }) => setLinhas(data))
+      .then(({ data }) => setLinhas(data.map((l: LinhaEnviadoSes, i: number) => ({ ...l, sequencial: i + 1 }))))
       .catch(() => setLinhas([]))
       .finally(() => setLoading(false));
   };
   useEffect(carregar, []);
   useEffect(() => { setVisiveis(linhas); }, [linhas]);
+
+  // @R 28/08 02:03: "falta o marcar todos e a numeração dos pedidos" + "a opção de
+  // selecionar mais de um" — seleção múltipla igual à tela 5.
+  const [selecionadas, setSelecionadas] = useState<LinhaEnviadoSes[]>([]);
+  // @R 28/08 02:04: "o frame que abre abaixo do pedido... igual temos em Análise
+  // Jurídica, mas abre com as informações do empenho pago".
+  const [expandidas, setExpandidas] = useState<any>(undefined);
 
   const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const fmtData = (iso: string | null) => {
@@ -157,8 +176,97 @@ export function EnviadoSesPage() {
     total: visiveis.length,
     segredo: visiveis.filter((l) => l.origem === 'segredo').length,
     semProtocolo: visiveis.filter((l) => l.origem === 'sem_protocolo').length,
+    verificar120: visiveis.filter((l) => l.dias >= SLA_VERIFICACAO_1 && l.dias < SLA_VERIFICACAO_2).length,
+    verificar180: visiveis.filter((l) => l.dias >= SLA_VERIFICACAO_2).length,
+    empenhoPago: visiveis.filter((l) => (l.empenho548?.pago ?? 0) > 0).length,
     valorTotal: visiveis.reduce((acc, l) => acc + (l.valorOrcamento || 0), 0),
   }), [visiveis]);
+
+  const NOMES_TIPO_ANEXO: Record<string, string> = {
+    ORCAMENTO: 'Orçamento', EMAIL_ORIGINAL: 'E-mail original', PROCESSO: 'Processo',
+    RELATORIO: 'Relatório', PROTOCOLO: 'Protocolo', ACOMPANHAMENTO: 'Acompanhamento',
+    DECISAO_INTEIRO_TEOR: 'Decisão — inteiro teor', OUTRO: 'Outro',
+  };
+
+  const fmtDataBr = (iso: string | null) => {
+    if (!iso) return '—';
+    const [a, m, d] = iso.split('-');
+    return `${d}/${m}/${a}`;
+  };
+
+  const detalhePedido = (r: LinhaEnviadoSes) => {
+    const orcamentos = r.anexos.filter((a) => a.tipo === 'ORCAMENTO');
+    const demais = r.anexos.filter((a) => a.tipo !== 'ORCAMENTO');
+    return (
+      <div style={{ padding: '12px 24px', display: 'grid', gap: '16px',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+        <div>
+          <h4 style={{ margin: '0 0 8px' }}><i className="pi pi-user-md" /> Médico e orçamento</h4>
+          <p style={{ margin: '0 0 8px' }}><strong>{r.medico ?? 'Sem médico designado'}</strong>
+            {r.valorOrcamento ? <> · enviado {fmtBRL(r.valorOrcamento)}</> : null}</p>
+          {orcamentos.length === 0 && <p style={{ opacity: 0.6, margin: 0 }}>Nenhum PDF de orçamento anexado.</p>}
+          {orcamentos.map((a) => (
+            <p key={a.id} style={{ margin: '2px 0' }}>
+              <a href={a.link} target="_blank" rel="noreferrer">
+                <i className="pi pi-download" /> Baixar orçamento ({fmtDataBr(a.data)})
+              </a>
+            </p>
+          ))}
+        </div>
+        <div>
+          <h4 style={{ margin: '0 0 8px' }}><i className="pi pi-paperclip" /> E-mail e anexos</h4>
+          {demais.length === 0 && <p style={{ opacity: 0.6, margin: 0 }}>Sem outros anexos.</p>}
+          {demais.map((a) => (
+            <p key={a.id} style={{ margin: '2px 0' }}>
+              <a href={a.link} target="_blank" rel="noreferrer">
+                <i className="pi pi-file" /> {NOMES_TIPO_ANEXO[a.tipo] ?? a.tipo} ({fmtDataBr(a.data)})
+              </a>
+            </p>
+          ))}
+        </div>
+        <div style={{ gridColumn: '1 / -1' }}>
+          <h4 style={{ margin: '0 0 8px' }}><i className="pi pi-wallet" /> Pagamentos do Estado neste CNJ (base 548)</h4>
+          {r.empenhos.length === 0
+            ? <p style={{ opacity: 0.6, margin: 0 }}>Nenhum empenho localizado para este CNJ.</p>
+            : <>
+                <table className="mc-tabela-detalhe" style={{ borderCollapse: 'collapse', width: '100%' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left' }}>
+                      <th style={{ padding: '4px 8px' }}>Nº referência</th>
+                      <th style={{ padding: '4px 8px' }}>Data empenho</th>
+                      <th style={{ padding: '4px 8px' }}>Data pagamento</th>
+                      <th style={{ padding: '4px 8px' }}>Empenhado</th>
+                      <th style={{ padding: '4px 8px' }}>Pago</th>
+                      <th style={{ padding: '4px 8px' }}>Favorecido</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {r.empenhos.map((e, i) => (
+                      <tr key={i} style={{ borderTop: '1px solid var(--surface-border, #e2e8f0)' }}>
+                        <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>{e.numEmpenho}/{e.ano ?? '—'}</td>
+                        <td style={{ padding: '4px 8px' }}>{fmtDataBr(e.dataEmpenho)}</td>
+                        <td style={{ padding: '4px 8px' }}>
+                          {e.dataPagamento
+                            ? <Tag value={fmtDataBr(e.dataPagamento)} severity="success" />
+                            : <Tag value="Não pago" severity="warning" />}
+                        </td>
+                        <td style={{ padding: '4px 8px' }}>{e.valorEmpenhado ? fmtBRL(e.valorEmpenhado) : '—'}</td>
+                        <td style={{ padding: '4px 8px' }}>{e.valorPago ? fmtBRL(e.valorPago) : '—'}</td>
+                        <td style={{ padding: '4px 8px', fontSize: '0.85em' }}>{e.favorecido ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p style={{ fontSize: '0.8em', opacity: 0.7, marginTop: '6px' }}>
+                  ⚠ Valor do EMPENHO do Estado (o favorecido costuma ser o Tribunal — depósito
+                  judicial), não o que o prestador recebeu. Use como sinal para investigar o
+                  desfecho, nunca como valor de repasse.
+                </p>
+              </>}
+        </div>
+      </div>
+    );
+  };
 
   const filterElement = (options: any, placeholder: string) => (
     <InputText value={options.value || ''} onChange={(e) => options.filterApplyCallback(e.target.value)}
@@ -181,6 +289,9 @@ export function EnviadoSesPage() {
             fases={[
               { rotulo: 'segredo de justiça', quantidade: kpis.segredo, tom: 'alerta' },
               { rotulo: 'sem protocolo', quantidade: kpis.semProtocolo, tom: 'ok' },
+              { rotulo: '≥120d — 1ª verificação', quantidade: kpis.verificar120, tom: 'alerta' },
+              { rotulo: '≥180d — verificação recomendada', quantidade: kpis.verificar180, tom: 'alerta' },
+              { rotulo: 'com pagamento no Estado (548)', quantidade: kpis.empenhoPago, tom: 'alerta' },
             ]} />
         </h2>
         <AcoesTabela>
@@ -190,6 +301,10 @@ export function EnviadoSesPage() {
         <DataTable
           aria-label="Pedidos enviados à SES aguardando retorno técnico"
           value={linhas} dataKey="id" paginator rows={100} rowsPerPageOptions={[10, 20, 50, 100]}
+          selection={selecionadas} selectionMode="checkbox"
+          onSelectionChange={(e) => setSelecionadas(e.value as LinhaEnviadoSes[])}
+          expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
+          rowExpansionTemplate={detalhePedido}
           onValueChange={(v) => setVisiveis(v as LinhaEnviadoSes[])}
           filters={filters} onFilter={(e) => setFilters(e.filters)} filterDisplay="row"
           sortField="dias" sortOrder={-1}
@@ -197,6 +312,9 @@ export function EnviadoSesPage() {
           emptyMessage="Nenhum pedido aguardando retorno da SES — quando um orçamento for enviado sem protocolo (ou em segredo de justiça), ele aparece aqui."
         >
           {colunasCfg.filtrar(<>
+          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+          <Column expander style={{ width: '3rem' }} />
+          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
           <Column field="paciente" header="Paciente" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')}
             body={(r: LinhaEnviadoSes) => nomeComCopiar(r.paciente)} style={{ minWidth: '16rem' }} />
@@ -212,6 +330,9 @@ export function EnviadoSesPage() {
             body={(r: LinhaEnviadoSes) => tagTipoPaciente(r.tipoPaciente)} />
           <Column field="procedimento" header="Procedimento" sortable filter
             filterElement={(o) => filterElement(o, 'BUSCAR')} style={{ minWidth: '18rem' }} />
+          <Column field="medico" header="Médico" sortable filter
+            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '13rem' }}
+            body={(r: LinhaEnviadoSes) => r.medico ?? <span style={{ opacity: 0.5 }}>—</span>} />
           <Column field="origem" header="Origem" sortable style={{ minWidth: '10rem' }}
             body={(r: LinhaEnviadoSes) => (r.origem === 'segredo'
               ? <Tag value="Segredo de Justiça" severity="danger" icon="pi pi-lock" />
@@ -222,7 +343,26 @@ export function EnviadoSesPage() {
           <Column field="dataEnvio" header="Enviado em" sortable style={{ minWidth: '8rem' }}
             body={(r: LinhaEnviadoSes) => fmtData(r.dataEnvio)} />
           <Column field="dias" header="Dias" sortable filter
-            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '6rem' }} />
+            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '8rem' }}
+            body={(r: LinhaEnviadoSes) => (r.dias >= SLA_VERIFICACAO_2
+              ? <Tag value={`${r.dias}d`} severity="danger" icon="pi pi-exclamation-triangle"
+                  title={`${SLA_VERIFICACAO_2}+ dias sem retorno — verificação RECOMENDADA junto à SES`} />
+              : r.dias >= SLA_VERIFICACAO_1
+                ? <Tag value={`${r.dias}d`} severity="warning" icon="pi pi-clock"
+                    title={`${SLA_VERIFICACAO_1}+ dias sem retorno — primeira verificação baixa`} />
+                : <span>{r.dias}d</span>)} />
+          <Column field="empenho548" header="Empenho Estado" sortable style={{ minWidth: '11rem' }}
+            sortFunction={(e) => {
+              const v = (r: LinhaEnviadoSes) => r.empenho548?.pago ?? -1;
+              return [...(e.data as LinhaEnviadoSes[])].sort((a, b) => (v(a) - v(b)) * (e.order ?? 1));
+            }}
+            body={(r: LinhaEnviadoSes) => (r.empenho548
+              ? (r.empenho548.pago > 0
+                ? <Tag value={`PAGO ${fmtBRL(r.empenho548.pago)}`} severity="success" icon="pi pi-check-circle"
+                    title={`O Estado já PAGOU ${r.empenho548.nEmpenhos} empenho(s) neste CNJ (último ano ${r.empenho548.anoMax ?? '—'}). Sinal de que o processo andou — investigar o desfecho. Valor do EMPENHO, não do prestador.`} />
+                : <Tag value={`Empenhado ${fmtBRL(r.empenho548.empenhado)}`} severity="info" icon="pi pi-wallet"
+                    title="Há empenho no Estado para este CNJ, ainda sem pagamento registrado." />)
+              : <span title="Nenhum empenho localizado para este CNJ na base do Estado (548).">—</span>)} />
           <Column header="Resultado" style={{ minWidth: '9rem' }} bodyStyle={{ textAlign: 'center' }}
             body={(r: LinhaEnviadoSes) => (!readOnly
               ? <Button label="Registrar" icon="pi pi-flag" size="small" outlined onClick={() => abrirResultado(r)} />
