@@ -199,6 +199,18 @@ export function EnviarOrcamentoDialog({
     return `${m}/${y?.slice(2)}`;
   };
 
+  // Juiz virgem 28/08 (furo MEMORIA-SEM-MEDIDOR): consulta quebrada era
+  // indistinguível de "caso inédito" — agora a falha se declara na tela.
+  const cardIntelErro = inteligencia && (inteligencia as any).erro ? (
+    <div style={{
+      marginBottom: '12px', padding: '8px 12px', borderRadius: '8px',
+      background: '#fffbeb', border: '1px solid #fcd34d', fontSize: '0.8rem', color: '#92400e',
+    }}>
+      ⚠ A memória de casos anteriores está indisponível agora ({(inteligencia as any).erro}) —
+      isto NÃO significa que o caso é inédito. Confira manualmente se já respondemos.
+    </div>
+  ) : null;
+
   const cardInteligencia = inteligencia
     && (inteligencia.duplicata.length > 0 || inteligencia.experiencia.length > 0) ? (
       <div style={{ marginBottom: '12px' }}>
@@ -670,6 +682,7 @@ export function EnviarOrcamentoDialog({
         modal
         onHide={handleClose}
       >
+        {cardIntelErro}
         {cardInteligencia}
         <div style={{ display: 'flex', gap: '16px', padding: '8px 0 16px' }}>
           <button
