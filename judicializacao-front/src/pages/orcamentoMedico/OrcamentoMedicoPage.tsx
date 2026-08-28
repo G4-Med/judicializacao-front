@@ -105,6 +105,12 @@ export function OrcamentoMedicoPage() {
   // dialogs
   const [detalheVisible, setDetalheVisible] = useState(false);
   const [examesVisible, setExamesVisible] = useState(false);
+  // Perda desta fase (task #233 — "toda fase tem que ter como darmos perda e
+  // escolhermos e confirmarmos"): antes era um confirm() nativo sem motivo.
+  const [naoFacoVisible, setNaoFacoVisible] = useState(false);
+  const [motivoNaoFaco, setMotivoNaoFaco] = useState<string | null>('MEDICO_RECUSOU');
+  const [parecerNaoFaco, setParecerNaoFaco] = useState('');
+  const [salvandoNaoFaco, setSalvandoNaoFaco] = useState(false);
   const [processoSelecionado, setProcessoSelecionado] = useState<ProcessoOrcamentoRow | null>(null);
   const [ordersLookup, setOrdersLookup] = useState<Record<number, OrderLookup>>({});
   const [exames, setExames] = useState('');
@@ -296,13 +302,25 @@ const abrirDetalhe = (rowData: ProcessoOrcamentoRow) => {
 
   const handleNaoFaco = async () => {
     if (!processoSelecionado) return;
-    if (!confirm('Confirma que não faz esse procedimento?')) return;
+    if (!parecerNaoFaco.trim()) {
+      alert('Escreva o motivo da perda (obrigatório).');
+      return;
+    }
+    setSalvandoNaoFaco(true);
     try {
-      await salvarOrcamentoMedico(processoSelecionado.id, { acao: 'nao_faco' });
+      await salvarOrcamentoMedico(processoSelecionado.id, {
+        acao: 'nao_faco',
+        motivoPerdaCategoria: motivoNaoFaco,
+        parecer: parecerNaoFaco,
+      });
+      setNaoFacoVisible(false);
       setDetalheVisible(false);
+      setParecerNaoFaco('');
       carregarDados();
     } catch (err) {
       alert('Erro ao registrar perda.');
+    } finally {
+      setSalvandoNaoFaco(false);
     }
   };
 
@@ -824,7 +842,8 @@ ${blocos}
                 severity="warning" outlined
                 onClick={() => { setExames(''); setExamesVisible(true); }} />}
               {!readOnly && <Button label="Não faço esse procedimento" icon="pi pi-times"
-                severity="danger" outlined onClick={handleNaoFaco} />
+                severity="danger" outlined
+                onClick={() => { setMotivoNaoFaco('MEDICO_RECUSOU'); setParecerNaoFaco(''); setNaoFacoVisible(true); }} />
               }
               {!readOnly && <Button label="Trocar médico" icon="pi pi-user-edit"
                 severity="secondary" outlined
@@ -922,6 +941,40 @@ ${blocos}
           <Button label="Cancelar" outlined onClick={() => setExamesVisible(false)} />
           <Button label="Solicitar" icon="pi pi-check" onClick={handleSolicitarExames} />
         </div>}
+      </Dialog>
+
+      {/* Dialog Não faço (perda desta fase, task #233) — motivo + parecer, mesmo
+          padrão exigido em toda outra tela (¬mais confirm() nativo cego). */}
+      <Dialog header="Não faço esse procedimento" visible={naoFacoVisible}
+        style={{ width: '40rem', maxWidth: '96vw' }} modal
+        onHide={() => setNaoFacoVisible(false)}>
+        <div className="field">
+          <label>Motivo (opcional — o parecer continua obrigatório)</label>
+          <Dropdown value={motivoNaoFaco} onChange={(e) => setMotivoNaoFaco(e.value)}
+            options={[
+              { label: 'O médico recusou o pedido', value: 'MEDICO_RECUSOU' },
+              { label: 'Não conseguimos o orçamento', value: 'ORCAMENTO_NAO_OBTIDO' },
+              { label: 'Orçamento não chegou em tempo hábil', value: 'ORCAMENTO_FORA_DO_PRAZO' },
+              { label: 'Outro (ver justificativa)', value: 'OUTRO' },
+            ]}
+            placeholder="Escolha, se algum se aplicar" showClear style={{ width: '100%', marginTop: '8px' }} />
+        </div>
+        <div className="field" style={{ marginTop: '12px' }}>
+          <label>Motivo da perda <span style={{ color: '#ef4444' }}>*obrigatório</span></label>
+          <InputTextarea
+            value={parecerNaoFaco}
+            onChange={(e) => setParecerNaoFaco(e.target.value)}
+            rows={4} autoResize
+            placeholder="Descreva com suas palavras por que este pedido não segue..."
+            style={{ width: '100%', marginTop: '8px' }}
+          />
+        </div>
+        <div className="dialog-footer-actions" style={{ marginTop: '16px' }}>
+          <Button label="Cancelar" outlined onClick={() => setNaoFacoVisible(false)} />
+          <Button label="Confirmar perda" icon="pi pi-check" severity="danger"
+            loading={salvandoNaoFaco} disabled={salvandoNaoFaco || !parecerNaoFaco.trim()}
+            onClick={handleNaoFaco} />
+        </div>
       </Dialog>
 
       <Dialog
