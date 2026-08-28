@@ -21,6 +21,7 @@ import { ConfiguracoesPage } from '../../pages/configuracoes/ConfiguracoesPage';
 import { LogsPage } from '../../pages/logs/LogsPage';
 import { LixeiraPage } from '../../pages/lixeira/LixeiraPage';
 import { OrcamentosTerceirosPage } from '../../pages/orcamentosTerceiros/OrcamentosTerceirosPage';
+import { CentralEmailsPage } from '../../pages/centralEmails/CentralEmailsPage';
 import { FunilPage } from '../../pages/funil/FunilPage';
 import { SlaPage } from '../../pages/sla/SlaPage';
 import { NotificacoesHistoricoPage } from '../../pages/notificacoesHistorico/NotificacoesHistoricoPage';
@@ -86,6 +87,7 @@ export function AppRoutes() {
         <Route path="/logs" element={<ProtectedScreen screen="logs"><LogsPage /></ProtectedScreen>} />
         <Route path="/lixeira" element={<ProtectedScreen screen="lixeira"><LixeiraPage /></ProtectedScreen>} />
         <Route path="/orcamentos-terceiros" element={<ProtectedScreen screen="orcamentosTerceiros"><OrcamentosTerceirosPage /></ProtectedScreen>} />
+        <Route path="/central-emails" element={<ProtectedScreen screen="centralEmails"><CentralEmailsPage /></ProtectedScreen>} />
       </Route>
     </Routes>
   );

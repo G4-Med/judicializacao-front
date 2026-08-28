@@ -1,0 +1,32 @@
+/* Central de E-mails — tela nova nasce com a própria folha (cicatriz Lixeira 28/08). */
+.ce-page { padding: 1rem 1.25rem 2rem; }
+.ce-page .page-header h1 { display: flex; align-items: center; gap: .5rem; margin: 0 0 .25rem; }
+.ce-sub { opacity: .72; font-size: .9rem; margin: .25rem 0; }
+.ruim { color: #b91c1c; font-weight: 600; }
+
+.ce-semaforo { display: flex; align-items: center; gap: .9rem; padding: .9rem 1rem; border-radius: 10px; margin: .5rem 0 1rem;
+  border: 1px solid var(--surface-border, #e2e8f0); }
+.ce-semaforo.ok { background: rgba(22,163,74,.08); border-color: rgba(22,163,74,.35); }
+.ce-semaforo.alerta { background: rgba(185,28,28,.07); border-color: rgba(185,28,28,.4); }
+.ce-semaforo > i { font-size: 1.8rem; }
+.ce-semaforo.ok > i { color: #16a34a; } .ce-semaforo.alerta > i { color: #b91c1c; }
+.ce-semaforo > div { flex: 1; }
+.ce-alertas { margin: 0 0 1rem; padding-left: 1.2rem; color: #b91c1c; }
+
+.ce-cards { display: flex; gap: .75rem; flex-wrap: wrap; margin-bottom: .75rem; }
+.ce-card { flex: 1 1 10rem; display: flex; flex-direction: column; gap: .2rem; padding: .7rem .9rem;
+  border: 1px solid var(--surface-border, #e2e8f0); border-radius: 8px; background: var(--surface-card, #fff); }
+.ce-card span { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; opacity: .65; }
+.ce-card strong { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+
+.ce-filtros { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; margin: .5rem 0 .75rem; }
+
+.ce-expansor { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; padding: .75rem 1rem 1rem; }
+.ce-bloco h4 { margin: 0 0 .4rem; display: flex; align-items: center; gap: .4rem; }
+.ce-bloco ul { margin: 0; padding-left: 1.1rem; }
+.ce-corpo { white-space: pre-wrap; font-family: inherit; font-size: .85rem; background: var(--surface-ground, #f8fafc);
+  padding: .6rem .75rem; border-radius: 8px; max-height: 40vh; overflow: auto; }
+
+.p-datatable .p-datatable-tbody > tr.ce-linha-falha > td { background: rgba(185,28,28,.08); box-shadow: inset 3px 0 0 #b91c1c; }
+.p-datatable .p-datatable-tbody > tr.ce-linha-repedido > td { background: rgba(180,83,9,.08); box-shadow: inset 3px 0 0 #b45309; }
+.ce-page .p-datatable-wrapper { overflow-x: auto; }
