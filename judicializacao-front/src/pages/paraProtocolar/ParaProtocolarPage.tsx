@@ -112,6 +112,12 @@ export function ParaProtocolarPage() {
   const [naoProtocolarOpcao, setNaoProtocolarOpcao] = useState<NaoProtocolarOpcao>('');
   const [naoProtocolarObs, setNaoProtocolarObs] = useState('');
   const [motivoPerdaCat, setMotivoPerdaCat] = useState<string | null>(null);  // task #223
+  // Ligação Amanda/Instituto 28/08 (@R): "na hora que você vai descartar, ele vai
+  // pedir pra você colocar a peça inteira e o motivo" — a peça de inteiro teor
+  // vira obrigatória em toda saída que não é protocolar, e o motivo deixa de ser opcional.
+  const [pecaDescarte, setPecaDescarte] = useState<File | null>(null);
+  const [pecaJaAnexada, setPecaJaAnexada] = useState(false);
+  const [enviandoDescarte, setEnviandoDescarte] = useState(false);
 
   const carregarDados = () => {
     setLoading(true);
@@ -479,6 +485,12 @@ export function ParaProtocolarPage() {
           setRegistroNaoProtocolar({ ...rowData });
           setNaoProtocolarOpcao('');
           setNaoProtocolarObs('');
+          setMotivoPerdaCat(null);
+          setPecaDescarte(null);
+          setPecaJaAnexada(false);
+          getAnexosOrder(rowData.id, 'DECISAO_INTEIRO_TEOR')
+            .then((res: any) => setPecaJaAnexada((res.data.anexos ?? []).length > 0))
+            .catch(() => setPecaJaAnexada(false));
           setAnexosOrcamento([]);
           setLoadingAnexosOrcamento(true);
           getAnexosOrder(rowData.id, 'ORCAMENTO')
@@ -576,17 +588,36 @@ const handleConfirmarProtocolacao = async () => {
 
     const acao = naoProtocolarOpcao === 'segredo' ? 'segredo'
       : naoProtocolarOpcao === 'sem_protocolo' ? 'recusar_protocolo' : 'perda';
+    const descarte = naoProtocolarOpcao !== 'segredo';
+    // "Diretoria falou para não protocolar" É o motivo — não pede outro.
+    const motivo = naoProtocolarOpcao === 'diretoria' ? 'DIRETORIA_ORIENTOU'
+      : naoProtocolarOpcao === 'sem_protocolo' ? 'PRAZO_PROTOCOLACAO' : motivoPerdaCat;
 
+    if (descarte && !pecaJaAnexada && !pecaDescarte) {
+      alert('Anexe a peça de inteiro teor (PDF) — ela guarda a prova do desfecho do processo.');
+      return;
+    }
+    if (descarte && !motivo) {
+      alert('Escolha o motivo da perda.');
+      return;
+    }
+
+    setEnviandoDescarte(true);
     try {
+      if (descarte && !pecaJaAnexada && pecaDescarte) {
+        await uploadAnexoOrder(registroNaoProtocolar.id, pecaDescarte, 'DECISAO_INTEIRO_TEOR');
+      }
       await salvarProtocolar(registroNaoProtocolar.id, {
         acao,
         obs: naoProtocolarObs,
-        motivoPerdaCategoria: motivoPerdaCat ?? undefined,   // task #223 (opcional)
+        motivoPerdaCategoria: motivo ?? undefined,
       });
       carregarDados();
       setNaoProtocolarDialogVisible(false);
     } catch (err: any) {
       alert(err?.response?.data?.error ?? 'Erro ao processar.');
+    } finally {
+      setEnviandoDescarte(false);
     }
   };
 
@@ -1371,19 +1402,43 @@ const handleConfirmarProtocolacao = async () => {
 
             {(naoProtocolarOpcao === 'perda') && (
               <div className="field field-span-4">
-                <label>Motivo da perda (opcional — o texto abaixo continua obrigatório)</label>
+                <label>Motivo da perda <span style={{ color: '#ef4444' }}>*obrigatório</span> — é o que entra no indicador</label>
                 <Dropdown value={motivoPerdaCat} onChange={(e) => setMotivoPerdaCat(e.value)}
                   options={[
+                    { label: 'Paciente já foi operado — nada a fazer', value: 'JA_OPERADO' },
+                    { label: 'Diretoria orientou não protocolar', value: 'DIRETORIA_ORIENTOU' },
                     { label: 'Decidimos não cotar', value: 'NAO_COTAR' },
                     { label: 'Não localizamos o médico', value: 'MEDICO_NAO_LOCALIZADO' },
                     { label: 'Não conseguimos o orçamento', value: 'ORCAMENTO_NAO_OBTIDO' },
                     { label: 'O médico recusou o pedido', value: 'MEDICO_RECUSOU' },
                     { label: 'Orçamento não chegou em tempo hábil', value: 'ORCAMENTO_FORA_DO_PRAZO' },
-                        { label: 'Sem exames — médico não quis cotar', value: 'SEM_EXAMES' },
-                        { label: 'Perda por segredo de justiça', value: 'SEGREDO_DE_JUSTICA' },
+                    { label: 'Sem exames — médico não quis cotar', value: 'SEM_EXAMES' },
+                    { label: 'Perda por segredo de justiça', value: 'SEGREDO_DE_JUSTICA' },
                     { label: 'Outro (ver justificativa)', value: 'OUTRO' },
                   ]}
-                  placeholder="Escolha, se algum se aplicar" showClear />
+                  placeholder="Escolha o motivo" showClear />
+              </div>
+            )}
+
+            {naoProtocolarOpcao && naoProtocolarOpcao !== 'segredo' && (
+              <div className="field field-span-4">
+                <label>
+                  Peça de inteiro teor (PDF){' '}
+                  {!pecaJaAnexada && <span style={{ color: '#ef4444' }}>*obrigatória para descartar</span>}
+                </label>
+                {pecaJaAnexada ? (
+                  <small style={{ color: '#16a34a' }}>
+                    <i className="pi pi-check-circle" /> Este pedido já tem a peça de inteiro teor anexada.
+                  </small>
+                ) : (
+                  <>
+                    <input type="file" accept="application/pdf" disabled={readOnly}
+                      onChange={(e) => setPecaDescarte(e.target.files?.[0] ?? null)} />
+                    <small style={{ color: '#6b7280' }}>
+                      A peça guarda a prova do desfecho (desistência, ganho de outro ou cirurgia já feita). Sem ela o descarte não fecha.
+                    </small>
+                  </>
+                )}
               </div>
             )}
 
@@ -1407,7 +1462,8 @@ const handleConfirmarProtocolacao = async () => {
             label="Confirmar"
             icon="pi pi-check"
             severity="danger"
-            disabled={!naoProtocolarOpcao}
+            disabled={!naoProtocolarOpcao || enviandoDescarte}
+            loading={enviandoDescarte}
             onClick={handleConfirmarNaoProtocolar}
           />
         </div>}
