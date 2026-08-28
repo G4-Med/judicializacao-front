@@ -24,6 +24,7 @@ import {
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
 
 /**
  * Enviado à SES (task #235, @R 28/08 00:2x): SÓ os pedidos cujo orçamento foi ao
@@ -182,6 +183,7 @@ export function EnviadoSesPage() {
     empenhoExato: visiveis.filter((l) => (l.empenho548?.pago ?? 0) > 0 && l.valorOrcamento > 0
       && Math.abs((l.empenho548?.pago ?? 0) - l.valorOrcamento) / l.valorOrcamento < 0.005).length,
     valorTotal: visiveis.reduce((acc, l) => acc + (l.valorOrcamento || 0), 0),
+    empenho: kpisEmpenho(visiveis),
   }), [visiveis]);
 
   const NOMES_TIPO_ANEXO: Record<string, string> = {
@@ -297,6 +299,11 @@ export function EnviadoSesPage() {
               { rotulo: 'pago = orçado (conferir baixa)', quantidade: kpis.empenhoExato, tom: 'alerta' },
             ]} />
         </h2>
+        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', margin: '4px 0 8px', fontSize: '0.95em' }}>
+          <span><strong>Valor enviado (total):</strong> {kpis.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+          <span><strong>Pago pelo Estado:</strong> {kpis.empenho.somaPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} em {kpis.empenho.nPagos} pedido(s)</span>
+          <span style={{ color: '#7c3aed' }}><strong>Pago = orçado:</strong> {kpis.empenho.nExatos} (conferir baixa)</span>
+        </div>
         <AcoesTabela>
           <BotaoExportarExcel todos={linhas} visiveis={visiveis} nome="enviado-ses" />
           {colunasCfg.botao}
@@ -354,25 +361,9 @@ export function EnviadoSesPage() {
                 ? <Tag value={`${r.dias}d`} severity="warning" icon="pi pi-clock"
                     title={`${SLA_VERIFICACAO_1}+ dias sem retorno — primeira verificação baixa`} />
                 : <span>{r.dias}d</span>)} />
-          <Column field="empenho548" header="Empenho Estado" sortable style={{ minWidth: '11rem' }}
-            sortFunction={(e) => {
-              const v = (r: LinhaEnviadoSes) => r.empenho548?.pago ?? -1;
-              return [...(e.data as LinhaEnviadoSes[])].sort((a, b) => (v(a) - v(b)) * (e.order ?? 1));
-            }}
-            body={(r: LinhaEnviadoSes) => (r.empenho548
-              ? (r.empenho548.pago > 0
-                // @R 28/08 02:20: "se for exato o valor colocar de uma cor diferente" —
-                // pago == orçado (±0,5%) é evidência forte de que é o MESMO item.
-                ? (r.empenho548.pago > 0 && r.valorOrcamento > 0
-                && Math.abs(r.empenho548.pago - r.valorOrcamento) / r.valorOrcamento < 0.005
-                  ? <Tag value={`PAGO = ORÇADO ${fmtBRL(r.empenho548.pago)}`} icon="pi pi-star-fill"
-                      style={{ background: '#7c3aed', color: '#fff' }}
-                      title="O valor pago pelo Estado BATE com o orçamento que enviamos (±0,5%) — evidência forte de que é ESTE item. Conferência prioritária para dar baixa." />
-                  : <Tag value={`PAGO ${fmtBRL(r.empenho548.pago)}`} severity="success" icon="pi pi-check-circle"
-                      title={`O Estado já PAGOU ${r.empenho548.nEmpenhos} empenho(s) neste CNJ (último ano ${r.empenho548.anoMax ?? '—'}) com valor DIFERENTE do orçado — pode ser outro item do mesmo processo. Investigar. Valor do EMPENHO, não do prestador.`} />)
-                : <Tag value={`Empenhado ${fmtBRL(r.empenho548.empenhado)}`} severity="info" icon="pi pi-wallet"
-                    title="Há empenho no Estado para este CNJ, ainda sem pagamento registrado." />)
-              : <span title="Nenhum empenho localizado para este CNJ na base do Estado (548).">—</span>)} />
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
           <Column header="Resultado" style={{ minWidth: '9rem' }} bodyStyle={{ textAlign: 'center' }}
             body={(r: LinhaEnviadoSes) => (!readOnly
               ? <Button label="Registrar" icon="pi pi-flag" size="small" outlined onClick={() => abrirResultado(r)} />

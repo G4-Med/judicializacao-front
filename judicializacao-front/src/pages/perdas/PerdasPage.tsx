@@ -17,6 +17,7 @@ import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, 
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
 
 interface PerdaProcesso {
   id: number;
@@ -295,6 +296,14 @@ export function PerdasPage() {
           </div>
           <div className="kpi-value">{formatarMoeda(kpis.valorTotal)}</div>
         </div>
+
+        <div className="kpi-card" title="O Estado PAGOU nestes CNJs mesmo com a perda declarada — dinheiro que passou sem nós. Somatório do empenho pago (base 548)">
+          <div className="kpi-header">
+            <span>Pago pelo Estado (548)</span>
+            <i className="pi pi-check-circle"></i>
+          </div>
+          <div className="kpi-value">{formatarMoeda(kpisEmpenho(dataComCamposCalculados).somaPago)} · {kpisEmpenho(dataComCamposCalculados).nPagos}</div>
+        </div>
       </div>
       </PainelKpis>
 
@@ -354,6 +363,9 @@ export function PerdasPage() {
           {colunaCadastro()}
           {colunaSegredo()}
           {colunaInteiroTeor()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
           {colunaSolicitante()}
 
           <Column

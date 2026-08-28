@@ -33,6 +33,7 @@ import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, 
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -506,6 +507,14 @@ const kpis = useMemo(() => {
           <div className="kpi-value">{formatarMoeda(kpis.valorTotal)}</div>
         </div>
 
+        <div className="kpi-card" title="Somatório do que o Estado já PAGOU (empenho, base 548) nos CNJs desta tela · nº de pedidos com pagamento — sinal para conferir o desfecho, não repasse ao prestador">
+          <div className="kpi-header">
+            <span>Pago pelo Estado (548)</span>
+            <i className="pi pi-check-circle"></i>
+          </div>
+          <div className="kpi-value">{formatarMoeda(kpisEmpenho(dataComCamposCalculados).somaPago)} · {kpisEmpenho(dataComCamposCalculados).nPagos}</div>
+        </div>
+
         <div className="kpi-card">
           <div className="kpi-header">
             <span>Ganhos</span>
@@ -582,6 +591,9 @@ const kpis = useMemo(() => {
           {colunaCadastro()}
           {colunaSegredo()}
           {colunaInteiroTeor()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
           {colunaSolicitante()}
 
           <Column
