@@ -76,8 +76,16 @@ export function PacoteExamesCotacao({ orderId }: { orderId: number }) {
                   <a href={i.link} target="_blank" rel="noreferrer">{i.nome}</a>
                   {i.data ? ` — ${i.data}` : ''}{' '}
                   <span style={{ opacity: 0.6 }}>({i.origem}{i.pagina ? `, p. ${i.pagina}` : ''})</span>
-                  {!i.classificado && (
-                    <Tag value="sem nome conferido" severity="warning"
+                  {/* Só o ILEGÍVEL vira alerta. Medido em produção 28/08: 429 dos 609
+                      documentos já trazem nome no próprio arquivo — marcar todos como
+                      pendência faria o aviso aparecer sempre, e aviso que sempre aparece
+                      ninguém lê. */}
+                  {i.qualidade === 'ilegivel' && (
+                    <Tag value="sem nome legível" severity="warning"
+                      style={{ marginLeft: 6, fontSize: '0.7rem' }} />
+                  )}
+                  {i.qualidade === 'conferido' && (
+                    <Tag value="conferido" severity="success"
                       style={{ marginLeft: 6, fontSize: '0.7rem' }} />
                   )}
                 </li>
