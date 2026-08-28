@@ -33,7 +33,8 @@ export type ScreenKey =
   | 'funil'
   | 'sla'
   | 'notificacoesHistorico'
-  | 'lixeira';
+  | 'lixeira'
+  | 'orcamentosTerceiros';
 
 export type ReportKey = 'relatorioResumido' | 'relatorioConsolidado';
 
@@ -74,6 +75,7 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'monitorIntegracao',
       'logs',
       'lixeira',
+      'orcamentosTerceiros',
     ],
     edit: [
       'lixeira',
@@ -126,6 +128,7 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'relatorioResumido',
       'relatorioConsolidado',
       'lixeira',
+      'orcamentosTerceiros',
     ],
     // Gerente era 100% somente-leitura por padrão — mas na prática precisa agir na
     // tela de orçamento médico (enviar orçamento, solicitar exames, recusar o
@@ -155,6 +158,7 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'relatorioResumido',
       'relatorioConsolidado',
       'lixeira',
+      'orcamentosTerceiros',
     ],
     edit: ['clientes', 'juridico', 'paraProtocolar', 'protocolados', 'segredoJustica', 'lixeira'],
     exportReports: ['relatorioResumido', 'relatorioConsolidado'],
@@ -239,6 +243,7 @@ export const SCREEN_PATHS: Record<ScreenKey, string> = {
   sla: '/sla',
   notificacoesHistorico: '/notificacoes-historico',
   lixeira: '/lixeira',
+  orcamentosTerceiros: '/orcamentos-terceiros',
 };
 
 export const SCREEN_ORDER: ScreenKey[] = [
@@ -265,6 +270,7 @@ export const SCREEN_ORDER: ScreenKey[] = [
   'monitorIntegracao',
   'logs',
   'lixeira',
+  'orcamentosTerceiros',
 ];
 
 export const DEFAULT_GROUP: UserGroup = 'SECRETARIA';

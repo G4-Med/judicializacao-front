@@ -42,6 +42,7 @@ export const MENU_CONFIG_CLEAN: MenuConfigItem[] = [
   { label: 'SLA', icon: 'pi pi-clock', path: '/sla', screen: 'sla' },
   { label: 'Notificações', icon: 'pi pi-bell', path: '/notificacoes-historico', screen: 'notificacoesHistorico' },
   { label: 'Base de Processos', icon: 'pi pi-briefcase', path: '/processos', screen: 'processos' },
+  { label: 'Orçamentos de terceiros', icon: 'pi pi-dollar', path: '/orcamentos-terceiros', screen: 'orcamentosTerceiros' },
   { label: 'Lixeira', icon: 'pi pi-trash', path: '/lixeira', screen: 'lixeira' },
   { label: 'Clientes', icon: 'pi pi-users', path: '/clientes', screen: 'clientes' },
   {

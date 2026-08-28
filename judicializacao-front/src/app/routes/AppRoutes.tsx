@@ -20,6 +20,7 @@ import { UsuariosPage } from '../../pages/usuarios/UsuariosPage';
 import { ConfiguracoesPage } from '../../pages/configuracoes/ConfiguracoesPage';
 import { LogsPage } from '../../pages/logs/LogsPage';
 import { LixeiraPage } from '../../pages/lixeira/LixeiraPage';
+import { OrcamentosTerceirosPage } from '../../pages/orcamentosTerceiros/OrcamentosTerceirosPage';
 import { FunilPage } from '../../pages/funil/FunilPage';
 import { SlaPage } from '../../pages/sla/SlaPage';
 import { NotificacoesHistoricoPage } from '../../pages/notificacoesHistorico/NotificacoesHistoricoPage';
@@ -84,6 +85,7 @@ export function AppRoutes() {
         <Route path="/monitor-integracao" element={<ProtectedScreen screen="monitorIntegracao"><MonitorIntegracaoPage /></ProtectedScreen>} />
         <Route path="/logs" element={<ProtectedScreen screen="logs"><LogsPage /></ProtectedScreen>} />
         <Route path="/lixeira" element={<ProtectedScreen screen="lixeira"><LixeiraPage /></ProtectedScreen>} />
+        <Route path="/orcamentos-terceiros" element={<ProtectedScreen screen="orcamentosTerceiros"><OrcamentosTerceirosPage /></ProtectedScreen>} />
       </Route>
     </Routes>
   );
