@@ -131,7 +131,11 @@
    ocupa o espaço que sobra e corta com reticências. O nome inteiro fica no
    title (hover), então nada se perde. `min-width: 0` é o que permite o flex
    item encolher — sem ele, `text-overflow` não tem efeito dentro de flex. */
-.mc-side-item > span {
+/* :not(.mc-side-dono) é o que faz esta regra valer SÓ para o rótulo. Sem isso
+   ela pegava também o span do hint (i) — que é irmão do rótulo — e o `flex: 1 1
+   auto` esticava a bolinha conforme o espaço que sobrava: fase de nome curto
+   ganhava um (i) grande, nome longo um (i) espremido (print @R 28/08 12:27). */
+.mc-side-item > span:not(.mc-side-dono) {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -168,10 +172,11 @@ body.dark-theme .mc-side-children { border-left-color: #334155; }
   justify-content: center;
   width: 20px; height: 20px;
   border-radius: 50%;
-  flex-shrink: 0;
+  flex: 0 0 20px;      /* nunca cresce nem encolhe — tamanho é o mesmo em toda fase */
+  box-sizing: border-box;
   cursor: help;
 }
-.mc-side-dono i { font-size: 12px; }
+.mc-side-dono i { font-size: 12px; width: auto; }  /* width:auto vence o 18px de .mc-side-item i */
 .mc-side-dono--instituto { background: rgba(15, 118, 110, 0.14); color: #0F766E; }
 .mc-side-dono--g4med { background: rgba(124, 58, 237, 0.14); color: #7C3AED; }
 body.dark-theme .mc-side-dono--instituto { background: rgba(15, 118, 110, 0.28); color: #2dd4bf; }
