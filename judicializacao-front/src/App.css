@@ -65,3 +65,15 @@ body.mc-tabelas-justificadas .p-datatable .p-datatable-tbody > tr > td {
   font-size: 0.85rem;
 }
 body.mc-tabelas-justificadas .mc-scroll-topo { display: none; }
+
+/* ── RE-PEDIDO (@R 28/08): linha mais escura + badge "!" quando a SES pediu mais de 1× ── */
+.p-datatable .p-datatable-tbody > tr.mc-linha-repedido > td {
+  background: rgba(180, 83, 9, 0.10);
+  box-shadow: inset 3px 0 0 #b45309;
+}
+.p-datatable .p-datatable-tbody > tr.mc-linha-repedido:hover > td { background: rgba(180, 83, 9, 0.16); }
+.mc-repedido-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 1px 7px; border-radius: 999px; font-weight: 700; font-size: 0.78rem;
+  color: #fff; background: #b45309; white-space: nowrap;
+}

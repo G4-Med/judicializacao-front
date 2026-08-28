@@ -30,6 +30,7 @@ import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasV
 import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
 import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
 
 // Meta desta fase (orçamento) — espelha backend/funil.py FASES['orcamento'].meta_dias.
 // "96 horas — é o prazo que sustenta o contrato com o Estado".
@@ -597,9 +598,9 @@ ${blocos}
           aria-label="Pedidos aguardando orçamento médico"
           value={dataComMedico} dataKey="id" paginator rowsPerPageOptions={[10, 20, 50, 100, 200]} rows={rows} first={first}
           onValueChange={(value) => setVisibleProcessos(value as typeof dataComMedico)}
-          rowClassName={(rowData: { dias: number }) =>
+          rowClassName={(r: any) => [((rowData: { dias: number }) =>
             rowData.dias > SLA_META_DIAS_ORCAMENTO ? 'linha-fora-sla' : ''
-          }
+          )(r), rowClassRepedido(r)].filter(Boolean).join(' ')}
           onPage={(e: DataTablePageEvent) => { setFirst(e.first); setRows(e.rows); }}
           sortField={sortField} sortOrder={sortOrder}
           onSort={(e: DataTableSortEvent) => { setSortField(e.sortField); setSortOrder(e.sortOrder); }}
@@ -622,6 +623,7 @@ ${blocos}
                 )}
               </span>
             )} />
+          {colunaRepedido()}
           {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
           {colunaCnj()}
           {colunaSei()}

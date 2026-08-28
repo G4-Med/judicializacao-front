@@ -29,6 +29,7 @@ import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasV
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
 import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
 import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
+import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -543,7 +544,7 @@ export function ProtocoladosPage() {
             <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="protocolados" />
             {colunasCfg.botao}
           </AcoesTabela>
-        <DataTable
+        <DataTable rowClassName={rowClassRepedido}
           aria-label="Pedidos protocolados"
           expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
           rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
@@ -587,6 +588,7 @@ export function ProtocoladosPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          {colunaRepedido()}
           {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
           {colunaCnj()}
           {colunaSei()}

@@ -25,6 +25,7 @@ import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
 
 // Meta desta fase (triagem jurídica) — espelha backend/funil.py FASES['triagem'].meta_dias.
 // "a análise sai no dia seguinte — libera para mim até meio-dia" (fala do @R na reunião).
@@ -394,9 +395,9 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           aria-label="Pedidos aguardando triagem jurídica"
           value={dataComSequencial}
           onValueChange={(value) => setVisibleProcessos(value as ProcessoJuridicoRow[])}
-          rowClassName={(rowData: ProcessoJuridicoRow) =>
+          rowClassName={(r: any) => [((rowData: ProcessoJuridicoRow) =>
             rowData.dias > SLA_META_DIAS_TRIAGEM ? 'linha-fora-sla' : ''
-          }
+          )(r), rowClassRepedido(r)].filter(Boolean).join(' ')}
           dataKey="id"
           expandedRows={linhaExpandida}
           onRowToggle={(e) => {
@@ -449,6 +450,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                 )}
               </span>
             )} />
+          {colunaRepedido()}
           <Column
             field="idade"
             header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento.')}
