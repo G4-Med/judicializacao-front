@@ -802,6 +802,8 @@ useEffect(() => { carregarDados(); }, [fila]);
                         { label: 'Não conseguimos o orçamento', value: 'ORCAMENTO_NAO_OBTIDO' },
                         { label: 'O médico recusou o pedido', value: 'MEDICO_RECUSOU' },
                         { label: 'Orçamento não chegou em tempo hábil', value: 'ORCAMENTO_FORA_DO_PRAZO' },
+                        { label: 'Sem exames — médico não quis cotar', value: 'SEM_EXAMES' },
+                        { label: 'Perda por segredo de justiça', value: 'SEGREDO_DE_JUSTICA' },
                         { label: 'Outro (ver justificativa)', value: 'OUTRO' },
                       ]}
                       placeholder="Escolha, se algum se aplicar" showClear />

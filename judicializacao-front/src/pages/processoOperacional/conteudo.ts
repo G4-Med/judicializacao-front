@@ -143,26 +143,12 @@ export const ETAPAS: Etapa[] = [
       'A análise da perda não é burocracia: é o que ensina o sistema quais procedimentos e quais ' +
       'médicos convertem.',
   },
-  {
-    id: 'segredo-justica',
-    numero: 6,
-    titulo: 'Segredo de justiça',
-    dono: 'INSTITUTO',
-    rota: '/segredo-justica',
-    oQueFaz:
-      'Processos com acesso restrito — na maioria das vezes, crianças. Só chegam aqui os que já ' +
-      'tiveram orçamento enviado.',
-    comoFazer: [
-      'Como não temos acesso aos autos, é preciso pedir à Secretaria o contato do advogado ou das partes.',
-      'Com o contato, dá para obter as informações que o médico precisa para cotar.',
-    ],
-    falaDoRapha:
-      'Eu pediria pra Secretaria do Estado mandar o e-mail da advogada para que a gente possa entrar ' +
-      'em contato e obter maiores informações para ajudar o paciente.',
-  },
+  // Task #238 (@R 28/08 01:43): "o canal 6 não existe" — segredo de justiça não é fase,
+  // é marca do pedido. Segredo que mata a cotação vira PERDA com o motivo
+  // 'Perda por segredo de justiça'; segredo enviado à SES vive na etapa 6 abaixo.
   {
     id: 'enviado-ses',
-    numero: 7,
+    numero: 6,
     titulo: 'Enviado à SES — aguardando retorno técnico',
     dono: 'G4MED',
     rota: '/enviado-ses',

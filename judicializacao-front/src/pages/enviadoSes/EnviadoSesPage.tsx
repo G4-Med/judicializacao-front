@@ -10,7 +10,9 @@ import { InputNumber } from 'primereact/inputnumber';
 import { Dropdown } from 'primereact/dropdown';
 import { Dialog } from 'primereact/dialog';
 import { FilterMatchMode } from 'primereact/api';
-import { getEnviadoSes, salvarResultadoSegredo } from '../../services/api/orders';
+import {
+  getEnviadoSes, salvarResultadoSegredo, adicionarAcompanhamento, uploadAnexoOrder,
+} from '../../services/api/orders';
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
@@ -70,6 +72,34 @@ export function EnviadoSesPage() {
   const [motivoCat, setMotivoCat] = useState<string | null>(null);
   const [parecer, setParecer] = useState('');
   const [salvando, setSalvando] = useState(false);
+
+  // informação avulsa (@R 28/08 01:43: "podemos receber a ligação da médica ou do
+  // representante" — a espera não é muda: anotação + anexo entram SEM fechar o pedido)
+  const [anotacao, setAnotacao] = useState('');
+  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [salvandoInfo, setSalvandoInfo] = useState(false);
+
+  const salvarInformacao = async () => {
+    if (!alvo) return;
+    if (!anotacao.trim() && !arquivo) { alert('Escreva a informação recebida ou escolha um arquivo.'); return; }
+    setSalvandoInfo(true);
+    try {
+      if (arquivo) await uploadAnexoOrder(alvo.id, arquivo, 'ACOMPANHAMENTO');
+      if (anotacao.trim() || arquivo) {
+        await adicionarAcompanhamento(alvo.id, {
+          acompanhamento: 'Retorno recebido na espera da SES',
+          descricao: anotacao.trim() || `Anexo recebido: ${arquivo?.name}`,
+        });
+      }
+      setAnotacao('');
+      setArquivo(null);
+      alert('Informação registrada — o pedido continua aguardando o retorno técnico.');
+    } catch {
+      alert('Erro ao registrar a informação.');
+    } finally {
+      setSalvandoInfo(false);
+    }
+  };
 
   const carregar = () => {
     setLoading(true);
@@ -224,14 +254,18 @@ export function EnviadoSesPage() {
         )}
         {resultado === 'perda' && (
           <div className="field" style={{ marginTop: '12px' }}>
-            <label>Motivo (opcional — o parecer continua obrigatório)</label>
+            <label>Status da perda (escolha o que aconteceu — o motivo escrito continua obrigatório)</label>
             <Dropdown value={motivoCat} onChange={(e) => setMotivoCat(e.value)}
               options={[
                 { label: 'SES não respondeu ao orçamento', value: 'SES_SEM_RESPOSTA' },
                 { label: 'Perda de prazo de protocolação', value: 'PRAZO_PROTOCOLACAO' },
+                { label: 'Perda por segredo de justiça', value: 'SEGREDO_DE_JUSTICA' },
+                { label: 'Sem exames — médico não quis cotar', value: 'SEM_EXAMES' },
+                { label: 'Não localizamos profissional', value: 'MEDICO_NAO_LOCALIZADO' },
+                { label: 'Médico recusou a cotação', value: 'MEDICO_RECUSOU' },
                 { label: 'Outro (ver justificativa)', value: 'OUTRO' },
               ]}
-              placeholder="Escolha, se algum se aplicar" showClear style={{ width: '100%' }} />
+              placeholder="Escolha o status da perda" showClear style={{ width: '100%' }} />
           </div>
         )}
         {resultado !== '' && (
@@ -241,6 +275,20 @@ export function EnviadoSesPage() {
               placeholder="Descreva o retorno técnico recebido..." style={{ width: '100%' }} />
           </div>
         )}
+        <div className="field" style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--surface-border, #e2e8f0)' }}>
+          <label style={{ fontWeight: 600 }}>
+            <i className="pi pi-phone" style={{ marginRight: '6px' }} />
+            Recebeu uma ligação ou documento? Registre sem fechar o pedido
+          </label>
+          <InputTextarea value={anotacao} onChange={(e) => setAnotacao(e.target.value)} rows={2} autoResize
+            placeholder="Ex.: a médica ligou informando que a cirurgia foi agendada..."
+            style={{ width: '100%', marginTop: '6px' }} />
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px', flexWrap: 'wrap' }}>
+            <input type="file" onChange={(e) => setArquivo(e.target.files?.[0] ?? null)} />
+            <Button label="Salvar informação" icon="pi pi-save" size="small" outlined
+              loading={salvandoInfo} disabled={salvandoInfo} onClick={salvarInformacao} />
+          </div>
+        </div>
         <div className="dialog-footer-actions" style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
           <Button label="Cancelar" outlined onClick={() => setAlvo(null)} />
           <Button label="Salvar resultado" icon="pi pi-check" loading={salvando}

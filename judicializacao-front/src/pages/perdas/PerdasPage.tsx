@@ -155,6 +155,10 @@ export function PerdasPage() {
     const perdaPrazoProtocolo = dataComCamposCalculados.filter(
       (item) => item.statusPerda === 'Perda de prazo de protocolação'
     ).length;
+    // Task #238 (@R 28/08): segredo que mata a cotação é PERDA com esse motivo
+    const perdaSegredo = dataComCamposCalculados.filter(
+      (item) => item.statusPerda === 'Perda por segredo de justiça'
+    ).length;
 
     return {
       totalProcessos,
@@ -163,6 +167,7 @@ export function PerdasPage() {
       perdaMedico,
       perdaSesSemResposta,
       perdaPrazoProtocolo,
+      perdaSegredo,
       perdaSemEspecialista
     };
   }, [dataComCamposCalculados]);
@@ -273,6 +278,14 @@ export function PerdasPage() {
             <i className="pi pi-calendar-times"></i>
           </div>
           <div className="kpi-value">{kpis.perdaPrazoProtocolo}</div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span>Segredo de justiça</span>
+            <i className="pi pi-lock"></i>
+          </div>
+          <div className="kpi-value">{kpis.perdaSegredo}</div>
         </div>
 
         <div className="kpi-card">
