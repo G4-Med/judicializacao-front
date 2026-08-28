@@ -130,13 +130,17 @@ export function colunaBaixarOrcamento() {
       alert('Este pedido não tem PDF de orçamento anexado.');
     }
   };
+  // 3 estados: PDF anexado (baixar) · cotamos-sem-PDF (baixar tenta mesmo assim)
+  // · nunca cotamos ("não enviado" — ausência REAL: 52/52 cotadas têm PDF).
   return (
-    <Column key="baixarOrc" header="Orçamento" style={{ minWidth: '8rem' }} bodyStyle={{ textAlign: 'center' }}
-      body={(r: any) => (
-        <Button icon="pi pi-download" size="small" outlined severity="secondary"
-          tooltip="Baixar o orçamento enviado ao Estado (PDF consolidado)"
-          onClick={() => baixar(r)} aria-label="Baixar orçamento" />
-      )} />
+    <Column key="baixarOrc" header="Orçamento" sortable field="temOrcamentoPdf"
+      style={{ minWidth: '8rem' }} bodyStyle={{ textAlign: 'center' }}
+      body={(r: any) => (r.temOrcamentoPdf
+        ? <Button icon="pi pi-download" size="small" outlined severity="secondary"
+            tooltip="Baixar o orçamento enviado ao Estado (PDF consolidado)"
+            onClick={() => baixar(r)} aria-label="Baixar orçamento" />
+        : <Tag value="não enviado" severity="secondary"
+            title="Este pedido não tem orçamento anexado — nunca chegou a ser cotado (não é falha de upload: toda cotação tem o PDF)." />)} />
   );
 }
 
