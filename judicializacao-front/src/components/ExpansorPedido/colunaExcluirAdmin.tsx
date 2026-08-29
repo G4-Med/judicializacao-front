@@ -68,7 +68,7 @@ function DialogoExcluir({ linha, onFechar, onFeito }: { linha: any; onFechar: ()
   );
 }
 
-function BotaoExcluir({ linha, aoExcluir }: { linha: any; aoExcluir?: () => void }) {
+export function BotaoExcluir({ linha, aoExcluir }: { linha: any; aoExcluir?: () => void }) {
   const [aberto, setAberto] = useState(false);
   return (
     <>

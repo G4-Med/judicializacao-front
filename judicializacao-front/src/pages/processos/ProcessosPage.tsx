@@ -8,6 +8,7 @@ import type {
   DataTableSortEvent
 } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -2040,7 +2041,7 @@ ${linhasAnexos}
             <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="base-processos" />
             {colunasCfg.botao}
           </AcoesTabela>
-        <DataTable
+        <DataTable scrollable
           expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
           rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Todos os processos — status, valor de referência e responsável por cada etapa"
@@ -2069,8 +2070,8 @@ ${linhasAnexos}
           className="processos-table"
         >
           {colunasCfg.filtrar(<>
-          <Column expander style={{ width: '3rem' }} />
-          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+          <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
+          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />
 
           <Column
             field="sequencial"
@@ -2078,15 +2079,9 @@ ${linhasAnexos}
             sortable
             style={{ minWidth: '4rem' }}
             body={(rowData: ProcessoTableRow) => rowData.sequencial}
-          />
+           frozen alignFrozen="left" />
 
 
-        {!readOnly && <Column
-            header="Ações"
-            body={acoesBodyTemplate}
-            style={{ minWidth: '7rem' }}
-            bodyStyle={{ textAlign: 'center' }}
-          />}
 
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
@@ -2095,7 +2090,14 @@ ${linhasAnexos}
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
-          />
+           frozen alignFrozen="left" />
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+          {colunaAcoesFase({ corpo: (r: any) => <>{acoesBodyTemplate(r)}{editarBodyTemplate(r)}{ehAdmin && (((r: any) => (
+              <Button icon="pi pi-trash" severity="danger" outlined size="small"
+                onClick={() => excluirLancamento(r)}
+                tooltip="Excluir lançamento (só Admin — backup automático antes)"
+                aria-label={`Excluir processo ${r.id}`} />
+            )) as any)(r)}</> })}
           {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
           {colunaCnj()}
           {colunaSei()}
@@ -2211,19 +2213,6 @@ ${linhasAnexos}
           />
 
 
-          <Column
-            header="Editar"
-            body={editarBodyTemplate}
-            style={{ minWidth: '7rem' }}
-            bodyStyle={{ textAlign: 'center' }}
-          />
-          {ehAdmin && <Column header={cabecalhoComHint('Excluir', 'Só Admin. Apaga o lançamento (backup automático no servidor antes).')} style={{ width: '5rem' }} bodyStyle={{ textAlign: 'center' }}
-            body={(r: any) => (
-              <Button icon="pi pi-trash" severity="danger" outlined size="small"
-                onClick={() => excluirLancamento(r)}
-                tooltip="Excluir lançamento (só Admin — backup automático antes)"
-                aria-label={`Excluir processo ${r.id}`} />
-            )} />}
         </>)}
         </DataTable>
 

@@ -7,6 +7,7 @@ import type {
   DataTableSortEvent
 } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -499,7 +500,7 @@ useEffect(() => { carregarDados(); }, [fila]);
             <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="segredo-justica" />
             {colunasCfg.botao}
           </AcoesTabela>
-        <DataTable
+        <DataTable scrollable
           aria-label="Pedidos em segredo de justiça"
           value={dataComCamposCalculados}
           onValueChange={(value) => setVisibleProcessos(value as SegredoJusticaTableRow[])}
@@ -522,7 +523,7 @@ useEffect(() => { carregarDados(); }, [fila]);
           className="segredo-justica-table"
         >
           {colunasCfg.filtrar(<>
-          {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
+          {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />}
 
           <Column
             field="sequencial"
@@ -530,7 +531,7 @@ useEffect(() => { carregarDados(); }, [fila]);
             sortable
             style={{ minWidth: '4rem' }}
             body={(rowData: SegredoJusticaTableRow) => rowData.sequencial}
-          />
+           frozen alignFrozen="left" />
 
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
@@ -539,7 +540,9 @@ useEffect(() => { carregarDados(); }, [fila]);
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
-          />
+           frozen alignFrozen="left" />
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+          {colunaAcoesFase({ corpo: (r: any) => <>{atualizarBodyTemplate(r)}</> })}
           {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
           {colunaCnj()}
           {colunaSei()}
@@ -647,12 +650,6 @@ useEffect(() => { carregarDados(); }, [fila]);
             style={{ minWidth: '12rem' }}
           />
 
-          <Column
-            header="Atualizar"
-            body={atualizarBodyTemplate}
-            style={{ minWidth: '10rem' }}
-            bodyStyle={{ textAlign: 'center' }}
-          />
         </>)}
         </DataTable>
       </div>

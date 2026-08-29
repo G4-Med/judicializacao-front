@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import type { DataTableFilterMeta } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -229,7 +230,7 @@ export function EnviadoSesPage() {
           <BotaoExportarExcel todos={linhas} visiveis={visiveis} nome="enviado-ses" />
           {colunasCfg.botao}
         </AcoesTabela>
-        <DataTable rowClassName={rowClassRepedido}
+        <DataTable scrollable rowClassName={rowClassRepedido}
           aria-label="Pedidos enviados à SES aguardando retorno técnico"
           value={linhas} dataKey="id" paginator rows={50} rowsPerPageOptions={[10, 20, 50, 100, 200]}
           selection={selecionadas} selectionMode="checkbox"
@@ -243,12 +244,16 @@ export function EnviadoSesPage() {
           emptyMessage="Nenhum pedido aguardando retorno da SES — quando um orçamento for enviado sem protocolo (ou em segredo de justiça), ele aparece aqui."
         >
           {colunasCfg.filtrar(<>
-          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
-          <Column expander style={{ width: '3rem' }} />
-          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
+          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />
+          <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
+          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
           <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')}
-            body={(r: LinhaEnviadoSes) => nomeComCopiar(r.paciente)} style={{ minWidth: '16rem' }} />
+            body={(r: LinhaEnviadoSes) => nomeComCopiar(r.paciente)} style={{ minWidth: '16rem' }}  frozen alignFrozen="left" />
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+          {colunaAcoesFase({ corpo: (r: any) => <>{(((r: LinhaEnviadoSes) => (!readOnly
+              ? <Button label="Registrar" icon="pi pi-flag" size="small" outlined onClick={() => abrirResultado(r)} />
+              : null)) as any)(r)}</>, excluir: carregar })}
           {colunaRepedido()}
           {colunaAnexosSES()}
           {colunaCnj()}
@@ -288,11 +293,6 @@ export function EnviadoSesPage() {
           {colunaEmpenhoEstado()}
           {colunaPagoEm()}
           {colunaDiferenca()}
-          <Column header={cabecalhoComHint('Resultado', 'Desfecho registrado: ganho, perda ou em andamento.')} style={{ minWidth: '9rem' }} bodyStyle={{ textAlign: 'center' }}
-            body={(r: LinhaEnviadoSes) => (!readOnly
-              ? <Button label="Registrar" icon="pi pi-flag" size="small" outlined onClick={() => abrirResultado(r)} />
-              : null)} />
-            {colunaExcluirAdmin(carregar)}
           </>)}
         </DataTable>
       </div>

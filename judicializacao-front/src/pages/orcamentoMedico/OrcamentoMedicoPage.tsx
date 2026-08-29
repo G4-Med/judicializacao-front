@@ -2,6 +2,7 @@
 import { DataTable } from 'primereact/datatable';
 import type { DataTableFilterMeta, DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -593,7 +594,7 @@ ${blocos}
             <BotaoExportarExcel todos={dataComMedico} visiveis={visibleProcessos} nome="orcamento-medico" />
             {colunasCfg.botao}
           </AcoesTabela>
-        <DataTable
+        <DataTable scrollable
           expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
           rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Pedidos aguardando orçamento médico"
@@ -611,15 +612,28 @@ ${blocos}
           className="orcamento-table"
         >
           {colunasCfg.filtrar(<>
-          <Column expander style={{ width: '3rem' }} />
-          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
+          <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
+          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
           <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }}
             body={(r: ProcessoOrcamentoRow) => (
               <span className="orcamento-paciente-cel">
                 {nomeComCopiar(r.paciente)}
               </span>
-            )} />
+            )}  frozen alignFrozen="left" />
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+          {colunaAcoesFase({ corpo: (r: any) => <>{(((rowData) => (
+              <Button label="Abrir" icon="pi pi-folder-open" outlined severity="secondary"
+                onClick={() => abrirDetalhe(rowData)} />
+            )) as any)(r)}{(((rowData) => (
+                <Button
+                  label="Copiar"
+                  icon="pi pi-copy"
+                  outlined
+                  severity="secondary"
+                  onClick={() => copiarParaWhatsapp(rowData)}
+                />
+              )) as any)(r)}</>, excluir: carregarDados })}
           {colunaRepedido()}
           {colunaAnexosSES()}
           {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
@@ -651,28 +665,7 @@ ${blocos}
             showFilterMenu={false}
             filterElement={statusFilterElement}
             style={{ minWidth: '15rem' }} />
-          <Column header="Enviar Orçamento"
-            body={(rowData) => (
-              <Button label="Abrir" icon="pi pi-folder-open" outlined severity="secondary"
-                onClick={() => abrirDetalhe(rowData)} />
-            )}
-            style={{ minWidth: '10rem' }} bodyStyle={{ textAlign: 'center' }} />
           
-            <Column
-              header="Copiar"
-              body={(rowData) => (
-                <Button
-                  label="Copiar"
-                  icon="pi pi-copy"
-                  outlined
-                  severity="secondary"
-                  onClick={() => copiarParaWhatsapp(rowData)}
-                />
-              )}
-              style={{ minWidth: '9rem' }}
-              bodyStyle={{ textAlign: 'center' }}
-            />
-          {colunaExcluirAdmin(carregarDados)}
           {colunaBaixarOrcamento()}
           {colunaEmpenhoEstado()}
           {colunaPagoEm()}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import type { DataTableFilterMeta, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
@@ -531,7 +532,7 @@ export function AguardandoCirurgiaPage() {
             <BotaoExportarExcel todos={linhas} nome="aguardando-cirurgia" />
             {colunasCfg.botao}
           </AcoesTabela>
-        <DataTable rowClassName={rowClassRepedido}
+        <DataTable scrollable rowClassName={rowClassRepedido}
           aria-label="Pedidos aguardando confirmação de cirurgia"
           value={linhas}
           loading={loading}
@@ -549,7 +550,7 @@ export function AguardandoCirurgiaPage() {
           className="ag-cir-table"
         >
           {colunasCfg.filtrar(<>
-          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
+          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
@@ -557,7 +558,9 @@ export function AguardandoCirurgiaPage() {
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
-          />
+           frozen alignFrozen="left" />
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+          {colunaAcoesFase({ corpo: (r: any) => <>{renderConfirmar(r)}</> })}
           {colunaRepedido()}
           {colunaAnexosSES()}
           {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
@@ -601,7 +604,6 @@ export function AguardandoCirurgiaPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '7rem' }}
           />
-          <Column header="Confirmar" body={renderConfirmar} style={{ minWidth: '10rem', textAlign: 'center' }} />
         </>)}
         </DataTable>
       </div>

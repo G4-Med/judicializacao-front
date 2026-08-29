@@ -6,6 +6,7 @@ import type {
   DataTableSortEvent
 } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -545,7 +546,7 @@ export function ProtocoladosPage() {
             <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="protocolados" />
             {colunasCfg.botao}
           </AcoesTabela>
-        <DataTable rowClassName={rowClassRepedido}
+        <DataTable scrollable rowClassName={rowClassRepedido}
           aria-label="Pedidos protocolados"
           expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
           rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
@@ -570,8 +571,8 @@ export function ProtocoladosPage() {
           className="protocolados-table"
         >
           {colunasCfg.filtrar(<>
-          {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
-          <Column expander style={{ width: '3rem' }} />
+          {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />}
+          <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
 
           <Column
             field="sequencial"
@@ -579,7 +580,7 @@ export function ProtocoladosPage() {
             sortable
             style={{ minWidth: '4rem' }}
             body={(rowData: ProtocoladoTableRow) => rowData.sequencial}
-          />
+           frozen alignFrozen="left" />
 
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
@@ -588,7 +589,9 @@ export function ProtocoladosPage() {
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
-          />
+           frozen alignFrozen="left" />
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+          {colunaAcoesFase({ corpo: (r: any) => <>{atualizarBodyTemplate(r)}{resultadoBodyTemplate(r)}</>, excluir: carregarDados })}
           {colunaRepedido()}
           {colunaAnexosSES()}
           {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
@@ -669,23 +672,7 @@ export function ProtocoladosPage() {
             style={{ minWidth: '12rem' }}
           />
 
-          <Column
-            field="resultado"
-            header={cabecalhoComHint('Resultado', 'Desfecho registrado: ganho, perda ou em andamento.')}
-            sortable
-            filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
-            body={resultadoBodyTemplate}
-            style={{ minWidth: '12rem' }}
-          />
 
-          <Column
-            header="Atualizar"
-            body={atualizarBodyTemplate}
-            style={{ minWidth: '10rem' }}
-            bodyStyle={{ textAlign: 'center' }}
-          />
-          {colunaExcluirAdmin(carregarDados)}
         </>)}
         </DataTable>
       </div>

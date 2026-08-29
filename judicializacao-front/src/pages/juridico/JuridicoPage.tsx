@@ -2,6 +2,7 @@
 import { DataTable } from 'primereact/datatable';
 import type { DataTableFilterMeta, DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -396,7 +397,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             <BotaoExportarExcel todos={dataComSequencial} visiveis={visibleProcessos} nome="analise-juridica" />
             {colunasCfg.botao}
           </AcoesTabela>
-        <DataTable
+        <DataTable scrollable
           aria-label="Pedidos aguardando triagem jurídica"
           value={dataComSequencial}
           onValueChange={(value) => setVisibleProcessos(value as ProcessoJuridicoRow[])}
@@ -436,8 +437,8 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           {colunasCfg.filtrar(<>
           {/* Abre o painel de preços do procedimento dentro da própria linha (task #207) */}
           <Column expander style={{ width: '3.5rem' }} headerStyle={{ width: '3.5rem' }}
-            headerClassName="col-expander" bodyClassName="col-expander" />
-          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
+            headerClassName="col-expander" bodyClassName="col-expander" frozen alignFrozen="left" />
+          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
           <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }}
             body={(r: ProcessoJuridicoRow) => (
@@ -450,7 +451,9 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                     title="Paciente com menos de 18 anos. Confirme se este pedido deve ser marcado Segredo de Justiça." />
                 )}
               </span>
-            )} />
+            )}  frozen alignFrozen="left" />
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+          {colunaAcoesFase({ corpo: (r: any) => <>{editarBodyTemplate(r)}</>, excluir: carregarDados })}
           {colunaRepedido()}
           {colunaAnexosSES()}
           <Column
@@ -525,11 +528,6 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                 icon={estourou ? 'pi pi-exclamation-triangle' : 'pi pi-clock'}
                 title={estourou ? `Passou do teto de ${SLA_META_DIAS_TRIAGEM} dias` : `Dentro do teto de ${SLA_META_DIAS_TRIAGEM} dias`} />;
             }} />
-          <Column header="Ações"
-            body={editarBodyTemplate}
-            style={{ minWidth: '7rem' }} 
-            bodyStyle={{ textAlign: 'center' }} />
-          {colunaExcluirAdmin(carregarDados)}
           {colunaBaixarOrcamento()}
           {colunaEmpenhoEstado()}
           {colunaPagoEm()}

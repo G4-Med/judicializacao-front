@@ -20,6 +20,7 @@ import {
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import { tagTipoPaciente } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import './SelecionarMedicoPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
@@ -29,7 +30,6 @@ import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExp
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
-import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
 import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
 import { colunaAnexosSES } from '../../components/AnexosSES/anexosSES';
@@ -433,6 +433,7 @@ export function SelecionarMedicoPage() {
             {colunasCfg.botao}
           </AcoesTabela>
         <DataTable
+          scrollable
           expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
           rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Pedidos aguardando seleção de médico"
@@ -463,9 +464,9 @@ export function SelecionarMedicoPage() {
           emptyMessage="Nenhum processo encontrado."
         >
           {colunasCfg.filtrar(<>
-          <Column expander style={{ width: '3rem' }} />
-          {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
-          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
+          <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
+          {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />}
+          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} frozen alignFrozen="left" />
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
@@ -473,7 +474,21 @@ export function SelecionarMedicoPage() {
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
+            frozen alignFrozen="left"
           />
+          {/* Ações da fase ao lado do paciente (@R 29/08): a decisão desta tela é escolher o médico. */}
+          {colunaAcoesFase({
+            readOnly,
+            principal: { label: 'Selecionar médico', icon: 'pi pi-user-edit', onClick: (r) => abrirDialog(r) },
+            secundarias: [
+              { label: 'Sugerir médico via IA', icon: 'pi pi-sparkles', onClick: (r) => void handleSugerirMedicoIA(r),
+                loading: (r) => iaLoadingId === r.id, disabled: (r) => iaLoadingId !== null && iaLoadingId !== r.id },
+              { label: 'Perda por falta de profissional', icon: 'pi pi-user-minus', severity: 'danger',
+                onClick: (r) => void handleMarcarSemProfissional(r) },
+            ],
+            excluir: carregarDados,
+            largura: '17rem',
+          })}
           <Column field="idade" header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento. Criança/recém-nascido recebe o e-mail pediátrico de exames.')}
             sortable filter filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '6rem' }}
             body={(r: any) => r.idade ?? <span className="sm-sla-vazio">—</span>} />
@@ -536,57 +551,6 @@ export function SelecionarMedicoPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '7rem' }}
           />
-          {!readOnly && (
-            <Column
-              header="Sugerir IA"
-              body={(rowData: ProcessoResumoTableRow) => (
-                <Button
-                  label=""
-                  tooltip="Sugerir médico via IA"
-                  tooltipOptions={{ position: 'bottom' }}
-                  icon="pi pi-sparkles"
-                  outlined
-                  loading={iaLoadingId === rowData.id}
-                  disabled={iaLoadingId !== null && iaLoadingId !== rowData.id}
-                  onClick={() => void handleSugerirMedicoIA(rowData)}
-                />
-              )}
-              style={{ minWidth: '7rem' }}
-              bodyStyle={{ textAlign: 'center' }}
-            />
-          )}
-          {!readOnly && (
-            <Column
-              header="Selecionar Médico"
-              body={(rowData: ProcessoResumoTableRow) => (
-                <Button
-                  label=""
-                  icon="pi pi-user-edit"
-                  outlined
-                  onClick={() => abrirDialog(rowData)}
-                />
-              )}
-              style={{ minWidth: '8rem' }}
-              bodyStyle={{ textAlign: 'center' }}
-            />
-          )}
-          {!readOnly && (
-            <Column
-              header="Perda"
-              body={(rowData: ProcessoResumoTableRow) => (
-                <Button
-                  label=""
-                  icon="pi pi-user-minus"
-                  severity="danger"
-                  outlined
-                  onClick={() => void handleMarcarSemProfissional(rowData)}
-                />
-              )}
-              style={{ minWidth: '5rem' }}
-              bodyStyle={{ textAlign: 'center' }}
-            />
-          )}
-          {colunaExcluirAdmin(carregarDados)}
           {colunaBaixarOrcamento()}
           {colunaEmpenhoEstado()}
           {colunaPagoEm()}

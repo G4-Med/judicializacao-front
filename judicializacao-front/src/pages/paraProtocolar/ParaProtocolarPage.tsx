@@ -6,6 +6,7 @@ import type {
   DataTableSortEvent
 } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import { getParaProtocolar, salvarProtocolar, uploadAnexoOrder, getOrders, getMedicosCompleto, getAnexosOrder, getOrcamentoConsolidado, getEmailRecebimentoPdf } from '../../services/api/orders';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
@@ -669,7 +670,7 @@ const handleConfirmarProtocolacao = async () => {
             <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="protocolar" />
             {colunasCfg.botao}
           </AcoesTabela>
-        <DataTable rowClassName={rowClassRepedido}
+        <DataTable scrollable rowClassName={rowClassRepedido}
           expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
           rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Pedidos para protocolar"
@@ -694,9 +695,9 @@ const handleConfirmarProtocolacao = async () => {
           className="para-protocolar-table"
         >
           {colunasCfg.filtrar(<>
-          <Column expander style={{ width: '3rem' }} />
+          <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
           {!readOnly && (
-            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />
           )}
 
           <Column
@@ -705,7 +706,7 @@ const handleConfirmarProtocolacao = async () => {
             sortable
             style={{ minWidth: '4rem' }}
             body={(rowData: ParaProtocolarTableRow) => rowData.sequencial}
-          />
+           frozen alignFrozen="left" />
 
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
@@ -714,7 +715,9 @@ const handleConfirmarProtocolacao = async () => {
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
-          />
+           frozen alignFrozen="left" />
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+          {colunaAcoesFase({ corpo: (r: any) => <>{editarBodyTemplate(r)}{protocolarBodyTemplate(r)}{excluirBodyTemplate(r)}{copiarBodyTemplate(r)}</>, excluir: carregarDados })}
           {colunaRepedido()}
           {colunaAnexosSES()}
           {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
@@ -793,34 +796,9 @@ const handleConfirmarProtocolacao = async () => {
             style={{ minWidth: '12rem' }}
           />
 
-          <Column
-            header="Copiar"
-            body={copiarBodyTemplate}
-            style={{ minWidth: '6rem' }}
-            bodyStyle={{ textAlign: 'center' }}
-          />
 
-          {!readOnly && <Column
-            header="Editar"
-            body={editarBodyTemplate}
-            style={{ minWidth: '7rem' }}
-            bodyStyle={{ textAlign: 'center' }}
-          />}
 
-          {!readOnly && <Column
-            header="Protocolar"
-            body={protocolarBodyTemplate}
-            style={{ minWidth: '10rem' }}
-            bodyStyle={{ textAlign: 'center' }}
-          />}
 
-          {!readOnly && <Column
-            header="Não Protocolar"
-            body={excluirBodyTemplate}
-            style={{ minWidth: '12rem' }}
-            bodyStyle={{ textAlign: 'center' }}
-          />}
-          {colunaExcluirAdmin(carregarDados)}
         </>)}
         </DataTable>
       </div>
