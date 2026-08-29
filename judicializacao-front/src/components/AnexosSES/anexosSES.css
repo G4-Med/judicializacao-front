@@ -50,3 +50,15 @@
 .mc-ses-dossie-acoes button { font: 600 .7rem system-ui, sans-serif; padding: .2rem .5rem; border-radius: 6px; border: 1px solid var(--surface-border, #dde3e8); background: var(--surface-card, #fff); cursor: pointer; }
 .mc-ses-dossie-acoes button.on { background: #1f5f7a; color: #fff; border-color: #1f5f7a; }
 .mc-ses-dossie-acoes button:disabled { opacity: .5; cursor: wait; }
+
+/* Origem do documento no modal (@R 29/08): o que o robô tirou da peça se destaca do que veio por e-mail. */
+.mc-ses-doc { display: flex; flex-direction: column; gap: .15rem; }
+.mc-ses-doc-nome { font-weight: 600; }
+.mc-ses-doc-nome--semnome { font-weight: 400; font-style: italic; opacity: .7; }
+.mc-ses-doc-meta { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; font-size: .7rem; }
+.mc-ses-origem { display: inline-flex; align-items: center; gap: .25rem; padding: .05rem .45rem; border-radius: 999px; font-weight: 600; letter-spacing: .02em; }
+.mc-ses-origem--peca { background: #e6f0f4; color: #1f5f7a; }
+.mc-ses-origem--email { background: #eef0f2; color: #5b6772; }
+.mc-ses-origem--manual { background: #f3eefb; color: #5b3d8a; }
+.mc-ses-doc-data { color: #5b6772; }
+.mc-ses-linha--peca > td:first-child { box-shadow: inset 3px 0 0 #1f5f7a; }

@@ -29,9 +29,18 @@ const fmt = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
 
 const TIPO_ANEXO: Record<string, string> = {
-  RELATORIO: 'Relatório / documento', EXAME: 'Exame', LAUDO: 'Laudo', ORCAMENTO: 'Orçamento',
+  RELATORIO: 'Relatório / documento', EXAME: 'Exame', LAUDO: 'Laudo / relatório médico', ORCAMENTO: 'Orçamento',
+  ORCAMENTO_TERCEIRO: 'Orçamento de terceiro', PROCESSO: 'Processo', PROTOCOLO: 'Protocolo', OUTRO: 'Outro',
   DECISAO_INTEIRO_TEOR: 'Peça (inteiro teor)', EMAIL_ORIGINAL: 'E-mail original',
 };
+/** De onde o documento veio — a marcação que diz "isto o robô tirou de dentro da peça". */
+const ORIGEM: Record<string, { rotulo: string; classe: string; hint: string }> = {
+  PECA: { rotulo: 'da peça', classe: 'mc-ses-origem--peca', hint: 'O robô extraiu este documento de dentro da peça de inteiro teor.' },
+  EMAIL: { rotulo: 'e-mail SES', classe: 'mc-ses-origem--email', hint: 'Chegou como anexo do e-mail da SES.' },
+  MANUAL: { rotulo: 'manual', classe: 'mc-ses-origem--manual', hint: 'A equipe subiu este documento à mão.' },
+};
+const ehHash = (n?: string) => !!n && /^[0-9a-f]{24,}(\.\w+)?$/i.test(n.trim());
+const fmtData = (iso?: string) => iso ? new Date(iso + (iso.length === 10 ? 'T12:00:00' : '')).toLocaleDateString('pt-BR') : '';
 const TIPO_EMAIL: Record<string, string> = {
   RECEBIMENTO_PEDIDO: 'Confirmação de recebimento', RECEBIMENTO_PEDIDO_SEGREDO: 'Confirmação (segredo de justiça)',
   RECEBIMENTO_PEDIDO_SEM_ANEXO: 'Confirmação + pedido de documentos', PEDIR_EXAMES: 'Pedido de exames',
@@ -119,8 +128,16 @@ function ModalAnexosSES({ orderId, paciente, aberto, fechar }: { orderId: number
                   <thead><tr><th>Documento</th><th>Tipo</th><th>Chegou em</th><th>Processamento</th><th /></tr></thead>
                   <tbody>
                     {anexos.map((a: any) => (
-                      <tr key={a.id}>
-                        <td>{a.nome}</td>
+                      <tr key={a.id} className={a.origem === 'PECA' ? 'mc-ses-linha--peca' : undefined}>
+                        <td>
+                          <div className="mc-ses-doc">
+                            <span className={ehHash(a.nome) ? 'mc-ses-doc-nome mc-ses-doc-nome--semnome' : 'mc-ses-doc-nome'}>{ehHash(a.nome) ? 'Documento sem nome' : a.nome}</span>
+                            <span className="mc-ses-doc-meta">
+                              {a.origem && ORIGEM[a.origem] && <span className={`mc-ses-origem ${ORIGEM[a.origem].classe}`} title={ORIGEM[a.origem].hint}>{a.origem === 'PECA' && <i className="pi pi-sparkles" />}{ORIGEM[a.origem].rotulo}{a.origem === 'PECA' && a.paginaOrigem ? ` · pág. ${a.paginaOrigem}` : ''}</span>}
+                              {a.dataDocumento && <span className="mc-ses-doc-data" title="Data que consta no documento">doc. de {fmtData(a.dataDocumento)}</span>}
+                            </span>
+                          </div>
+                        </td>
                         <td>{TIPO_ANEXO[a.tipo] ?? a.tipo}</td>
                         <td>{fmt(a.criadoEm)}</td>
                         <td>{a.processamento ? <Tag value={String(a.processamento).toLowerCase()} severity={a.processamento === 'PROCESSADO' ? 'success' : 'info'} /> : <span className="mc-ses-vazio">—</span>}</td>
