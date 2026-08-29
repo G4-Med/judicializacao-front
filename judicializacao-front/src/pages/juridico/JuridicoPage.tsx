@@ -445,10 +445,6 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                     className="juridico-tag-menor-idade"
                     title="Paciente com menos de 18 anos. Confirme se este pedido deve ser marcado Segredo de Justiça." />
                 )}
-                {!r.qtdAnexos && (
-                  <Tag value="Sem anexo" severity="danger" className="juridico-tag-sem-anexo"
-                    title="Este pedido chegou do e-mail do Estado sem nenhum anexo." />
-                )}
               </span>
             )} />
           {colunaRepedido()}

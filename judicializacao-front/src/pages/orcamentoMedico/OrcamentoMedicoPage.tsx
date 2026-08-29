@@ -618,10 +618,6 @@ ${blocos}
             body={(r: ProcessoOrcamentoRow) => (
               <span className="orcamento-paciente-cel">
                 {nomeComCopiar(r.paciente)}
-                {!r.qtdAnexos && (
-                  <Tag value="Sem anexo" severity="danger" className="orcamento-tag-sem-anexo"
-                    title="Este pedido chegou sem nenhum anexo (processo/relatório/orçamento)." />
-                )}
               </span>
             )} />
           {colunaRepedido()}

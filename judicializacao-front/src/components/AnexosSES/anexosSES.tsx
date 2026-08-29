@@ -5,6 +5,7 @@ import { Tag } from 'primereact/tag';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { cabecalhoComHint } from '../ColunasIdentificacao/colunasIdentificacao';
 import { getThreadPedido, postThreadVista } from '../../services/api/integracoes';
+import './anexosSES.css';
 
 /**
  * SES ANEXOS (@R 28/08 22:09): "criar uma coluna com SES Anexos e colocar se veio com anexo /
@@ -18,10 +19,10 @@ import { getThreadPedido, postThreadVista } from '../../services/api/integracoes
  */
 
 const ESTADO: Record<string, { rotulo: string; severity: 'success' | 'warning' | 'info' | 'danger' | undefined; hint: string }> = {
-  COM_ANEXO: { rotulo: 'com anexo', severity: 'success', hint: 'O pedido chegou com documentos.' },
-  SEM_ANEXO: { rotulo: 'sem anexo', severity: 'danger', hint: 'Chegou sem nenhum documento e ainda não pedimos.' },
-  SOLICITADO: { rotulo: 'solicitado', severity: 'warning', hint: 'Chegou sem documento; a resposta automática já pediu à SES. Aguardando.' },
-  RECEBIDO: { rotulo: 'recebido', severity: 'info', hint: 'A SES devolveu documentos por e-mail — entraram no pedido (continuação da thread).' },
+  COM_ANEXO: { rotulo: 'Com anexo', severity: 'success', hint: 'O pedido chegou com documentos.' },
+  SEM_ANEXO: { rotulo: 'Sem anexo', severity: 'danger', hint: 'Chegou sem nenhum documento e ainda não pedimos.' },
+  SOLICITADO: { rotulo: 'Solicitado', severity: 'warning', hint: 'Chegou sem documento; a resposta automática já pediu à SES. Aguardando.' },
+  RECEBIDO: { rotulo: 'Recebido', severity: 'info', hint: 'A SES devolveu documentos por e-mail — entraram no pedido (continuação da thread).' },
 };
 
 const fmt = (iso?: string | null) =>
@@ -55,9 +56,15 @@ function ModalAnexosSES({ orderId, paciente, aberto, fechar }: { orderId: number
   }, [aberto, orderId]);
   const anexos = dados?.anexos ?? [];
   return (
-    <Dialog visible={aberto} onHide={fechar} style={{ width: 'min(60rem, 95vw)' }} dismissableMask
+    <Dialog visible={aberto} onHide={fechar} style={{ width: 'min(62rem, 95vw)' }} dismissableMask className="mc-ses-modal"
       header={<span><i className="pi pi-paperclip" /> Anexos e e-mails da SES — pedido #{orderId}{paciente ? ` · ${paciente}` : ''}</span>}>
-      {loading && !dados ? <p>Carregando…</p> : (
+      {loading && !dados ? <p>Carregando…</p> : (<>
+        <div className="mc-ses-resumo">
+          <span>Documentos: <b>{anexos.length}</b></span>
+          <span>Recebidos da SES: <b>{dados?.recebidos?.length ?? 0}</b></span>
+          <span>Enviados por nós: <b>{dados?.enviados?.length ?? 0}</b></span>
+          <span>Situação: <b>{dados?.statusDocumentos === 'AGUARDANDO' ? 'aguardando documentos' : dados?.statusDocumentos === 'COMPLETO' ? 'documentos recebidos' : anexos.length ? 'com documentos' : 'sem documentos'}</b></span>
+        </div>
         <TabView>
           <TabPanel header={`Anexos (${anexos.length})`} leftIcon="pi pi-file mr-2">
             {anexos.length === 0
@@ -80,7 +87,7 @@ function ModalAnexosSES({ orderId, paciente, aberto, fechar }: { orderId: number
               )}
           </TabPanel>
           <TabPanel header={`E-mails da thread (${(dados?.enviados?.length ?? 0) + (dados?.recebidos?.length ?? 0)})`} leftIcon="pi pi-envelope mr-2">
-            <p className="mc-ses-sub">O rastro completo desta conversa com a SES: o que recebemos (à esquerda) e o que enviamos (à direita), em ordem de tempo.</p>
+            <p className="mc-ses-intro">O rastro completo desta conversa com a SES: o que recebemos (à esquerda) e o que enviamos (à direita), em ordem de tempo.</p>
             <ul className="mc-ses-thread">
               {[...(dados?.recebidos ?? []).map((r: any) => ({ ...r, _dir: 'in', _ts: r.recebidoEm })),
                 ...(dados?.enviados ?? []).map((e: any) => ({ ...e, _dir: 'out', _ts: e.enviadoEm || e.montadoEm }))]
@@ -101,7 +108,7 @@ function ModalAnexosSES({ orderId, paciente, aberto, fechar }: { orderId: number
             </ul>
           </TabPanel>
         </TabView>
-      )}
+      </>)}
     </Dialog>
   );
 }
@@ -110,15 +117,21 @@ function ModalAnexosSES({ orderId, paciente, aberto, fechar }: { orderId: number
 function CelulaAnexosSES({ r }: { r: any }) {
   const [aberto, setAberto] = useState(false);
   const [novos, setNovos] = useState<number>(r?.emailsNovos ?? 0);
-  const est = ESTADO[r?.sesAnexos] ?? null;
+  const chave = r?.sesAnexos as string | undefined;
+  const est = chave ? ESTADO[chave] : null;
   const n = r?.anexosN ?? 0;
+  const classe = chave === 'SEM_ANEXO' ? ' mc-ses-btn--alerta' : chave === 'SOLICITADO' ? ' mc-ses-btn--aguarda' : '';
+  const sub = chave === 'SEM_ANEXO' ? 'nenhum documento' : chave === 'SOLICITADO' ? 'pedimos à SES · aguardando' : chave === 'RECEBIDO' ? `${n} doc(s) · a SES devolveu` : `${n} documento(s)`;
   return (
     <>
-      <button type="button" className="mc-ses-btn" onClick={() => setAberto(true)}
-        title={`${est ? est.hint : 'Ver anexos e e-mails da SES'} — ${n} documento(s)${novos ? ` · ${novos} e-mail(s) novo(s)` : ''}`}
-        aria-label={`Anexos da SES do pedido ${r?.id}`}>
+      <button type="button" className={`mc-ses-btn${classe}`} onClick={() => setAberto(true)}
+        title={`${est ? est.hint : 'Ver anexos e e-mails da SES'} Clique para ver, baixar e ler a thread.`}
+        aria-label={`Anexos da SES do pedido ${r?.id}: ${est?.rotulo ?? 'ver'}`}>
         <span className="mc-ses-icone"><i className="pi pi-paperclip" />{n > 0 && <span className="mc-ses-n">{n}</span>}</span>
-        {est && <Tag value={est.rotulo} severity={est.severity} className="mc-ses-tag" />}
+        <span className="mc-ses-txt">
+          <span className={`mc-ses-estado mc-ses-estado--${chave ?? ''}`}>{est ? est.rotulo : '—'}</span>
+          <span className="mc-ses-sub">{sub}</span>
+        </span>
         {novos > 0 && <span className="mc-ses-novos" title={`${novos} e-mail(s) novo(s) nesta thread`}><i className="pi pi-envelope" /> {novos}</span>}
       </button>
       {aberto && <ModalAnexosSES orderId={r.id} paciente={r.paciente} aberto={aberto} fechar={() => { setAberto(false); setNovos(0); }} />}

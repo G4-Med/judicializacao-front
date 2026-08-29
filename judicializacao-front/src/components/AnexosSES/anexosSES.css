@@ -1,0 +1,38 @@
+/* SES Anexos (@R 28/08 22:09 + 22:19 "melhorar o css do modal") — coluna + modal, mesmo molde da coluna "!" */
+.mc-ses-btn { display: inline-flex; align-items: center; gap: .45rem; background: transparent; border: 0; padding: .15rem .3rem; cursor: pointer; font: inherit; color: inherit; border-radius: 8px; text-align: left; }
+.mc-ses-btn:hover { background: rgba(31, 95, 122, .08); }
+.mc-ses-icone { position: relative; display: inline-flex; flex: 0 0 auto; width: 1.7rem; height: 1.7rem; align-items: center; justify-content: center; border: 1px solid var(--surface-border, #dde3e8); border-radius: 7px; background: var(--surface-card, #fff); }
+.mc-ses-n { position: absolute; top: -.45rem; right: -.5rem; min-width: 1.05rem; height: 1.05rem; padding: 0 .28rem; border-radius: 999px; background: #1f5f7a; color: #fff; font-size: .64rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+.mc-ses-txt { display: flex; flex-direction: column; gap: .05rem; line-height: 1.15; }
+.mc-ses-estado { font-size: .78rem; font-weight: 700; letter-spacing: .01em; }
+.mc-ses-estado--COM_ANEXO { color: #1b7a4a; } .mc-ses-estado--RECEBIDO { color: #1f5f7a; }
+.mc-ses-estado--SOLICITADO { color: #b45309; } .mc-ses-estado--SEM_ANEXO { color: #b42318; }
+.mc-ses-sub { font-size: .7rem; opacity: .7; }
+.mc-ses-btn--alerta { background: #fff1ee; } .mc-ses-btn--alerta:hover { background: #ffe3dd; }
+.mc-ses-btn--aguarda { background: #fff6e6; } .mc-ses-btn--aguarda:hover { background: #ffeccc; }
+.mc-ses-novos { display: inline-flex; align-items: center; gap: .2rem; font-size: .7rem; font-weight: 700; color: #fff; background: #b45309; border-radius: 999px; padding: .1rem .5rem; }
+
+/* modal */
+.mc-ses-modal .p-dialog-header { border-bottom: 1px solid var(--surface-border, #dde3e8); }
+.mc-ses-modal .p-dialog-content { padding-top: .5rem; }
+.mc-ses-resumo { display: flex; flex-wrap: wrap; gap: .5rem 1.2rem; margin: .25rem 0 .9rem; font-size: .85rem; }
+.mc-ses-resumo b { font-weight: 700; }
+.mc-ses-vazio { opacity: .7; margin: .6rem 0; }
+.mc-ses-intro { font-size: .85rem; opacity: .75; margin: 0 0 .8rem; max-width: 70ch; }
+.mc-ses-link { color: #1f5f7a; text-decoration: none; display: inline-flex; gap: .3rem; align-items: center; white-space: nowrap; font-weight: 600; }
+.mc-ses-link:hover { text-decoration: underline; }
+.mc-ses-tabela { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.mc-ses-tabela th { text-align: left; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; opacity: .65; padding: .45rem .6rem; border-bottom: 1px solid var(--surface-border, #dde3e8); }
+.mc-ses-tabela td { padding: .55rem .6rem; border-bottom: 1px solid var(--surface-border, #dde3e8); vertical-align: middle; }
+.mc-ses-tabela tr:hover td { background: rgba(31, 95, 122, .05); }
+.mc-ses-thread { list-style: none; margin: 0; padding: 0; display: grid; gap: .7rem; }
+.mc-ses-msg { padding: .7rem .95rem; border-radius: 12px; border: 1px solid var(--surface-border, #dde3e8); max-width: 88%; }
+.mc-ses-msg--in { justify-self: start; background: var(--surface-ground, #f4f6f8); border-bottom-left-radius: 4px; }
+.mc-ses-msg--out { justify-self: end; background: #e6f0f4; border-color: #cfe0e8; border-bottom-right-radius: 4px; }
+.mc-ses-msg-cab { display: flex; flex-wrap: wrap; gap: .4rem .7rem; align-items: center; font-size: .76rem; opacity: .85; margin-bottom: .3rem; }
+.mc-ses-msg-cab strong { font-weight: 700; opacity: 1; }
+.mc-ses-msg-assunto { font-weight: 600; font-size: .92rem; }
+.mc-ses-msg-detalhe { font-size: .78rem; opacity: .75; margin-top: .3rem; font-family: ui-monospace, Menlo, monospace; }
+.mc-ses-msg details { margin-top: .4rem; font-size: .82rem; }
+.mc-ses-msg summary { cursor: pointer; color: #1f5f7a; font-weight: 600; }
+.mc-ses-corpo { white-space: pre-wrap; font: .8rem/1.45 ui-monospace, Menlo, monospace; margin: .5rem 0 0; max-height: 18rem; overflow: auto; background: var(--surface-card, #fff); border-radius: 8px; padding: .6rem .8rem; border: 1px solid var(--surface-border, #dde3e8); }
