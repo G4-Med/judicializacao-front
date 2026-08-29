@@ -111,6 +111,12 @@ function montarIndicadores(s: any): Indicador[] {
       mede: 'Pedidos que o robô capturou mas ainda não viraram pedido na tela (fila entre a leitura e a criação).',
       regua: 'O cron converte no próximo ciclo. Se o número não zera em 20 min, a conversão travou.',
       situacao: s.pendentesConversao ? 'atencao' : 'ok', statusFiltro: 'CRIADO', abrir: 'processados' },
+    { categoria: 'Conversão', nome: 'Aguardando documentos', valor: s.aguardandoDocumentos?.n ?? 0,
+      mede: 'Pedidos que chegaram sem nenhum documento e a SES ainda não devolveu (o pedido de documentos sai na confirmação; 1 lembrete após 3 dias úteis).',
+      regua: s.aguardandoDocumentos?.n
+        ? `O mais antigo espera há ${s.aguardandoDocumentos.maisAntigoDias ?? '?'} dia(s). Pedidos: ${(s.aguardandoDocumentos.ids || []).map((i: number) => '#' + i).join(' ')}. Coluna "SES Anexos" nas telas mostra cada um.`
+        : 'Nenhum pedido esperando documento.',
+      situacao: (s.aguardandoDocumentos?.maisAntigoDias ?? 0) > 5 ? 'atencao' : 'info' },
     { categoria: 'Resposta', nome: 'Respostas na fila', valor: s.respostasPendentes ?? 0,
       mede: 'Confirmações de recebimento (normal, segredo de justiça ou sem anexo) montadas e ainda não enviadas. Saem sozinhas a cada ciclo do robô (10 min).',
       regua: s.respostaPendenteMaisAntigaMin != null
