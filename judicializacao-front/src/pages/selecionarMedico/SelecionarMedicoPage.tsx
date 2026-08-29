@@ -125,6 +125,10 @@ export function SelecionarMedicoPage() {
       const lista = Array.isArray(processosRes.data) ? processosRes.data : [];
       setProcessos(
         lista.map((item: any) => ({
+          // Cicatriz 29/08 00:15 (@R "não estão populados os dados"): o mapeamento copiava só
+          // os campos que conhecia e DESCARTAVA CNJ/SEI/comarca/solicitante/peça/dossiê/re-pedido
+          // que a API já devolvia. Espalha tudo primeiro; o que vem abaixo só normaliza.
+          ...item,
           id: item.id,
           paciente: item.paciente ?? '',
           procedimento: item.procedimento ?? '',
