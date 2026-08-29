@@ -17,7 +17,15 @@ body.dark-theme .chip-cadastro--completo { background: rgba(28,122,72,0.16); bor
 
 /* Hint de coluna (?) — abre modal explicando a coluna */
 .cabecalho-hint { display: inline-flex; align-items: center; gap: 6px; }
-.hint-coluna { width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--mc-border, #cbd5e1); background: var(--mc-surface-2, #f8fafc); color: var(--mc-muted, #64748b); font-size: 0.68rem; font-weight: 700; line-height: 1; cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.hint-coluna { position: relative; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--mc-border, #cbd5e1); background: var(--mc-surface-2, #f8fafc); color: var(--mc-muted, #64748b); font-size: 0.68rem; font-weight: 700; line-height: 1; cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+/* ÁREA DE CLIQUE de 24×24 sem engordar o círculo (auditor de página viva, 29/08 18:0x:
+   "1× 16x16 · cabecalho-coluna · O que é Ações?" — abaixo do mínimo WCAG 2.5.8 de 24px).
+   O ::after é um alvo invisível centrado: o dedo/mouse acerta 24px, o olho vê 16px. */
+.hint-coluna::after { content: ''; position: absolute; top: 50%; left: 50%;
+  width: 24px; height: 24px; transform: translate(-50%, -50%); }
+/* 24px FIXOS, ¬`inset: -4px`: o círculo renderiza menor que os 16px declarados
+   (font-size relativo) e o inset relativo entregou 21,46px — MEDIDO no navegador,
+   ¬suposto. Régua fixa não depende do tamanho de quem ela envolve. */
 .hint-coluna:hover { background: var(--mc-green-500, #00a651); color: #fff; border-color: var(--mc-green-500, #00a651); }
 .hint-coluna:focus-visible { outline: 2px solid var(--mc-green-500, #00a651); outline-offset: 1px; }
 .hint-coluna__corpo { font-size: 0.92rem; line-height: 1.6; color: var(--mc-ink-2, #334155); }

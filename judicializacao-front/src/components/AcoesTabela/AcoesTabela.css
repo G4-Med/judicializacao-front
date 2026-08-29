@@ -76,7 +76,10 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 36px;
+  /* 40px = a MESMA altura de Baixar Excel / Colunas / Ajustar à tela. Nasci com 36px e o
+     auditor de página viva flagrou na 1ª rodada (29/08 18:0x) — justamente o defeito que
+     este container foi criado para impedir ("mesma fileira, alturas desiguais"). */
+  height: 40px;
   padding: 0 12px;
   border: 1px solid var(--primary-color, #10b981);
   border-radius: 6px;
