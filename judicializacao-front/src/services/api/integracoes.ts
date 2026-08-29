@@ -87,3 +87,8 @@ export const getCentralSaude = () => api.get('/integracoes/central/saude/');
 export const getCentralEmails = (params: Record<string, string>) => api.get('/integracoes/central/emails/', { params });
 export const getCentralCaixa = (dias: number) => api.get('/integracoes/central/caixa/', { params: { dias } });
 export const postCentralReprocessar = (messageId: string) => api.post('/integracoes/central/reprocessar/', { messageId });
+
+// Respostas por destinatário (@R 28/08 21:07): o que o sistema montou para cada pessoa que pediu,
+// e o que aconteceu com cada uma (fila · enviada · aberta · clicada · devolvida · spam).
+export const getCentralRespostas = (params: { q?: string; status?: string; tipo?: string; dias?: number }) =>
+  api.get('/integracoes/central/respostas/', { params });
