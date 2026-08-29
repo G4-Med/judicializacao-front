@@ -54,3 +54,78 @@
 .mc-acoes-tabela .mc-modo-tabela:hover { background: #f1f5f9; }
 .mc-acoes-tabela .mc-modo-tabela[aria-pressed="true"] { background: #e0f2fe; border-color: #7dd3fc; color: #0369a1; }
 .mc-acoes-tabela .mc-modo-tabela:focus-visible { outline: 2px solid #0ea5e9; outline-offset: 2px; }
+
+/* ─── AVISO DE COLUNAS À DIREITA (@R 29/08 17:45) ─────────────────────────────
+   O @R: "algo que ajude a pessoa entender que tem colunas para direita com
+   informação, clique e ela anda SEM IR PARA BAIXO". A barra de rolagem nativa
+   fica no rodapé da tabela — numa lista longa, ninguém a vê. Estas 2 pistas
+   resolvem no TOPO: (1) o botão contando as colunas escondidas, aqui na barra
+   de ações; (2) o degradê na borda, que mostra que o conteúdo continua.       */
+
+.mc-aviso-colunas-ancora { display: none; }
+
+.mc-aviso-colunas {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;           /* empurra para a direita — onde o corte acontece */
+}
+
+.mc-aviso-colunas__ir,
+.mc-aviso-colunas__seta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--primary-color, #10b981);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--primary-color, #10b981) 10%, transparent);
+  color: var(--primary-color, #10b981);
+  font-size: .85rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s ease, transform .15s ease;
+}
+.mc-aviso-colunas__seta { padding: 0 9px; }
+
+.mc-aviso-colunas__ir:hover,
+.mc-aviso-colunas__seta:hover {
+  background: color-mix(in srgb, var(--primary-color, #10b981) 20%, transparent);
+}
+.mc-aviso-colunas__ir:active { transform: translateX(2px); }
+.mc-aviso-colunas__ir strong { font-weight: 700; }
+
+.mc-aviso-colunas__ir:focus-visible,
+.mc-aviso-colunas__seta:focus-visible {
+  outline: 2px solid var(--primary-color, #10b981);
+  outline-offset: 2px;
+}
+
+/* Pulso 1× ao aparecer: o olho precisa ser atraído UMA vez; repetir vira ruído.
+   Quem pediu "sem animação" no sistema operacional é respeitado abaixo.        */
+.mc-aviso-colunas__ir { animation: mc-aviso-nasce .45s ease-out; }
+@keyframes mc-aviso-nasce {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mc-aviso-colunas__ir { animation: none; }
+  .mc-aviso-colunas__ir:active { transform: none; }
+}
+
+/* Degradê na borda: pista PASSIVA de que a tabela continua para o lado.
+   `position: sticky` no pseudo-elemento não funciona em wrapper com overflow,
+   então usamos mask/sombra interna via box-shadow no próprio wrapper.          */
+.p-datatable-wrapper.mc-tem-mais-direita {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 44px), rgba(0,0,0,.35) 100%);
+          mask-image: linear-gradient(to right, #000 calc(100% - 44px), rgba(0,0,0,.35) 100%);
+}
+.p-datatable-wrapper.mc-tem-mais-esquerda.mc-tem-mais-direita {
+  -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,.35) 0, #000 44px, #000 calc(100% - 44px), rgba(0,0,0,.35) 100%);
+          mask-image: linear-gradient(to right, rgba(0,0,0,.35) 0, #000 44px, #000 calc(100% - 44px), rgba(0,0,0,.35) 100%);
+}
+
+/* No modo "Ajustar à tela" nada é cortado — o aviso não tem razão de existir. */
+body.mc-tabelas-justificadas .mc-aviso-colunas { display: none; }
