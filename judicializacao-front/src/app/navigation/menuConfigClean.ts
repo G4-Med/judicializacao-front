@@ -84,6 +84,7 @@ export const MENU_CONFIG_CLEAN: MenuConfigItem[] = [
       { label: 'Usuários', icon: 'pi pi-angle-right', path: '/usuarios', screen: 'usuarios' },
       { label: 'Configurações', icon: 'pi pi-angle-right', path: '/configuracoes', screen: 'configuracoes' },
       { label: 'Configurações Emails', icon: 'pi pi-angle-right', path: '/configuracoes-emails', screen: 'configuracoesEmails' },
+      { label: 'Colunas das tabelas', icon: 'pi pi-angle-right', path: '/configuracoes-colunas', screen: 'configuracoes' },
       { label: 'Monitor de Integração', icon: 'pi pi-angle-right', path: '/monitor-integracao', screen: 'monitorIntegracao' },
       { label: 'Logs', icon: 'pi pi-angle-right', path: '/logs', screen: 'logs' },
     ],

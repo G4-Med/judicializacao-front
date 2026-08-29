@@ -60,6 +60,7 @@ export const MENU_CONFIG: MenuConfigItem[] = [
       { label: 'Usuários', icon: 'pi pi-angle-right', path: '/usuarios', screen: 'usuarios' },
       { label: 'Configurações', icon: 'pi pi-angle-right', path: '/configuracoes', screen: 'configuracoes' },
       { label: 'Configurações Emails', icon: 'pi pi-angle-right', path: '/configuracoes-emails', screen: 'configuracoesEmails' },
+      { label: 'Colunas das tabelas', icon: 'pi pi-angle-right', path: '/configuracoes-colunas', screen: 'configuracoes' },
       { label: 'Logs', icon: 'pi pi-angle-right', path: '/logs', screen: 'logs' },
     ],
   },
