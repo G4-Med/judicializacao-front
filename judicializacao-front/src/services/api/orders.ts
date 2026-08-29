@@ -7,6 +7,9 @@ export const getOrders = () => api.get('/orders/listar/');
 // o axios manda `data` no DELETE e o DRF lê em request.data.
 export const excluirOrder = (id: number, senha: string, motivo?: string) =>
   api.delete(`/orders/${id}/excluir/`, { data: { senha, motivo } });
+/** Reabrir uma perda (@R 29/08 14:07): volta o pedido para a fase de onde saiu. */
+export const reabrirPerda = (id: number, statusProcesso?: string) =>
+  api.post(`/orders/${id}/reabrir/`, statusProcesso ? { statusProcesso } : {});
 export const getLixeira = () => api.get('/orders/lixeira/');
 export const restaurarOrder = (id: number, senha: string, statusProcesso?: string) =>
   api.post(`/orders/${id}/restaurar/`, { senha, statusProcesso });

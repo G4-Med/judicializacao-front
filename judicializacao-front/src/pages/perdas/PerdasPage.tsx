@@ -6,10 +6,11 @@ import type {
   DataTableSortEvent
 } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import { Tag } from 'primereact/tag';
 import { InputText } from 'primereact/inputtext';
 import { FilterMatchMode } from 'primereact/api';
-import { getPerdas, getOrders, getMedicosCompleto } from '../../services/api/orders';
+import { getPerdas, getOrders, getMedicosCompleto, reabrirPerda } from '../../services/api/orders';
 import { getStatusTagStyle } from '../../utils/statusTag';
 import './PerdasPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
@@ -358,6 +359,20 @@ export function PerdasPage() {
             style={{ minWidth: '4rem' }}
             body={(rowData: PerdaProcessoTableRow) => rowData.sequencial}
           />
+          {/* Reabrir a perda (@R 29/08 14:07): volta o pedido para a fase de onde saiu. */}
+          {colunaAcoesFase({
+            principal: { label: 'Reabrir', icon: 'pi pi-replay', severity: 'secondary',
+              tooltip: 'Devolve o pedido para a fase de onde ele saiu quando virou Perda',
+              onClick: async (r: any) => {
+                const de = r.faseAntesDaPerda ? ` para "${r.faseAntesDaPerda}"` : '';
+                if (!window.confirm(`Reabrir o pedido de ${r.paciente}${de}? A justificativa da perda fica registrada no histórico.`)) return;
+                try { await reabrirPerda(r.id); carregarDados(); }
+                catch (e: any) { alert(e?.response?.data?.error || 'Não foi possível reabrir este pedido.'); }
+              } },
+            excluir: carregarDados,
+            largura: '13rem',
+            hint: 'Reabrir devolve o pedido à fase de onde ele saiu (a justificativa da perda continua no histórico). A lixeira remove do fluxo, com senha e reversível.',
+          })}
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
