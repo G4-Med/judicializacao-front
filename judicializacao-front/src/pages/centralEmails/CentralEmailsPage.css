@@ -30,3 +30,17 @@
 .p-datatable .p-datatable-tbody > tr.ce-linha-falha > td { background: rgba(185,28,28,.08); box-shadow: inset 3px 0 0 #b91c1c; }
 .p-datatable .p-datatable-tbody > tr.ce-linha-repedido > td { background: rgba(180,83,9,.08); box-shadow: inset 3px 0 0 #b45309; }
 .ce-page .p-datatable-wrapper { overflow-x: auto; }
+
+/* Saúde explicada (@R 28/08 20:54): tabela de indicadores por estação, hint e clique. */
+.ce-saude-intro { max-width: 90ch; line-height: 1.5; margin: .75rem 0; }
+.ce-indicadores .p-datatable-thead > tr > th { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+.ce-indicadores .p-rowgroup-header td { background: var(--surface-ground, #f6f8fa); padding: .4rem .75rem; }
+.ce-grupo { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; color: #1f5f7a; }
+.ce-ind-nome { font-weight: 600; display: inline-flex; align-items: center; gap: .35rem; }
+.ce-hint { font-size: .85rem; opacity: .55; cursor: help; }
+.ce-hint:hover { opacity: 1; }
+.ce-ind-valor { font-variant-numeric: tabular-nums; font-size: 1rem; }
+.ce-linha-clicavel { cursor: pointer; }
+.ce-linha-clicavel:hover > td { background: #eef5f8; }
+.ce-ver { font-size: .78rem; color: #1f5f7a; display: inline-flex; gap: .3rem; align-items: center; white-space: nowrap; }
+.ce-templates .page-header { display: none; }

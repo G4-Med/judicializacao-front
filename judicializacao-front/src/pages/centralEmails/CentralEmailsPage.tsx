@@ -9,7 +9,7 @@ import { InputIcon } from 'primereact/inputicon';
 import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 import { Tag } from 'primereact/tag';
-import { Link } from 'react-router-dom';
+import { ConfiguracoesEmailsPage } from '../configuracoesEmails/ConfiguracoesEmailsPage';
 import { getCentralSaude, getCentralEmails, getCentralCaixa, postCentralReprocessar } from '../../services/api/integracoes';
 import { cabecalhoComHint } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import './CentralEmailsPage.css';
@@ -63,13 +63,82 @@ function BotaoReprocessar({ messageId, rotulo, aoTerminar }: { messageId: string
   );
 }
 
-function Saude() {
+/** Cada indicador de saúde explicado: categoria, o que mede, como julgar, e para onde clicar
+ *  para ver o detalhe. @R 28/08 20:54: "explicar cada um... tabela... clicar e entender o que é
+ *  cada indicador... hint". A régua de cada um fica aqui, não na cabeça de quem lê. */
+type Indicador = {
+  categoria: string; nome: string; valor: number | string; mede: string; regua: string;
+  situacao: 'ok' | 'atencao' | 'info'; statusFiltro?: string | null; abrir?: 'processados' | 'templates';
+};
+function montarIndicadores(s: any): Indicador[] {
+  const esperado = Math.round((24 * 60) / (s.intervaloEsperadoMinutos || 10));
+  const st = (k: string) => (s.emails24hPorStatus || {})[k] ?? 0;
+  return [
+    { categoria: 'Monitor', nome: 'Última execução', valor: `${s.idadeMinutos ?? '—'} min atrás`,
+      mede: 'Há quanto tempo o robô leu a caixa pela última vez.',
+      regua: `Esperado a cada ${s.intervaloEsperadoMinutos} min. Acima do dobro = monitor parado.`,
+      situacao: s.idadeMinutos != null && s.idadeMinutos > 2 * s.intervaloEsperadoMinutos ? 'atencao' : 'ok' },
+    { categoria: 'Monitor', nome: 'Execuções 24 h', valor: s.execucoes24h ?? 0,
+      mede: 'Quantas vezes o robô rodou no último dia.',
+      regua: `Esperado ~${esperado}. Bem abaixo disso = houve buracos sem leitura da caixa.`,
+      situacao: (s.execucoes24h ?? 0) < esperado * 0.8 ? 'atencao' : 'ok' },
+    { categoria: 'Monitor', nome: 'Com erro 24 h', valor: s.erros24h ?? 0,
+      mede: 'Execuções que terminaram em erro (a caixa não foi lida até o fim).',
+      regua: 'Zero é o normal. Qualquer erro merece abrir o log da execução.',
+      situacao: s.erros24h ? 'atencao' : 'ok' },
+    { categoria: 'Captura', nome: 'Virou pedido', valor: st('CRIADO'),
+      mede: 'E-mails do dia que viraram pedido novo no sistema.',
+      regua: 'Informativo — é o volume de entrada. Clique para ver cada um.',
+      situacao: 'info', statusFiltro: 'CRIADO', abrir: 'processados' },
+    { categoria: 'Captura', nome: 'Re-pedido (contado)', valor: st('DUPLICADO_PACIENTE'),
+      mede: 'E-mails de paciente que já tinha pedido: somam no contador "!" do pedido em vez de criar outro.',
+      regua: 'Informativo. Re-pedido alto num mesmo pedido = urgência — a linha fica escura nas telas.',
+      situacao: 'info', statusFiltro: 'DUPLICADO_PACIENTE', abrir: 'processados' },
+    { categoria: 'Captura', nome: 'Ignorado (remetente)', valor: st('REMETENTE_INVALIDO'),
+      mede: 'E-mails de quem não está na lista de remetentes válidos (propaganda, respostas automáticas).',
+      regua: 'Normal ter alguns. Se um remetente legítimo aparece aqui, é a lista que precisa de ajuste.',
+      situacao: 'info', statusFiltro: 'REMETENTE_INVALIDO', abrir: 'processados' },
+    { categoria: 'Captura', nome: 'Resposta a e-mail', valor: st('RESPOSTA'),
+      mede: 'E-mails que são resposta a algo nosso ("Re:") — não geram pedido.',
+      regua: 'Informativo. Clique para ler o que responderam.',
+      situacao: 'info', statusFiltro: 'RESPOSTA', abrir: 'processados' },
+    { categoria: 'Captura', nome: 'Falhou', valor: st('ERRO'),
+      mede: 'E-mails que o robô leu mas não conseguiu processar (extração falhou, anexo corrompido).',
+      regua: 'Zero é o normal. Cada um aqui é um pedido que pode ter se perdido — use "Processar agora".',
+      situacao: st('ERRO') ? 'atencao' : 'ok', statusFiltro: 'ERRO', abrir: 'processados' },
+    { categoria: 'Conversão', nome: 'Capturados sem converter', valor: s.pendentesConversao ?? 0,
+      mede: 'Pedidos que o robô capturou mas ainda não viraram pedido na tela (fila entre a leitura e a criação).',
+      regua: 'O cron converte no próximo ciclo. Se o número não zera em 20 min, a conversão travou.',
+      situacao: s.pendentesConversao ? 'atencao' : 'ok', statusFiltro: 'CRIADO', abrir: 'processados' },
+    { categoria: 'Resposta', nome: 'Respostas na fila', valor: s.respostasPendentes ?? 0,
+      mede: 'Confirmações de recebimento (normal, segredo de justiça ou sem anexo) montadas e ainda não enviadas.',
+      regua: 'Informativo — saem no próximo envio. Fila crescendo sem esvaziar = envio parado.',
+      situacao: 'info', abrir: 'processados' },
+    { categoria: 'Resposta', nome: 'Respostas com erro', valor: s.respostasComErro ?? 0,
+      mede: 'Confirmações que tentaram sair e falharam no envio.',
+      regua: 'Zero é o normal. O remetente não recebeu nada — reenviar pela tela E-mails.',
+      situacao: s.respostasComErro ? 'atencao' : 'ok', abrir: 'processados' },
+    { categoria: 'Configuração', nome: 'Monitor ativo', valor: s.monitorAtivo ? 'sim' : 'NÃO',
+      mede: 'A chave geral: desligada, o robô roda mas não faz nada.',
+      regua: 'Tem que estar "sim".', situacao: s.monitorAtivo ? 'ok' : 'atencao' },
+    { categoria: 'Configuração', nome: 'Remetentes válidos', valor: s.remetentesValidos || '—',
+      mede: 'Domínios/endereços que o robô aceita como pedido.',
+      regua: 'Pedido legítimo ignorado? O remetente precisa entrar aqui.', situacao: 'info' },
+    { categoria: 'Configuração', nome: 'Templates de resposta', valor: 'normal · segredo · sem anexo',
+      mede: 'Os textos que o sistema devolve automaticamente ao remetente, por situação.',
+      regua: 'Editáveis na aba Templates desta Central.', situacao: 'info', abrir: 'templates' },
+  ];
+}
+
+function Saude({ onVer }: { onVer: (abrir: 'processados' | 'templates', status?: string | null) => void }) {
   const [s, setS] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const carregar = () => { setLoading(true); getCentralSaude().then(({ data }) => setS(data)).finally(() => setLoading(false)); };
   useEffect(carregar, []);
   if (loading && !s) return <p>Medindo…</p>;
   if (!s) return <p>Não foi possível medir a saúde do monitor.</p>;
+  const indicadores = montarIndicadores(s);
+  const atencao = indicadores.filter((i) => i.situacao === 'atencao').length;
   return (
     <div className="ce-saude">
       <div className={`ce-semaforo ${s.emDia ? 'ok' : 'alerta'}`}>
@@ -83,30 +152,38 @@ function Saude() {
       {s.alertas?.length > 0 && (
         <ul className="ce-alertas">{s.alertas.map((a: string, i: number) => <li key={i}>{a}</li>)}</ul>
       )}
-      <div className="ce-cards">
-        <div className="ce-card"><span>Execuções 24 h</span><strong>{s.execucoes24h}</strong></div>
-        <div className="ce-card"><span>Com erro 24 h</span><strong className={s.erros24h ? 'ruim' : ''}>{s.erros24h}</strong></div>
-        <div className="ce-card"><span>Capturados sem converter</span><strong className={s.pendentesConversao ? 'ruim' : ''}>{s.pendentesConversao}</strong></div>
-        <div className="ce-card"><span>Respostas na fila</span><strong>{s.respostasPendentes}</strong></div>
-        <div className="ce-card"><span>Respostas com erro</span><strong className={s.respostasComErro ? 'ruim' : ''}>{s.respostasComErro}</strong></div>
-      </div>
-      <div className="ce-cards">
-        {Object.entries(s.emails24hPorStatus || {}).map(([k, v]) => (
-          <div className="ce-card" key={k}><span>{ROTULO_STATUS[k] ?? k} (24 h)</span><strong>{v as number}</strong></div>
-        ))}
-      </div>
-      <p className="ce-sub">
-        Remetentes válidos: <code>{s.remetentesValidos || '—'}</code> · monitor {s.monitorAtivo ? 'ativo' : 'DESATIVADO'} ·{' '}
-        templates de resposta (comum e segredo de justiça): <Link to="/configuracoes-emails">editar</Link>
+      <p className="ce-sub ce-saude-intro">
+        <strong>O que é "saúde" aqui:</strong> o caminho do e-mail tem 4 estações — o <em>Monitor</em> lê a caixa,
+        a <em>Captura</em> decide o que cada e-mail é, a <em>Conversão</em> transforma em pedido e a <em>Resposta</em> devolve
+        a confirmação ao remetente. Cada linha abaixo vigia uma estação; {atencao ? `${atencao} pede(m) atenção` : 'nenhuma pede atenção'} agora.
+        Passe o mouse no ícone para a régua; clique na linha para ver o detalhe.
       </p>
+      <DataTable value={indicadores} dataKey="nome" rowGroupMode="subheader" groupRowsBy="categoria" size="small"
+        className="ce-indicadores" selectionMode="single"
+        rowGroupHeaderTemplate={(r: Indicador) => <span className="ce-grupo">{r.categoria}</span>}
+        onRowClick={(e) => { const r = e.data as Indicador; if (r.abrir) onVer(r.abrir, r.statusFiltro ?? null); }}
+        rowClassName={(r: Indicador) => (r.abrir ? 'ce-linha-clicavel' : '')} aria-label="Indicadores de saúde">
+        <Column field="nome" header="Indicador" style={{ minWidth: '13rem' }}
+          body={(r: Indicador) => <span className="ce-ind-nome">{r.nome} <i className="pi pi-info-circle ce-hint" title={`${r.mede} ${r.regua}`} /></span>} />
+        <Column field="valor" header="Agora" style={{ width: '11rem' }}
+          body={(r: Indicador) => <strong className={`ce-ind-valor ${r.situacao === 'atencao' ? 'ruim' : ''}`}>{r.valor}</strong>} />
+        <Column header="Situação" style={{ width: '8rem' }}
+          body={(r: Indicador) => <Tag value={r.situacao === 'ok' ? 'ok' : r.situacao === 'atencao' ? 'atenção' : 'informativo'}
+            severity={r.situacao === 'ok' ? 'success' : r.situacao === 'atencao' ? 'warning' : 'info'} />} />
+        <Column field="mede" header="O que mede" style={{ minWidth: '18rem' }} />
+        <Column field="regua" header="Como ler" style={{ minWidth: '18rem' }} body={(r: Indicador) => <span className="ce-sub">{r.regua}</span>} />
+        <Column header="" style={{ width: '6rem' }}
+          body={(r: Indicador) => (r.abrir ? <span className="ce-ver"><i className="pi pi-external-link" /> ver</span> : null)} />
+      </DataTable>
     </div>
   );
 }
 
-function Processados() {
+function Processados({ statusInicial }: { statusInicial: string | null }) {
   const [dia, setDia] = useState<Date | null>(new Date());
   const [q, setQ] = useState('');
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(statusInicial);
+  useEffect(() => { setStatus(statusInicial); }, [statusInicial]);
   const [dados, setDados] = useState<any>({ itens: [], total: 0, diasComMovimento: {} });
   const [loading, setLoading] = useState(false);
   const [expandidas, setExpandidas] = useState<any>(null);
@@ -246,16 +323,26 @@ function Caixa() {
 }
 
 export function CentralEmailsPage() {
+  const [aba, setAba] = useState(0);
+  const [statusPreset, setStatusPreset] = useState<string | null>(null);
+  const ver = (abrir: 'processados' | 'templates', status?: string | null) => {
+    if (abrir === 'processados') { setStatusPreset(status ?? null); setAba(1); }
+    else setAba(3);
+  };
   return (
     <div className="ce-page">
       <div className="page-header">
         <h1><i className="pi pi-inbox" /> Central de E-mails</h1>
         <p className="ce-sub">O monitor está em dia? O que ele fez com cada e-mail? Que resposta saiu? A caixa inteira, lida ou não, conferida contra o que foi processado.</p>
       </div>
-      <TabView>
-        <TabPanel header="Saúde" leftIcon="pi pi-heart mr-2"><Saude /></TabPanel>
-        <TabPanel header="Processados" leftIcon="pi pi-list mr-2"><Processados /></TabPanel>
+      <TabView activeIndex={aba} onTabChange={(e) => setAba(e.index)}>
+        <TabPanel header="Saúde" leftIcon="pi pi-heart mr-2"><Saude onVer={ver} /></TabPanel>
+        <TabPanel header="Processados" leftIcon="pi pi-list mr-2"><Processados statusInicial={statusPreset} /></TabPanel>
         <TabPanel header="Caixa (reconciliação)" leftIcon="pi pi-envelope mr-2"><Caixa /></TabPanel>
+        <TabPanel header="Templates de resposta" leftIcon="pi pi-file-edit mr-2">
+          <p className="ce-sub">Os textos que saem automaticamente para quem mandou o pedido: <strong>Recebimento normal</strong>, <strong>Segredo de justiça</strong> (menor de 18 — sem nome nem número do processo) e <strong>Sem anexo</strong> (pede o documento que faltou). Os demais são os e-mails enviados pela equipe nas fases seguintes.</p>
+          <div className="ce-templates"><ConfiguracoesEmailsPage /></div>
+        </TabPanel>
       </TabView>
     </div>
   );

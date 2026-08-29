@@ -132,6 +132,7 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'lixeira',
       'orcamentosTerceiros',
       'centralEmails',
+      'configuracoesEmails',
     ],
     // Gerente era 100% somente-leitura por padrão — mas na prática precisa agir na
     // tela de orçamento médico (enviar orçamento, solicitar exames, recusar o
@@ -163,6 +164,7 @@ export const GROUP_PERMISSIONS: Record<UserGroup, GroupPermissionConfig> = {
       'lixeira',
       'orcamentosTerceiros',
       'centralEmails',
+      'configuracoesEmails',
     ],
     edit: ['clientes', 'juridico', 'paraProtocolar', 'protocolados', 'segredoJustica', 'lixeira'],
     exportReports: ['relatorioResumido', 'relatorioConsolidado'],
