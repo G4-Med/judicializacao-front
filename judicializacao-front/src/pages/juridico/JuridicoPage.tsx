@@ -8,6 +8,7 @@ import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { Dropdown } from 'primereact/dropdown';
 import { Dialog } from 'primereact/dialog';
+import { Checkbox } from 'primereact/checkbox';
 import { FilterMatchMode } from 'primereact/api';
 import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder, getCnjCandidatos, confirmarCnj, uploadAnexoOrder, getInteligenciaPedido } from '../../services/api/orders';
 import { useAccess } from '../../access/AccessContext';
@@ -126,6 +127,8 @@ export function JuridicoPage() {
   const [inteiroTeorFile, setInteiroTeorFile] = useState<File | null>(null)
   const [inteiroTeorJaAnexado, setInteiroTeorJaAnexado] = useState(false)
   const [inteiroTeorObrigatorio, setInteiroTeorObrigatorio] = useState(false)
+  // @R 29/08 00:55: caixa "não teve peça de inteiro teor" — libera o Cotar sem a peça, com registro de quem declarou.
+  const [semPecaInteiroTeor, setSemPecaInteiroTeor] = useState(false)
 
   const colunasCfg = useColunasVisiveis('analise-juridica');
 
@@ -268,7 +271,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
     // Peça de inteiro teor obrigatória nos DOIS caminhos da decisão (@R 27/08).
     // Refinamento 20:27: a equipe g4med pode seguir sem — anexa depois em outra fase.
     const decidindo = statusJuridico === 'Cotar' || statusJuridico === 'Não Cotar';
-    if (decidindo && !equipeG4med && !inteiroTeorJaAnexado && !inteiroTeorFile) {
+    if (decidindo && !equipeG4med && !inteiroTeorJaAnexado && !inteiroTeorFile && !semPecaInteiroTeor) {
       setInteiroTeorObrigatorio(true);
       return;
     }
@@ -277,6 +280,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
         nprocesso: nprocesso || null,
         numeroSei: numeroSei || null,
         statusJuridico: statusJuridico || null,
+        semPecaInteiroTeor: decidindo && !inteiroTeorJaAnexado && !inteiroTeorFile && semPecaInteiroTeor,
         orcamentos: orcamentos || null,
         obs: obs || null,
     };
@@ -813,8 +817,15 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                   />
                   {inteiroTeorObrigatorio && (
                     <small style={{ color: '#ef4444' }}>
-                      Anexe a peça de inteiro teor da decisão — ela é obrigatória tanto para Cotar quanto para Não Cotar.
+                      Anexe a peça de inteiro teor da decisão — ela é obrigatória para Cotar e Não Cotar. Se o processo não tem a peça, marque a caixa abaixo.
                     </small>
+                  )}
+                  {(statusJuridico === 'Cotar' || statusJuridico === 'Não Cotar') && !inteiroTeorFile && (
+                    <div className="sem-peca-box" title="Marque só quando o processo realmente não tem peça de inteiro teor. Fica registrado quem declarou e quando; o robô não terá o que ler e o médico recebe só os anexos da SES.">
+                      <Checkbox inputId="semPeca" checked={semPecaInteiroTeor} disabled={readOnly}
+                        onChange={(e) => { setSemPecaInteiroTeor(!!e.checked); if (e.checked) setInteiroTeorObrigatorio(false); }} />
+                      <label htmlFor="semPeca">Não teve peça de inteiro teor neste processo — seguir sem a peça <small>(fica registrado quem declarou)</small></label>
+                    </div>
                   )}
                 </>
               )}

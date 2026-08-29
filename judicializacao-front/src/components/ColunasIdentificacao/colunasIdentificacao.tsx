@@ -38,6 +38,8 @@ export interface LinhaIdentificada {
   id?: number;
   segredo?: 'sim' | 'possivel' | 'nao' | null;
   temInteiroTeor?: boolean | null;
+  semPecaInteiroTeor?: boolean | null;
+  semPecaDeclaracao?: string | null;
   solicitante?: string | null;
   segredoFonte?: string | null;
   nprocesso?: string | null;
@@ -142,8 +144,12 @@ function CelulaInteiroTeor({ linha }: { linha: LinhaIdentificada }) {
       title="A peça de inteiro teor já está anexada a este pedido" />;
   }
   if (!linha.id) return <span className="ident-vazio">—</span>;
+  const declarado = !!linha.semPecaInteiroTeor;
   return (
-    <label className="inteiro-teor-anexar" title="Falta a peça de inteiro teor — anexe o PDF aqui (pode ser feito em qualquer fase)">
+    <span className="inteiro-teor-wrap">
+    {declarado && <Tag value="Sem peça (declarado)" severity="warning" icon="pi pi-info-circle"
+      title={`O jurídico declarou que este processo não tem peça de inteiro teor. ${linha.semPecaDeclaracao ?? ''}`} />}
+    <label className="inteiro-teor-anexar" title={declarado ? 'Apareceu a peça? Anexe aqui — a declaração deixa de valer.' : 'Falta a peça de inteiro teor — anexe o PDF aqui (pode ser feito em qualquer fase)'}>
       <i className={enviando ? 'pi pi-spin pi-spinner' : 'pi pi-upload'} />
       {enviando ? ' Enviando…' : ' Anexar'}
       <input type="file" accept="application/pdf" style={{ display: 'none' }} disabled={enviando}
@@ -161,6 +167,7 @@ function CelulaInteiroTeor({ linha }: { linha: LinhaIdentificada }) {
           }
         }} />
     </label>
+    </span>
   );
 }
 

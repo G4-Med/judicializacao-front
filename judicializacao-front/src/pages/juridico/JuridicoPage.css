@@ -416,3 +416,8 @@ body.dark-theme .juridico-table .p-datatable-tbody > tr > td {
 .candidato-cnj__linha { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
 .candidato-cnj__linha small { color: #92400e; }
 body.dark-theme .candidato-cnj { background: rgba(148,98,13,0.15); border-color: rgba(148,98,13,0.4); }
+
+/* caixa 'não teve peça de inteiro teor' (@R 29/08) */
+.sem-peca-box { display: flex; align-items: flex-start; gap: .5rem; margin-top: .5rem; padding: .5rem .65rem; border: 1px dashed #d8a24a; border-radius: 8px; background: #fff8ea; font-size: .85rem; }
+.sem-peca-box label { cursor: pointer; line-height: 1.35; }
+.sem-peca-box small { color: #7a5a1a; }

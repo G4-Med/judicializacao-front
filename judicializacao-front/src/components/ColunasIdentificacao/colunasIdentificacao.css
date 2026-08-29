@@ -39,3 +39,5 @@ body.dark-theme .chip-cadastro--completo { background: rgba(28,122,72,0.16); bor
   white-space: nowrap;
 }
 .inteiro-teor-anexar:hover { background: #fffbeb; }
+
+.inteiro-teor-wrap { display: inline-flex; flex-direction: column; gap: .25rem; align-items: flex-start; }
