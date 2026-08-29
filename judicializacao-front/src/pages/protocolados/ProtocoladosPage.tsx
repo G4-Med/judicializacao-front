@@ -29,7 +29,6 @@ import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
 import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
-import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
 import { colunaAnexosSES } from '../../components/AnexosSES/anexosSES';
 

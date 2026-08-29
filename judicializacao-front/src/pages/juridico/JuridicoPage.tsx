@@ -26,7 +26,6 @@ import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExp
 import { NovoPedidoManual } from '../../components/NovoPedidoManual/novoPedidoManual';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
-import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
 import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
 import { colunaAnexosSES } from '../../components/AnexosSES/anexosSES';

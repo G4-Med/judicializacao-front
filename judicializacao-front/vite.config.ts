@@ -23,4 +23,18 @@ export default defineConfig({
       },
     },
   },
+  // MESMO proxy para `vite preview` (o build de produção rodando local). Serve para
+  // conferir o pacote EXATO que vai ao Netlify antes de pedir revisão — build verde
+  // não prova tela viva, e o dev-server esconde diferenças (React em modo dev).
+  preview: {
+    host: true,
+    allowedHosts: ['.share.zrok.io', '.zrok.io', 'localhost'],
+    proxy: {
+      '/api': {
+        target: process.env.VITE_PROXY_API || 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
 })

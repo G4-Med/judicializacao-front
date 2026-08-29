@@ -29,7 +29,6 @@ import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExp
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
-import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
 import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
 import { colunaAnexosSES } from '../../components/AnexosSES/anexosSES';
@@ -615,10 +614,10 @@ ${blocos}
           <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
           <Column field="sequencial" header="#" style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
           {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
-{colunaAcoesFase({ corpo: (r: any) => <>{(((rowData) => (
+{colunaAcoesFase({ corpo: (r: any) => <>{(((rowData: any) => (
               <Button label="Abrir" icon="pi pi-folder-open" outlined severity="secondary"
                 onClick={() => abrirDetalhe(rowData)} />
-            )) as any)(r)}{(((rowData) => (
+            )) as any)(r)}{(((rowData: any) => (
                 <Button
                   label="Copiar"
                   icon="pi pi-copy"
