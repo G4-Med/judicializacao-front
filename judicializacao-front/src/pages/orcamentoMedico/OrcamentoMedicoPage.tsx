@@ -613,7 +613,7 @@ ${blocos}
         >          {colunasCfg.filtrar(<>
 
           <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
-          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
+          <Column field="sequencial" header="#" style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
           {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
 {colunaAcoesFase({ corpo: (r: any) => <>{(((rowData) => (
               <Button label="Abrir" icon="pi pi-folder-open" outlined severity="secondary"
@@ -627,7 +627,7 @@ ${blocos}
                   onClick={() => copiarParaWhatsapp(rowData)}
                 />
               )) as any)(r)}</>, excluir: carregarDados })}
-          <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
+          <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }}
             body={(r: ProcessoOrcamentoRow) => (
               <span className="orcamento-paciente-cel">

@@ -466,7 +466,7 @@ export function SelecionarMedicoPage() {
 
           <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
           {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />}
-          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} frozen alignFrozen="left" />
+          <Column field="sequencial" header="#" style={{ minWidth: '4rem' }} frozen alignFrozen="left" />
           {/* Ações da fase ao lado do paciente (@R 29/08): a decisão desta tela é escolher o médico. */}
 {colunaAcoesFase({
             readOnly,
@@ -483,7 +483,6 @@ export function SelecionarMedicoPage() {
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
-            sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}

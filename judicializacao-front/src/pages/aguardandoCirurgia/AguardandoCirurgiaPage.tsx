@@ -551,13 +551,12 @@ export function AguardandoCirurgiaPage() {
           className="ag-cir-table"
         >          {colunasCfg.filtrar(<>
 
-          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
+          <Column field="sequencial" header="#" style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
           {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
 {colunaAcoesFase({ corpo: (r: any) => <>{renderConfirmar(r)}</> })}
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
-            sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}

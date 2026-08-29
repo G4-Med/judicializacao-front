@@ -245,12 +245,12 @@ export function EnviadoSesPage() {
 
           <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />
-          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
+          <Column field="sequencial" header="#" style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
           {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
 {colunaAcoesFase({ corpo: (r: any) => <>{(((r: LinhaEnviadoSes) => (!readOnly
               ? <Button label="Registrar" icon="pi pi-flag" size="small" outlined onClick={() => abrirResultado(r)} />
               : null)) as any)(r)}</>, excluir: carregar })}
-          <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
+          <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} filter
             filterElement={(o) => filterElement(o, 'Buscar')}
             body={(r: LinhaEnviadoSes) => nomeComCopiar(r.paciente)} style={{ minWidth: '16rem' }}  frozen alignFrozen="left" />
           {colunaOrigem()}

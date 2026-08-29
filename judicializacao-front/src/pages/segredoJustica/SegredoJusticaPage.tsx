@@ -530,7 +530,6 @@ useEffect(() => { carregarDados(); }, [fila]);
           <Column
             field="sequencial"
             header="#"
-            sortable
             style={{ minWidth: '4rem' }}
             body={(rowData: SegredoJusticaTableRow) => rowData.sequencial}
            frozen alignFrozen="left" />
@@ -539,7 +538,6 @@ useEffect(() => { carregarDados(); }, [fila]);
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
-            sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}

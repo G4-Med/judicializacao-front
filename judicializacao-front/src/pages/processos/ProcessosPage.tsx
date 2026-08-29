@@ -2077,7 +2077,6 @@ ${linhasAnexos}
           <Column
             field="sequencial"
             header="#"
-            sortable
             style={{ minWidth: '4rem' }}
             body={(rowData: ProcessoTableRow) => rowData.sequencial}
            frozen alignFrozen="left" />
@@ -2091,7 +2090,6 @@ ${linhasAnexos}
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
-            sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}

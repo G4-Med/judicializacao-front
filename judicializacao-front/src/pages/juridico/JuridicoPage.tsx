@@ -440,7 +440,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           {/* Abre o painel de preços do procedimento dentro da própria linha (task #207) */}
 <Column expander style={{ width: '3.5rem' }} headerStyle={{ width: '3.5rem' }}
             headerClassName="col-expander" bodyClassName="col-expander" frozen alignFrozen="left" />
-          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
+          <Column field="sequencial" header="#" style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
           {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
 {colunaAcoesFase({ corpo: (r: any) => <>{editarBodyTemplate(r)}</>, excluir: carregarDados })}
           <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
