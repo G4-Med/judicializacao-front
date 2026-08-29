@@ -253,3 +253,22 @@ export const getCnjCandidatos = (orderId: number) =>
 export const confirmarCnj = (orderId: number, cnj: string, acao: 'confirmar' | 'corrigir') =>
   api.post(`/orders/${orderId}/cnj-confirmar/`, { cnj, acao });
 export const getKpiCompletude = () => api.get('/kpis/completude/');
+
+// Peça-envelope (task #249, @R 28/08). O pacote junta os exames/laudos do pedido venham
+// eles da peça de inteiro teor ou do e-mail — é o que vai ao médico. A cotação MONTA o
+// texto (não envia): o disparo sai por fora, e o texto tem uma fonte só.
+export const getPacoteExames = (orderId: number) =>
+  api.get(`/orders/${orderId}/pacote-exames/`);
+export const montarCotacaoMedico = (orderId: number, medico?: string) =>
+  api.post(`/orders/${orderId}/solicitar-cotacao-medico/`, { medico });
+
+// A morada do orçamento de terceiro: por pedido (histórico daquele processo) ou por
+// procedimento (o que outros lugares cobraram pela MESMA cirurgia — a régua de preço).
+export const getOrcamentosTerceiros = (params: { order?: number; procedimento?: string }) =>
+  api.get('/orders/orcamentos-terceiros/', { params });
+
+// Acervo de preços (@R 28/08): uma linha por procedimento, quatro lentes lado a lado —
+// o que NÓS cobramos, o que TERCEIROS cobraram, o que o ESTADO pagou, quantos DOCUMENTOS
+// temos — sempre com o N, porque mediana de um caso é um caso, não régua.
+export const getAcervoPrecos = (params: { especialidade?: string; q?: string; so_sem_orcamento?: 1 }) =>
+  api.get('/orders/acervo-precos/', { params });

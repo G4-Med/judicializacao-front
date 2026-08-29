@@ -36,6 +36,7 @@ import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasV
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
 import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
 import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
+import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -562,7 +563,7 @@ const kpis = useMemo(() => {
             <BotaoExportarExcel todos={dataComCamposCalculados} nome="resultados" />
             {colunasCfg.botao}
           </AcoesTabela>
-        <DataTable
+        <DataTable rowClassName={rowClassRepedido}
           expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
           rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Processos finalizados — resultado (ganho ou perda), valor e tempo de tramitação"
@@ -608,6 +609,7 @@ const kpis = useMemo(() => {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          {colunaRepedido()}
           {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
           {colunaCnj()}
           {colunaSei()}

@@ -27,6 +27,7 @@ import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasV
 import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
 import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
 
 /**
  * Enviado à SES (task #235, @R 28/08 00:2x): SÓ os pedidos cujo orçamento foi ao
@@ -227,7 +228,7 @@ export function EnviadoSesPage() {
           <BotaoExportarExcel todos={linhas} visiveis={visiveis} nome="enviado-ses" />
           {colunasCfg.botao}
         </AcoesTabela>
-        <DataTable
+        <DataTable rowClassName={rowClassRepedido}
           aria-label="Pedidos enviados à SES aguardando retorno técnico"
           value={linhas} dataKey="id" paginator rows={50} rowsPerPageOptions={[10, 20, 50, 100, 200]}
           selection={selecionadas} selectionMode="checkbox"
@@ -247,6 +248,7 @@ export function EnviadoSesPage() {
           <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')}
             body={(r: LinhaEnviadoSes) => nomeComCopiar(r.paciente)} style={{ minWidth: '16rem' }} />
+          {colunaRepedido()}
           {colunaCnj()}
           {colunaSei()}
           {colunaComarca()}

@@ -1,0 +1,107 @@
+/* Acervo de preços — folha da tela (cicatriz 28/08: tela sem CSS chegou crua ao @R).
+   Tokens locais: azul-petróleo como acento (dinheiro sem ser verde-de-planilha), âmbar para
+   "sem orçamento" (pendência, não erro), vinho para perda. Neutros puxados ao acento. */
+.acv-page {
+  --acv-acento: #1f5f7a;
+  --acv-acento-fraco: #e6f0f4;
+  --acv-alerta: #b45309;
+  --acv-alerta-fundo: #fff4e0;
+  --acv-perda: #8b2236;
+  --acv-perda-fundo: #fbe9ec;
+  --acv-ok: #1b7a4a;
+  --acv-borda: var(--surface-border, #dde3e8);
+  --acv-card: var(--surface-card, #fff);
+  --acv-texto-2: #5b6772;
+  padding: 1rem 1.25rem 2.5rem;
+}
+
+.acv-header h1 { display: flex; align-items: center; gap: .5rem; margin: 0 0 .35rem; font-size: 1.5rem; letter-spacing: -.01em; }
+.acv-header h1 .pi { color: var(--acv-acento); }
+.acv-sub { margin: 0 0 1.1rem; color: var(--acv-texto-2); max-width: 72ch; line-height: 1.45; text-wrap: pretty; }
+.acv-sub strong { color: inherit; font-weight: 600; }
+
+/* Barra de filtros: especialidade + busca por nome, numa linha só. */
+.acv-toolbar { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+.acv-especialidade { min-width: 16rem; }
+.acv-busca { flex: 1 1 22rem; }
+.acv-busca .p-inputtext { width: 100%; }
+.acv-busca { display: block; }
+
+/* KPIs: resumo antes do detalhe. */
+.acv-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: .75rem; margin-bottom: 1.1rem; }
+.acv-kpi {
+  display: flex; flex-direction: column; gap: .15rem; padding: .8rem .95rem;
+  border: 1px solid var(--acv-borda); border-radius: 10px; background: var(--acv-card);
+}
+.acv-kpi strong { font-size: 1.55rem; line-height: 1.1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.acv-kpi-rot { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--acv-texto-2); }
+.acv-kpi-sub { font-size: .78rem; color: var(--acv-texto-2); }
+.acv-kpi--alerta { border-color: #f3c78a; background: var(--acv-alerta-fundo); }
+.acv-kpi--alerta strong { color: var(--acv-alerta); }
+
+.acv-tabs .p-tabview-nav { border-bottom: 1px solid var(--acv-borda); }
+.acv-tabs .p-tabview-panels { padding: 1rem 0 0; }
+.acv-tab-intro { margin: 0 0 .75rem; color: var(--acv-texto-2); max-width: 80ch; line-height: 1.45; }
+
+/* Tabela principal */
+.acv-tabela .p-datatable-thead > tr > th { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--acv-texto-2); }
+.acv-tabela .p-datatable-tbody > tr > td { vertical-align: top; padding-top: .6rem; padding-bottom: .6rem; }
+.acv-page .p-datatable-wrapper { overflow-x: auto; }
+.acv-linha-pendente > td:first-child { box-shadow: inset 3px 0 0 var(--acv-alerta); }
+
+.acv-proc { display: flex; flex-direction: column; gap: .15rem; }
+.acv-proc-nome { font-weight: 600; }
+.acv-proc-esp { font-size: .75rem; color: var(--acv-texto-2); }
+
+.acv-demanda { display: flex; flex-wrap: wrap; gap: .3rem .4rem; align-items: center; font-variant-numeric: tabular-nums; }
+.acv-chip {
+  display: inline-block; padding: .1rem .5rem; border-radius: 999px; font-size: .72rem; font-weight: 600;
+  white-space: nowrap; line-height: 1.5;
+}
+.acv-chip--alerta { background: var(--acv-alerta-fundo); color: var(--acv-alerta); }
+.acv-chip--perda { background: var(--acv-perda-fundo); color: var(--acv-perda); }
+.acv-chip--grande { font-size: .85rem; padding: .2rem .7rem; }
+
+/* Lentes de preço */
+.acv-lente { display: inline-flex; flex-direction: column; gap: .05rem; line-height: 1.2; }
+.acv-lente-valor { font-weight: 600; font-variant-numeric: tabular-nums; font-size: .98rem; }
+.acv-lente-n { font-size: .7rem; color: var(--acv-texto-2); }
+.acv-lente--fraca .acv-lente-valor { color: var(--acv-texto-2); font-weight: 500; }
+.acv-lente--fraca .acv-lente-n { color: var(--acv-alerta); }
+.acv-lente--vazia { font-size: .78rem; color: var(--acv-texto-2); opacity: .7; font-style: italic; }
+.acv-lente-dupla { display: flex; flex-direction: column; gap: .25rem; }
+.acv-vencedor { font-size: .74rem; color: var(--acv-ok); font-variant-numeric: tabular-nums; }
+.acv-vencedor small { color: var(--acv-texto-2); }
+
+.acv-ref { display: flex; flex-wrap: wrap; gap: .4rem 1rem; font-size: .78rem; color: var(--acv-texto-2); align-items: flex-start; }
+.acv-ref > span { display: inline-flex; gap: .35rem; align-items: baseline; }
+
+.acv-ids { display: flex; flex-wrap: wrap; gap: .3rem; }
+.acv-id-chip {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .75rem;
+  padding: .05rem .4rem; border: 1px solid var(--acv-borda); border-radius: 4px; background: var(--acv-card);
+}
+.acv-pedido-id { margin-left: .4rem; font-size: .75rem; color: var(--acv-texto-2); font-family: ui-monospace, Menlo, monospace; }
+
+/* Linha expandida */
+.acv-detalhe { display: grid; grid-template-columns: minmax(0, 2fr) minmax(14rem, 1fr); gap: 1rem; padding: .5rem .5rem .75rem 3rem; background: var(--acv-acento-fraco); }
+.acv-detalhe-bloco h4 { margin: 0 0 .5rem; font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; color: var(--acv-acento); }
+.acv-detalhe-bloco h4 small { font-weight: 400; color: var(--acv-texto-2); text-transform: none; letter-spacing: 0; }
+.acv-subtabela { background: var(--acv-card); border-radius: 8px; overflow: hidden; }
+@media (max-width: 900px) { .acv-detalhe { grid-template-columns: 1fr; padding-left: 1rem; } }
+
+/* Demanda: barra com a parte pendente marcada em âmbar. */
+.acv-barra-wrap { display: flex; align-items: center; gap: .6rem; font-variant-numeric: tabular-nums; }
+.acv-barra { display: block; height: .7rem; background: var(--acv-acento); border-radius: 3px; position: relative; overflow: hidden; min-width: 4px; flex: 0 0 auto; max-width: 14rem; }
+.acv-barra-pend { position: absolute; right: 0; top: 0; bottom: 0; background: var(--acv-alerta); opacity: .85; }
+
+.acv-cobertura { display: inline-flex; gap: .25rem; }
+.acv-cobertura span {
+  font-size: .68rem; padding: .05rem .4rem; border-radius: 4px; border: 1px solid var(--acv-borda);
+  color: var(--acv-texto-2); opacity: .55;
+}
+.acv-cobertura span.on { opacity: 1; background: var(--acv-acento-fraco); color: var(--acv-acento); border-color: transparent; font-weight: 600; }
+
+.acv-vazio { color: var(--acv-texto-2); opacity: .7; font-size: .85rem; }
+.acv-baixar { text-decoration: none; display: inline-flex; align-items: center; gap: .3rem; color: var(--acv-acento); }
+.acv-baixar:hover { text-decoration: underline; }

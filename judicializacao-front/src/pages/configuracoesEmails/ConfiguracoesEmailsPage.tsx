@@ -11,7 +11,7 @@ import {
 } from '../../services/api/orders';
 import './ConfiguracoesEmailsPage.css';
 
-type TipoEmail = 'DAR_PERDA' | 'PEDIR_EXAMES' | 'ENVIAR_ORCAMENTO' | 'RECEBIMENTO_PEDIDO' | 'RECEBIMENTO_PEDIDO_SEGREDO';
+type TipoEmail = 'DAR_PERDA' | 'PEDIR_EXAMES' | 'ENVIAR_ORCAMENTO' | 'RECEBIMENTO_PEDIDO' | 'RECEBIMENTO_PEDIDO_SEGREDO' | 'RECEBIMENTO_PEDIDO_SEM_ANEXO';
 
 interface ConfiguracaoEmail {
   id?: number;
@@ -27,6 +27,7 @@ const CONFIG_PADRAO: Record<TipoEmail, ConfiguracaoEmail> = {
   ENVIAR_ORCAMENTO: { tipoEmail: 'ENVIAR_ORCAMENTO', assunto: '', corpo: '', ativo: true },
   RECEBIMENTO_PEDIDO: { tipoEmail: 'RECEBIMENTO_PEDIDO', assunto: '', corpo: '', ativo: true },
   RECEBIMENTO_PEDIDO_SEGREDO: { tipoEmail: 'RECEBIMENTO_PEDIDO_SEGREDO', assunto: '', corpo: '', ativo: true },
+  RECEBIMENTO_PEDIDO_SEM_ANEXO: { tipoEmail: 'RECEBIMENTO_PEDIDO_SEM_ANEXO', assunto: '', corpo: '', ativo: true },
 };
 
 const TIPOS_EMAIL: Array<{
@@ -67,6 +68,14 @@ const TIPOS_EMAIL: Array<{
       'é justamente o e-mail que precisa proteger essa identidade. Sem configuração aqui, o sistema ' +
       'usa o template normal de Recebimento Pedido.',
     icon: 'pi pi-lock',
+  },
+  {
+    tipoEmail: 'RECEBIMENTO_PEDIDO_SEM_ANEXO',
+    titulo: 'Recebimento Pedido (sem anexo)',
+    descricao: 'Usado automaticamente quando o e-mail do pedido chega SEM nenhum documento anexado — ' +
+      'em vez de só confirmar, pede ao remetente o que falta (ofício, laudo, exames). Segredo de ' +
+      'justiça tem prioridade sobre este. Sem configuração aqui, o sistema usa o Recebimento Pedido normal.',
+    icon: 'pi pi-paperclip',
   },
 ];
 

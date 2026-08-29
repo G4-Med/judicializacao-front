@@ -25,6 +25,7 @@ import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, 
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
+import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
 
 interface Anexo {
   id: number;
@@ -529,7 +530,7 @@ export function AguardandoCirurgiaPage() {
             <BotaoExportarExcel todos={linhas} nome="aguardando-cirurgia" />
             {colunasCfg.botao}
           </AcoesTabela>
-        <DataTable
+        <DataTable rowClassName={rowClassRepedido}
           aria-label="Pedidos aguardando confirmação de cirurgia"
           value={linhas}
           loading={loading}
@@ -556,6 +557,7 @@ export function AguardandoCirurgiaPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          {colunaRepedido()}
           {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
           {colunaCnj()}
           {colunaSei()}

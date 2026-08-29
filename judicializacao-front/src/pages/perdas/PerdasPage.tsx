@@ -20,6 +20,7 @@ import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasV
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
 import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
 import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
+import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
 
 interface PerdaProcesso {
   id: number;
@@ -320,7 +321,7 @@ export function PerdasPage() {
             <BotaoExportarExcel todos={dataComCamposCalculados} nome="perdas" />
             {colunasCfg.botao}
           </AcoesTabela>
-        <DataTable
+        <DataTable rowClassName={rowClassRepedido}
           expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
           rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Pedidos perdidos — motivo e fase em que a perda ocorreu"
@@ -366,6 +367,7 @@ export function PerdasPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          {colunaRepedido()}
           {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
           {colunaCnj()}
           {colunaSei()}

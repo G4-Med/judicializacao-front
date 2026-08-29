@@ -30,6 +30,7 @@ import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasV
 import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
 import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
 
 interface ProcessoResumo {
   id: number;
@@ -411,9 +412,9 @@ export function SelecionarMedicoPage() {
           aria-label="Pedidos aguardando seleção de médico"
           value={dataComCamposCalculados}
           onValueChange={(value) => setVisibleProcessos(value as ProcessoResumoTableRow[])}
-          rowClassName={(rowData: ProcessoResumoTableRow) =>
+          rowClassName={(r: any) => [((rowData: ProcessoResumoTableRow) =>
             rowData.slaMedicoEstourado ? 'linha-fora-sla' : ''
-          }
+          )(r), rowClassRepedido(r)].filter(Boolean).join(' ')}
           dataKey="id"
           paginator
           rowsPerPageOptions={[10, 20, 50, 100, 200]}
@@ -447,6 +448,7 @@ export function SelecionarMedicoPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          {colunaRepedido()}
           {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
           {colunaCnj()}
           {colunaSei()}

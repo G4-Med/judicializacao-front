@@ -1,5 +1,6 @@
 import { Tag } from 'primereact/tag';
 import { PainelPrecos } from '../PainelPrecos/PainelPrecos';
+import { PacoteExamesCotacao } from '../PacoteExames/PacoteExamesCotacao';
 
 /**
  * O que abre ABAIXO de cada pedido, em QUALQUER fase (@R 28/08 03:37: "colocar
@@ -47,7 +48,10 @@ export function ExpansorPedido({ linha }: { linha: any }) {
         <PainelPrecos orderId={r.id} procedimento={r.procedimento} nossoPreco={nossoPreco} />
       )}
 
-      {/* 2. Pagamento DESTE processo */}
+      {/* 2. Exames do processo + cotação ao médico (task #249) — carrega ao clique */}
+      {r.id && <PacoteExamesCotacao orderId={r.id} />}
+
+      {/* 3. Pagamento DESTE processo */}
       <div>
         <h4 style={{ margin: '0 0 6px' }}>
           <i className="pi pi-wallet" /> Pagamentos do Estado neste CNJ (base 548)

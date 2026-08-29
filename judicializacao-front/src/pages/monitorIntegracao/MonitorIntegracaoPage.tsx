@@ -4,6 +4,8 @@ import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
+import { IconField } from 'primereact/iconfield';
+import { InputIcon } from 'primereact/inputicon';
 import { InputNumber } from 'primereact/inputnumber';
 import { InputSwitch } from 'primereact/inputswitch';
 import { Tag } from 'primereact/tag';
@@ -278,14 +280,14 @@ export function MonitorIntegracaoPage() {
       <div className="monitor-card">
         <div className="monitor-card__header">
           <h2>Processos</h2>
-          <span className="p-input-icon-left monitor-search">
-            <i className="pi pi-search" />
+          <IconField iconPosition="left" className="monitor-search">
+            <InputIcon className="pi pi-search" />
             <InputText
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
               placeholder="Buscar processo..."
             />
-          </span>
+          </IconField>
         </div>
 
         <DataTable
