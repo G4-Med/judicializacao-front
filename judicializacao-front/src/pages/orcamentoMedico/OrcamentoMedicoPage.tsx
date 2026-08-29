@@ -24,7 +24,7 @@ import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { ContadorRegistros, contarPorCampo } from '../../components/ContadorRegistros/ContadorRegistros';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaSolicitante, tagTipoPaciente, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, tagTipoPaciente, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint, colunaOrigem } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
@@ -610,19 +610,12 @@ ${blocos}
           filterDisplay="row" loading={loading}
           emptyMessage="Nenhum processo aguardando orçamento."
           className="orcamento-table"
-        >
-          {colunasCfg.filtrar(<>
+        >          {colunasCfg.filtrar(<>
+
           <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
-          <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
-            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }}
-            body={(r: ProcessoOrcamentoRow) => (
-              <span className="orcamento-paciente-cel">
-                {nomeComCopiar(r.paciente)}
-              </span>
-            )}  frozen alignFrozen="left" />
           {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
-          {colunaAcoesFase({ corpo: (r: any) => <>{(((rowData) => (
+{colunaAcoesFase({ corpo: (r: any) => <>{(((rowData) => (
               <Button label="Abrir" icon="pi pi-folder-open" outlined severity="secondary"
                 onClick={() => abrirDetalhe(rowData)} />
             )) as any)(r)}{(((rowData) => (
@@ -634,26 +627,25 @@ ${blocos}
                   onClick={() => copiarParaWhatsapp(rowData)}
                 />
               )) as any)(r)}</>, excluir: carregarDados })}
+          <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
+            filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }}
+            body={(r: ProcessoOrcamentoRow) => (
+              <span className="orcamento-paciente-cel">
+                {nomeComCopiar(r.paciente)}
+              </span>
+            )}  frozen alignFrozen="left" />
+          {colunaOrigem()}
           {colunaRepedido()}
-          {colunaAnexosSES()}
-          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
-          {colunaCnj()}
-          {colunaSei()}
-          {colunaComarca()}
-          {colunaCadastro()}
-          {colunaSegredo()}
-          {colunaInteiroTeor()}
-          {colunaSolicitante()}
           <Column field="idade" header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento.')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '7rem' }} />
           <Column field="tipoPaciente" header={cabecalhoComHint('Tipo', 'Pediátrico (<18) · Adulto · Idoso (60+). Muda o médico certo e o risco de segredo.')} sortable style={{ minWidth: '7rem' }}
             body={(r: any) => tagTipoPaciente(r.tipoPaciente)} />
           <Column field="procedimento" className="col-procedimento-upper" header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '18rem' }} />
-          <Column field="medico" header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')} sortable filter
-            filterElement={(o) => dropdownFilterElement(o, medicosOptions)} style={{ minWidth: '14rem' }} />
           <Column field="area" header="Área" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '10rem' }} />
+          <Column field="medico" header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')} sortable filter
+            filterElement={(o) => dropdownFilterElement(o, medicosOptions)} style={{ minWidth: '14rem' }} />
           <Column field="dataStatusJuridico" header="Data Solicitação"
             body={(r) => formatarData(r.dataStatusJuridico)} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '12rem' }} />
@@ -665,13 +657,21 @@ ${blocos}
             showFilterMenu={false}
             filterElement={statusFilterElement}
             style={{ minWidth: '15rem' }} />
-          
+          {colunaAnexosSES()}
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+{colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaSolicitante()}
           {colunaBaixarOrcamento()}
           {colunaEmpenhoEstado()}
           {colunaPagoEm()}
           {colunaDiferenca()}
-        </>)}
-        </DataTable>
+          </>)}
+</DataTable>
       </div>
 
       {/* Dialog Detalhe */}

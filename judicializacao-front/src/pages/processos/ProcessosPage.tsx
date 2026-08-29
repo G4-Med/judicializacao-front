@@ -8,6 +8,8 @@ import type {
   DataTableSortEvent
 } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { colunaAnexosSES } from '../../components/AnexosSES/anexosSES';
+import { colunaRepedido } from '../../components/Repedido/repedido';
 import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
@@ -2068,11 +2070,10 @@ ${linhasAnexos}
           tableStyle={{ minWidth: '110rem' }}
           emptyMessage="Nenhum processo encontrado."
           className="processos-table"
-        >
-          {colunasCfg.filtrar(<>
+        >          {colunasCfg.filtrar(<>
+
           <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />
-
           <Column
             field="sequencial"
             header="#"
@@ -2080,9 +2081,13 @@ ${linhasAnexos}
             style={{ minWidth: '4rem' }}
             body={(rowData: ProcessoTableRow) => rowData.sequencial}
            frozen alignFrozen="left" />
-
-
-
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+{colunaAcoesFase({ corpo: (r: any) => <>{acoesBodyTemplate(r)}{editarBodyTemplate(r)}{ehAdmin && (((r: any) => (
+              <Button icon="pi pi-trash" severity="danger" outlined size="small"
+                onClick={() => excluirLancamento(r)}
+                tooltip="Excluir lançamento (só Admin — backup automático antes)"
+                aria-label={`Excluir processo ${r.id}`} />
+            )) as any)(r)}</> })}
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
@@ -2091,31 +2096,8 @@ ${linhasAnexos}
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
            frozen alignFrozen="left" />
-          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
-          {colunaAcoesFase({ corpo: (r: any) => <>{acoesBodyTemplate(r)}{editarBodyTemplate(r)}{ehAdmin && (((r: any) => (
-              <Button icon="pi pi-trash" severity="danger" outlined size="small"
-                onClick={() => excluirLancamento(r)}
-                tooltip="Excluir lançamento (só Admin — backup automático antes)"
-                aria-label={`Excluir processo ${r.id}`} />
-            )) as any)(r)}</> })}
           {colunaOrigem()}
-          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
-          {colunaCnj()}
-          {colunaSei()}
-          {colunaComarca()}
-          {colunaCadastro()}
-          {colunaSegredo()}
-          {colunaInteiroTeor()}
-          {colunaBaixarOrcamento()}
-          {colunaEmpenhoEstado()}
-          {colunaPagoEm()}
-          {colunaDiferenca()}
-          <Column field="valorGanho" header={cabecalhoComHint('Ganho', 'Valor do ganho declarado por nós neste pedido.')} sortable style={{ minWidth: '8rem' }}
-            body={(r: any) => (r.valorGanho > 0
-              ? <span style={{ color: '#16a34a', fontWeight: 600 }}>{r.valorGanho.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-              : <span style={{ opacity: 0.4 }}>—</span>)} />
-          {colunaSolicitante()}
-
+          {colunaRepedido()}
           {/* <Column
             field="idade"
             header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento.')}
@@ -2124,8 +2106,7 @@ ${linhasAnexos}
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '7rem' }}
           /> */}
-
-          <Column
+<Column
             field="procedimento"
             header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')}
             sortable
@@ -2134,7 +2115,26 @@ ${linhasAnexos}
             className="col-procedimento-upper"
             style={{ minWidth: '18rem' }}
           />
-
+          <Column
+            field="area"
+            header="Área"
+            sortable
+            filter
+            filterElement={(options) => filterElement(options, 'Buscar')}
+            style={{ minWidth: '10rem' }}
+          />
+          <Column
+            field="medico"
+            header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}
+            sortable
+            filter
+            filterElement={(options) => dropdownFilterElement(options, 'Selecione', medicosFilterOptions)}
+            style={{ minWidth: '14rem' }}
+          />
+          <Column field="valorGanho" header={cabecalhoComHint('Ganho', 'Valor do ganho declarado por nós neste pedido.')} sortable style={{ minWidth: '8rem' }}
+            body={(r: any) => (r.valorGanho > 0
+              ? <span style={{ color: '#16a34a', fontWeight: 600 }}>{r.valorGanho.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+              : <span style={{ opacity: 0.4 }}>—</span>)} />
           <Column
             field="refPreco"
             header={cabecalhoComHint('Ref. Preço', 'Preço de referência do procedimento — base de comparação, não é o orçamento.')}
@@ -2144,25 +2144,6 @@ ${linhasAnexos}
             body={precoBodyTemplate}
             style={{ minWidth: '10rem' }}
           />
-
-          <Column
-            field="medico"
-            header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}
-            sortable
-            filter
-            filterElement={(options) => dropdownFilterElement(options, 'Selecione', medicosFilterOptions)}
-            style={{ minWidth: '14rem' }}
-          />
-
-          <Column
-            field="area"
-            header="Área"
-            sortable
-            filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
-            style={{ minWidth: '10rem' }}
-          />
-
           {/* <Column
             field="dataSolicitacao"
             header="Data da Solicitação"
@@ -2172,8 +2153,7 @@ ${linhasAnexos}
             body={dataBodyTemplate}
             style={{ minWidth: '12rem' }}
           /> */}
-
-          <Column
+<Column
             field="dias"
             header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
             sortable
@@ -2182,7 +2162,6 @@ ${linhasAnexos}
             body={diasBodyTemplate}
             style={{ minWidth: '7rem' }}
           />
-
           <Column
             field="status"
             header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
@@ -2192,7 +2171,6 @@ ${linhasAnexos}
             body={(rowData: ProcessoTableRow) => statusBodyTemplate(rowData, 'status')}
             style={{ minWidth: '12rem' }}
           />
-
           <Column
             field="statusJuridico"
             header="Status Jurídico"
@@ -2202,7 +2180,6 @@ ${linhasAnexos}
             body={(rowData: ProcessoTableRow) => statusBodyTemplate(rowData, 'statusJuridico')}
             style={{ minWidth: '14rem' }}
           />
-
           <Column
             field="statusMedico"
             header="Status Médico"
@@ -2212,10 +2189,21 @@ ${linhasAnexos}
             body={(rowData: ProcessoTableRow) => statusBodyTemplate(rowData, 'statusMedico')}
             style={{ minWidth: '14rem' }}
           />
-
-
-        </>)}
-        </DataTable>
+          {colunaAnexosSES()}
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+{colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaSolicitante()}
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
+          </>)}
+</DataTable>
 
         <Dialog
           header="Novo Processo"

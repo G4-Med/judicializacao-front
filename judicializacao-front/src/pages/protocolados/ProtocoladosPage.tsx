@@ -23,7 +23,7 @@ import './ProtocoladosPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint, colunaOrigem } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
@@ -569,11 +569,10 @@ export function ProtocoladosPage() {
           tableStyle={{ minWidth: '95rem' }}
           emptyMessage="Nenhum processo encontrado."
           className="protocolados-table"
-        >
-          {colunasCfg.filtrar(<>
-          {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />}
-          <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
+        >          {colunasCfg.filtrar(<>
 
+          <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
+          {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />}
           <Column
             field="sequencial"
             header="#"
@@ -581,7 +580,8 @@ export function ProtocoladosPage() {
             style={{ minWidth: '4rem' }}
             body={(rowData: ProtocoladoTableRow) => rowData.sequencial}
            frozen alignFrozen="left" />
-
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+{colunaAcoesFase({ corpo: (r: any) => <>{atualizarBodyTemplate(r)}{resultadoBodyTemplate(r)}</>, excluir: carregarDados })}
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
@@ -590,19 +590,8 @@ export function ProtocoladosPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
            frozen alignFrozen="left" />
-          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
-          {colunaAcoesFase({ corpo: (r: any) => <>{atualizarBodyTemplate(r)}{resultadoBodyTemplate(r)}</>, excluir: carregarDados })}
+          {colunaOrigem()}
           {colunaRepedido()}
-          {colunaAnexosSES()}
-          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
-          {colunaCnj()}
-          {colunaSei()}
-          {colunaComarca()}
-          {colunaCadastro()}
-          {colunaSegredo()}
-          {colunaInteiroTeor()}
-          {colunaSolicitante()}
-
           <Column
             field="cliente"
             header={cabecalhoComHint('Cliente', 'Empresa/prestador que responde pelo orçamento.')}
@@ -611,7 +600,6 @@ export function ProtocoladosPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
-
           <Column
             field="valor"
             header={cabecalhoComHint('Valor', 'Valor do orçamento que enviamos ao Estado por este pedido.')}
@@ -621,7 +609,6 @@ export function ProtocoladosPage() {
             body={precoBodyTemplate}
             style={{ minWidth: '10rem' }}
           />
-
           <Column
             field="numeroProcesso"
             header="Processo"
@@ -630,7 +617,6 @@ export function ProtocoladosPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
-
           <Column
             field="dias"
             header={cabecalhoComHint('Dias protocolo', 'Dias desde a data em que a peça foi protocolada nos autos.')}
@@ -640,10 +626,9 @@ export function ProtocoladosPage() {
             body={diasBodyTemplate}
             style={{ minWidth: '8rem' }}
           />
-
           {/* @R 28/08 02:0x: "quantos dias desde a última atualização... pelo menos
               de 15 em 15 dias o processo precisa ser atualizado" — SLA de acompanhamento */}
-          <Column
+<Column
             field="diasSemAtualizacao"
             header={cabecalhoComHint('Sem atualização', 'Dias desde o último acompanhamento registrado. SLA: atualizar a cada 15 dias.')}
             sortable
@@ -656,12 +641,6 @@ export function ProtocoladosPage() {
                     title="15+ dias sem atualização — SLA de acompanhamento vencido (atualizar a cada 15 dias)" />
                 : <span title="Dentro do SLA de 15 dias">{r.diasSemAtualizacao ?? '—'}d</span>)}
           />
-
-          {colunaBaixarOrcamento()}
-          {colunaEmpenhoEstado()}
-          {colunaPagoEm()}
-          {colunaDiferenca()}
-
           <Column
             field="status"
             header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
@@ -671,10 +650,21 @@ export function ProtocoladosPage() {
             body={statusBodyTemplate}
             style={{ minWidth: '12rem' }}
           />
-
-
-        </>)}
-        </DataTable>
+          {colunaAnexosSES()}
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+{colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaSolicitante()}
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
+          </>)}
+</DataTable>
       </div>
 
       <Dialog

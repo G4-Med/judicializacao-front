@@ -462,22 +462,13 @@ export function SelecionarMedicoPage() {
           tableStyle={{ minWidth: '92rem' }}
           className="selecionar-medico-table"
           emptyMessage="Nenhum processo encontrado."
-        >
-          {colunasCfg.filtrar(<>
+        >          {colunasCfg.filtrar(<>
+
           <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
           {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />}
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} frozen alignFrozen="left" />
-          <Column
-            field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
-            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
-            sortable
-            filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
-            style={{ minWidth: '16rem' }}
-            frozen alignFrozen="left"
-          />
           {/* Ações da fase ao lado do paciente (@R 29/08): a decisão desta tela é escolher o médico. */}
-          {colunaAcoesFase({
+{colunaAcoesFase({
             readOnly,
             principal: { label: 'Selecionar médico', icon: 'pi pi-user-edit', onClick: (r) => abrirDialog(r) },
             secundarias: [
@@ -489,22 +480,22 @@ export function SelecionarMedicoPage() {
             excluir: carregarDados,
             largura: '17rem',
           })}
+          <Column
+            field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
+            header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
+            sortable
+            filter
+            filterElement={(options) => filterElement(options, 'Buscar')}
+            style={{ minWidth: '16rem' }}
+            frozen alignFrozen="left"
+          />
           {colunaOrigem()}
+          {colunaRepedido()}
           <Column field="idade" header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento. Criança/recém-nascido recebe o e-mail pediátrico de exames.')}
             sortable filter filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '6rem' }}
             body={(r: any) => r.idade ?? <span className="sm-sla-vazio">—</span>} />
           <Column field="tipoPaciente" header={cabecalhoComHint('Tipo', 'Recém-nascido (≤28 dias) · Pediátrico (<18) · Adulto · Idoso (60+). Muda o médico certo e o risco de segredo.')}
             sortable style={{ minWidth: '7rem' }} body={(r: any) => tagTipoPaciente(r.tipoPaciente)} />
-          {colunaRepedido()}
-          {colunaAnexosSES()}
-          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
-          {colunaCnj()}
-          {colunaSei()}
-          {colunaComarca()}
-          {colunaCadastro()}
-          {colunaSegredo()}
-          {colunaInteiroTeor()}
-          {colunaSolicitante()}
           <Column
             field="procedimento" className="col-procedimento-upper"
             header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')}
@@ -552,12 +543,21 @@ export function SelecionarMedicoPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '7rem' }}
           />
+          {colunaAnexosSES()}
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+{colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaSolicitante()}
           {colunaBaixarOrcamento()}
           {colunaEmpenhoEstado()}
           {colunaPagoEm()}
           {colunaDiferenca()}
-        </>)}
-        </DataTable>
+          </>)}
+</DataTable>
       </div>
 
       <Dialog

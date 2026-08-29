@@ -20,8 +20,7 @@ import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 import { ContadorRegistros } from '../../components/ContadorRegistros/ContadorRegistros';
 import {
   colunaCnj, colunaSei, colunaComarca, colunaCadastro, colunaSegredo, colunaInteiroTeor,
-  colunaSolicitante, tagTipoPaciente, FILTROS_IDENTIFICACAO, nomeComCopiar, cabecalhoComHint,
-} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+  colunaSolicitante, tagTipoPaciente, FILTROS_IDENTIFICACAO, nomeComCopiar, cabecalhoComHint, colunaOrigem } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
@@ -242,27 +241,20 @@ export function EnviadoSesPage() {
           sortField="dias" sortOrder={-1}
           loading={loading} tableStyle={{ minWidth: '95rem' }}
           emptyMessage="Nenhum pedido aguardando retorno da SES — quando um orçamento for enviado sem protocolo (ou em segredo de justiça), ele aparece aqui."
-        >
-          {colunasCfg.filtrar(<>
-          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />
+        >          {colunasCfg.filtrar(<>
+
           <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
+          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+{colunaAcoesFase({ corpo: (r: any) => <>{(((r: LinhaEnviadoSes) => (!readOnly
+              ? <Button label="Registrar" icon="pi pi-flag" size="small" outlined onClick={() => abrirResultado(r)} />
+              : null)) as any)(r)}</>, excluir: carregar })}
           <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')}
             body={(r: LinhaEnviadoSes) => nomeComCopiar(r.paciente)} style={{ minWidth: '16rem' }}  frozen alignFrozen="left" />
-          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
-          {colunaAcoesFase({ corpo: (r: any) => <>{(((r: LinhaEnviadoSes) => (!readOnly
-              ? <Button label="Registrar" icon="pi pi-flag" size="small" outlined onClick={() => abrirResultado(r)} />
-              : null)) as any)(r)}</>, excluir: carregar })}
+          {colunaOrigem()}
           {colunaRepedido()}
-          {colunaAnexosSES()}
-          {colunaCnj()}
-          {colunaSei()}
-          {colunaComarca()}
-          {colunaCadastro()}
-          {colunaSegredo()}
-          {colunaInteiroTeor()}
-          {colunaSolicitante()}
           <Column field="idade" header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento.')} sortable style={{ minWidth: '5rem' }} />
           <Column field="tipoPaciente" header={cabecalhoComHint('Tipo', 'Pediátrico (<18) · Adulto · Idoso (60+). Muda o médico certo e o risco de segredo.')} sortable style={{ minWidth: '7rem' }}
             body={(r: LinhaEnviadoSes) => tagTipoPaciente(r.tipoPaciente)} />
@@ -289,12 +281,20 @@ export function EnviadoSesPage() {
                 ? <Tag value={`${r.dias}d`} severity="warning" icon="pi pi-clock"
                     title={`${SLA_VERIFICACAO_1}+ dias sem retorno — primeira verificação baixa`} />
                 : <span>{r.dias}d</span>)} />
+          {colunaAnexosSES()}
+          {colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaSolicitante()}
           {colunaBaixarOrcamento()}
           {colunaEmpenhoEstado()}
           {colunaPagoEm()}
           {colunaDiferenca()}
           </>)}
-        </DataTable>
+</DataTable>
       </div>
 
       <Dialog header={`Retorno técnico — ${alvo?.paciente ?? ''}`} visible={!!alvo} modal

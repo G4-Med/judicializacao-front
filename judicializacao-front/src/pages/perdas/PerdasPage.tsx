@@ -347,11 +347,10 @@ export function PerdasPage() {
           tableStyle={{ minWidth: '100rem' }}
           emptyMessage="Nenhuma perda encontrada."
           className="perdas-table"
-        >
-          {colunasCfg.filtrar(<>
+        >          {colunasCfg.filtrar(<>
+
           <Column expander style={{ width: '3rem' }} />
           <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
-
           <Column
             field="sequencial"
             header="#"
@@ -359,7 +358,6 @@ export function PerdasPage() {
             style={{ minWidth: '4rem' }}
             body={(rowData: PerdaProcessoTableRow) => rowData.sequencial}
           />
-
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
@@ -369,28 +367,12 @@ export function PerdasPage() {
             style={{ minWidth: '16rem' }}
           />
           {colunaRepedido()}
-          {colunaAnexosSES()}
-          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
-          {colunaCnj()}
-          {colunaSei()}
-          {colunaComarca()}
-          {colunaCadastro()}
-          {colunaSegredo()}
-          {colunaInteiroTeor()}
           <Column field="procedimento" header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')} sortable filter
             filterElement={(options: any) => (
               <InputText value={options.value || ''} onChange={(e) => options.filterApplyCallback(e.target.value)}
                 placeholder="Buscar" className="p-column-filter" />
             )}
             style={{ minWidth: '16rem' }} />
-          <Column field="dataStatusPerda" header={cabecalhoComHint('Perda em', 'Data em que a perda foi registrada.')} sortable style={{ minWidth: '8rem' }}
-            body={(r: any) => (r.dataStatusPerda ? r.dataStatusPerda.split('-').reverse().join('/') : '—')} />
-          {colunaBaixarOrcamento()}
-          {colunaEmpenhoEstado()}
-          {colunaPagoEm()}
-          {colunaDiferenca()}
-          {colunaSolicitante()}
-
           <Column
             field="cliente"
             header={cabecalhoComHint('Cliente', 'Empresa/prestador que responde pelo orçamento.')}
@@ -399,7 +381,8 @@ export function PerdasPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
-
+          <Column field="dataStatusPerda" header={cabecalhoComHint('Perda em', 'Data em que a perda foi registrada.')} sortable style={{ minWidth: '8rem' }}
+            body={(r: any) => (r.dataStatusPerda ? r.dataStatusPerda.split('-').reverse().join('/') : '—')} />
           <Column
             field="valor"
             header={cabecalhoComHint('Valor', 'Valor do orçamento que enviamos ao Estado por este pedido.')}
@@ -409,7 +392,6 @@ export function PerdasPage() {
             body={precoBodyTemplate}
             style={{ minWidth: '10rem' }}
           />
-
           <Column
             field="dias"
             header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
@@ -419,7 +401,6 @@ export function PerdasPage() {
             body={diasBodyTemplate}
             style={{ minWidth: '7rem' }}
           />
-
           <Column
             field="resultado"
             header={cabecalhoComHint('Resultado', 'Desfecho registrado: ganho, perda ou em andamento.')}
@@ -429,7 +410,6 @@ export function PerdasPage() {
             body={resultadoBodyTemplate}
             style={{ minWidth: '12rem' }}
           />
-
           <Column
             field="statusPerda"
             header="Status Perda"
@@ -439,7 +419,6 @@ export function PerdasPage() {
             body={statusPerdaBodyTemplate}
             style={{ minWidth: '16rem' }}
           />
-
           <Column field="motivoPerdaCategoria" header={cabecalhoComHint('Motivo (categoria)', 'Classificação da perda — alimenta os cards e o funil.')} sortable
             style={{ minWidth: '13rem' }}
             body={(r: any) => r.motivoPerdaCategoria ?? <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>não classificado</span>} />
@@ -451,9 +430,22 @@ export function PerdasPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '24rem' }}
           />
+          {colunaAnexosSES()}
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+{colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaSolicitante()}
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
           {colunaExcluirAdmin(carregarDados)}
-        </>)}
-        </DataTable>
+          </>)}
+</DataTable>
       </div>
     </div>
   );

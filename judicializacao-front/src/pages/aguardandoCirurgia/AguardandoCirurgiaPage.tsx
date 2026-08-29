@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import type { DataTableFilterMeta, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { colunaBaixarOrcamento, colunaDiferenca, colunaEmpenhoEstado, colunaPagoEm } from '../../components/ColunasEmpenho/colunasEmpenho';
 import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
@@ -22,7 +23,7 @@ import type {
 } from '../../services/api/financeiro';
 import './AguardandoCirurgiaPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
-import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint, colunaOrigem } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
@@ -548,9 +549,11 @@ export function AguardandoCirurgiaPage() {
           filterDisplay="row"
           emptyMessage="Nenhum pedido aguardando cirurgia."
           className="ag-cir-table"
-        >
-          {colunasCfg.filtrar(<>
+        >          {colunasCfg.filtrar(<>
+
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+{colunaAcoesFase({ corpo: (r: any) => <>{renderConfirmar(r)}</> })}
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
@@ -559,18 +562,8 @@ export function AguardandoCirurgiaPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
            frozen alignFrozen="left" />
-          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
-          {colunaAcoesFase({ corpo: (r: any) => <>{renderConfirmar(r)}</> })}
+          {colunaOrigem()}
           {colunaRepedido()}
-          {colunaAnexosSES()}
-          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
-          {colunaCnj()}
-          {colunaSei()}
-          {colunaComarca()}
-          {colunaCadastro()}
-          {colunaSegredo()}
-          {colunaInteiroTeor()}
-          {colunaSolicitante()}
           <Column
             field="medico"
             header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}
@@ -604,8 +597,21 @@ export function AguardandoCirurgiaPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '7rem' }}
           />
-        </>)}
-        </DataTable>
+          {colunaAnexosSES()}
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+{colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaSolicitante()}
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
+          </>)}
+</DataTable>
       </div>
 
       <Dialog

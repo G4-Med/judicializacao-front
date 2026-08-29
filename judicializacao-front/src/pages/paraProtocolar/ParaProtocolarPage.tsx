@@ -25,7 +25,7 @@ import './ParaProtocolarPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint, colunaOrigem } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
@@ -693,13 +693,12 @@ const handleConfirmarProtocolacao = async () => {
           tableStyle={{ minWidth: '95rem' }}
           emptyMessage="Nenhum processo encontrado."
           className="para-protocolar-table"
-        >
-          {colunasCfg.filtrar(<>
+        >          {colunasCfg.filtrar(<>
+
           <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
           {!readOnly && (
             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />
           )}
-
           <Column
             field="sequencial"
             header="#"
@@ -707,7 +706,8 @@ const handleConfirmarProtocolacao = async () => {
             style={{ minWidth: '4rem' }}
             body={(rowData: ParaProtocolarTableRow) => rowData.sequencial}
            frozen alignFrozen="left" />
-
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+{colunaAcoesFase({ corpo: (r: any) => <>{editarBodyTemplate(r)}{protocolarBodyTemplate(r)}{excluirBodyTemplate(r)}{copiarBodyTemplate(r)}</>, excluir: carregarDados })}
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
@@ -716,23 +716,8 @@ const handleConfirmarProtocolacao = async () => {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
            frozen alignFrozen="left" />
-          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
-          {colunaAcoesFase({ corpo: (r: any) => <>{editarBodyTemplate(r)}{protocolarBodyTemplate(r)}{excluirBodyTemplate(r)}{copiarBodyTemplate(r)}</>, excluir: carregarDados })}
+          {colunaOrigem()}
           {colunaRepedido()}
-          {colunaAnexosSES()}
-          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
-          {colunaCnj()}
-          {colunaSei()}
-          {colunaComarca()}
-          {colunaCadastro()}
-          {colunaSegredo()}
-          {colunaInteiroTeor()}
-          {colunaBaixarOrcamento()}
-          {colunaEmpenhoEstado()}
-          {colunaPagoEm()}
-          {colunaDiferenca()}
-          {colunaSolicitante()}
-
           <Column
             field="cliente"
             header={cabecalhoComHint('Cliente', 'Empresa/prestador que responde pelo orçamento.')}
@@ -741,7 +726,6 @@ const handleConfirmarProtocolacao = async () => {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '14rem' }}
           />
-
           <Column
             field="valor"
             header={cabecalhoComHint('Valor', 'Valor do orçamento que enviamos ao Estado por este pedido.')}
@@ -751,7 +735,6 @@ const handleConfirmarProtocolacao = async () => {
             body={precoBodyTemplate}
             style={{ minWidth: '10rem' }}
           />
-
           <Column
             field="dataEnvioOrcamento"
             header={cabecalhoComHint('Data Envio Orçamento', 'Data em que o orçamento foi enviado ao Estado.')}
@@ -761,7 +744,6 @@ const handleConfirmarProtocolacao = async () => {
             body={dataBodyTemplate}
             style={{ minWidth: '12rem' }}
           />
-
           <Column
             field="dias"
             header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
@@ -771,21 +753,18 @@ const handleConfirmarProtocolacao = async () => {
             body={diasBodyTemplate}
             style={{ minWidth: '7rem' }}
           />
-
           <Column
             header={cabecalhoComHint('Orçamento', 'Verde = PDF do orçamento anexado (clique para baixar). "Não enviado" = nunca cotamos.')}
             body={anexoBodyTemplate}
             style={{ minWidth: '7rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
-
           <Column
             header="Baixar Email Recebimento"
             body={emailRecebimentoBodyTemplate}
             style={{ minWidth: '9rem' }}
             bodyStyle={{ textAlign: 'center' }}
           />
-
           <Column
             field="status"
             header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
@@ -795,12 +774,21 @@ const handleConfirmarProtocolacao = async () => {
             body={statusBodyTemplate}
             style={{ minWidth: '12rem' }}
           />
-
-
-
-
-        </>)}
-        </DataTable>
+          {colunaAnexosSES()}
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+{colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaSolicitante()}
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
+          </>)}
+</DataTable>
       </div>
 
       <Dialog

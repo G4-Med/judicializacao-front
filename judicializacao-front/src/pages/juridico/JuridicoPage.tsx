@@ -15,7 +15,7 @@ import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder, getCnjCan
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './JuridicoPage.css';
-import { colunaSolicitante, tagTipoPaciente , cabecalhoComHint, colunaOrigem } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, tagTipoPaciente , cabecalhoComHint, colunaOrigem, colunaCadastro, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { PainelPrecos } from '../../components/PainelPrecos/PainelPrecos';
@@ -435,12 +435,14 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           loading={loading}
           emptyMessage="Nenhum processo aguardando jurídico."
           className="juridico-table"
-        >
-          {colunasCfg.filtrar(<>
+        >          {colunasCfg.filtrar(<>
+
           {/* Abre o painel de preços do procedimento dentro da própria linha (task #207) */}
-          <Column expander style={{ width: '3.5rem' }} headerStyle={{ width: '3.5rem' }}
+<Column expander style={{ width: '3.5rem' }} headerStyle={{ width: '3.5rem' }}
             headerClassName="col-expander" bodyClassName="col-expander" frozen alignFrozen="left" />
           <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+{colunaAcoesFase({ corpo: (r: any) => <>{editarBodyTemplate(r)}</>, excluir: carregarDados })}
           <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }}
             body={(r: ProcessoJuridicoRow) => (
@@ -454,11 +456,8 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                 )}
               </span>
             )}  frozen alignFrozen="left" />
-          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
-          {colunaAcoesFase({ corpo: (r: any) => <>{editarBodyTemplate(r)}</>, excluir: carregarDados })}
           {colunaOrigem()}
           {colunaRepedido()}
-          {colunaAnexosSES()}
           <Column
             field="idade"
             header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento.')}
@@ -471,8 +470,32 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             body={(r: any) => tagTipoPaciente(r.tipoPaciente)} />
           <Column field="procedimento" className="col-procedimento-upper" header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '18rem' }} />
+          {/* @R 28/08: "a data que o pedido chegou e o horário e o tempo atual no funil" */}
+<Column field="chegouEm" header={cabecalhoComHint('Chegou em',
+              'Quando o pedido ENTROU no sistema (o monitor lê o e-mail a cada 10 min). Data e hora.')}
+            sortable style={{ minWidth: '10rem' }}
+            body={(r: ProcessoJuridicoRow) => {
+              if (!r.chegouEm) return <span className="juridico-geo-vazio">—</span>;
+              const d = new Date(r.chegouEm);
+              return <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                {d.toLocaleDateString('pt-BR')} <small style={{ opacity: 0.7 }}>{d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small>
+              </span>;
+            }} />
+          <Column field="dias" header={cabecalhoComHint('Tempo no funil',
+              `Desde a data do e-mail do pedido. Teto: ${SLA_META_DIAS_TRIAGEM} dias — acima disso está errado (fica vermelho).`)}
+            sortable filter filterElement={(o) => filterElement(o, 'Buscar')}
+            style={{ minWidth: '9rem' }}
+            body={(r: ProcessoJuridicoRow) => {
+              const h = r.horasNoFunil ?? r.dias * 24;
+              const dias = Math.floor(h / 24), horas = h % 24;
+              const estourou = r.dias > SLA_META_DIAS_TRIAGEM;
+              return <Tag value={`${dias}d ${horas}h`} severity={estourou ? 'danger' : dias >= SLA_META_DIAS_TRIAGEM - 1 ? 'warning' : 'success'}
+                icon={estourou ? 'pi pi-exclamation-triangle' : 'pi pi-clock'}
+                title={estourou ? `Passou do teto de ${SLA_META_DIAS_TRIAGEM} dias` : `Dentro do teto de ${SLA_META_DIAS_TRIAGEM} dias`} />;
+            }} />
+          {colunaAnexosSES()}
           {/* CNJ e SEI nas colunas (@R 27/08 12:59): os dois números do pedido, buscáveis e copiáveis */}
-          <Column field="nprocesso" header="Nº CNJ" sortable filter
+<Column field="nprocesso" header="Nº CNJ" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar CNJ')} style={{ minWidth: '14rem' }}
             body={(r: ProcessoJuridicoRow) => r.nprocesso
               ? <><code className="juridico-numero" title="Número CNJ do processo">{r.nprocesso}</code><BotaoCopiar valor={r.nprocesso} rotulo="número CNJ" /></>
@@ -498,45 +521,24 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                 </span>
               );
             }} />
+          {colunaCadastro()}
           {/* Selo Segredo em toda tabela (@R 27/08 16:52) — na fase 1 é onde a decisão
               COTAR/NÃO COTAR acontece já sabendo que o processo é sigiloso. */}
-          <Column field="segredo" header="Segredo" sortable style={{ minWidth: '9rem' }}
+<Column field="segredo" header="Segredo" sortable style={{ minWidth: '9rem' }}
             body={(r: any) => {
               if (r.segredo === 'sim') return <Tag value="Segredo de Justiça" severity="danger" icon="pi pi-lock" title={r.segredoFonte ?? 'Marcado no sistema'} />;
               if (r.segredo === 'possivel') return <Tag value="Possível segredo" severity="warning" icon="pi pi-question-circle" title={`Sinal da consulta ao CNJ. ${r.segredoFonte ?? ''}`} />;
               if (r.segredo === 'nao') return <Tag value="Sem segredo" severity="secondary" />;
               return <span className="juridico-geo-vazio">—</span>;
             }} />
+          {colunaInteiroTeor()}
           {colunaSolicitante()}
-          {/* @R 28/08: "a data que o pedido chegou e o horário e o tempo atual no funil" */}
-          <Column field="chegouEm" header={cabecalhoComHint('Chegou em',
-              'Quando o pedido ENTROU no sistema (o monitor lê o e-mail a cada 10 min). Data e hora.')}
-            sortable style={{ minWidth: '10rem' }}
-            body={(r: ProcessoJuridicoRow) => {
-              if (!r.chegouEm) return <span className="juridico-geo-vazio">—</span>;
-              const d = new Date(r.chegouEm);
-              return <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-                {d.toLocaleDateString('pt-BR')} <small style={{ opacity: 0.7 }}>{d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small>
-              </span>;
-            }} />
-          <Column field="dias" header={cabecalhoComHint('Tempo no funil',
-              `Desde a data do e-mail do pedido. Teto: ${SLA_META_DIAS_TRIAGEM} dias — acima disso está errado (fica vermelho).`)}
-            sortable filter filterElement={(o) => filterElement(o, 'Buscar')}
-            style={{ minWidth: '9rem' }}
-            body={(r: ProcessoJuridicoRow) => {
-              const h = r.horasNoFunil ?? r.dias * 24;
-              const dias = Math.floor(h / 24), horas = h % 24;
-              const estourou = r.dias > SLA_META_DIAS_TRIAGEM;
-              return <Tag value={`${dias}d ${horas}h`} severity={estourou ? 'danger' : dias >= SLA_META_DIAS_TRIAGEM - 1 ? 'warning' : 'success'}
-                icon={estourou ? 'pi pi-exclamation-triangle' : 'pi pi-clock'}
-                title={estourou ? `Passou do teto de ${SLA_META_DIAS_TRIAGEM} dias` : `Dentro do teto de ${SLA_META_DIAS_TRIAGEM} dias`} />;
-            }} />
           {colunaBaixarOrcamento()}
           {colunaEmpenhoEstado()}
           {colunaPagoEm()}
           {colunaDiferenca()}
-        </>)}
-        </DataTable>
+          </>)}
+</DataTable>
       </div>
 
       <Dialog
