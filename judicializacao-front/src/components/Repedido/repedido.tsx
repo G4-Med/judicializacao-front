@@ -26,9 +26,9 @@ export const colunaRepedido = () => (
   <Column
     key="vezesPedido"
     field="vezesPedido"
-    header={cabecalhoComHint('!', 'Quantas vezes a SES pediu este mesmo paciente. Mais de 1 = urgência: o pedido voltou.')}
+    header={<span className="mc-repedido-cab"><i className="pi pi-exclamation-triangle" aria-hidden="true" />{cabecalhoComHint('Re-pedido', 'Quantas vezes a SES pediu este mesmo paciente. Mais de 1 = urgência: o pedido voltou e ninguém respondeu. Atenção: a linha fica marcada em toda tela.')}</span>}
     sortable
-    style={{ width: '4.5rem' }}
+    style={{ width: '7rem' }}
     bodyStyle={{ textAlign: 'center' }}
     body={(r: any) => {
       const n = r?.vezesPedido ?? 1;
@@ -37,7 +37,7 @@ export const colunaRepedido = () => (
         <span className="mc-repedido-badge"
           title={`Pedido ${n} vezes pela SES${r?.ultimoPedidoEm ? ` — último em ${fmt(r.ultimoPedidoEm)}` : ''}`}
           aria-label={`Pedido ${n} vezes`}>
-          <i className="pi pi-exclamation-circle" /> {n}×
+          <i className="pi pi-exclamation-triangle" /> {n}×
         </span>
       );
     }}

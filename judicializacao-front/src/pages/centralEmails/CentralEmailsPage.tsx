@@ -38,18 +38,19 @@ const COR_STATUS: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'se
 };
 const ROTULO_STATUS: Record<string, string> = {
   CRIADO: 'Virou pedido', DUPLICADO_PACIENTE: 'Re-pedido (contado)', REMETENTE_INVALIDO: 'Ignorado (remetente)',
+  CONTINUACAO: 'Continuação (anexos entraram)', PROPOSTA_CONTINUACAO: 'Parece continuação — confirmar',
   RESPOSTA: 'Resposta a e-mail', ERRO: 'Falhou',
 };
 
 /** "Recuperar anexos" / "Processar agora": busca o e-mail na caixa pelo Message-ID e faz o que
  *  o monitor deveria ter feito. Idempotente no backend — clicar duas vezes não duplica. */
-function BotaoReprocessar({ messageId, rotulo, aoTerminar }: { messageId: string; rotulo: string; aoTerminar: () => void }) {
+function BotaoReprocessar({ messageId, rotulo, aoTerminar, orderId }: { messageId: string; rotulo: string; aoTerminar: () => void; orderId?: number }) {
   const [ocupado, setOcupado] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const clicar = async () => {
     setOcupado(true); setMsg(null);
     try {
-      const { data } = await postCentralReprocessar(messageId);
+      const { data } = await postCentralReprocessar(messageId, orderId);
       setMsg(data.jaFeito ? 'já feito' : data.processadoAgora ? `processado: ${data.status}` : data.jaProcessado ? 'já processado' : `${data.anexosSubidos ?? 0} anexo(s) subido(s)`);
       aoTerminar();
     } catch (e: any) {
@@ -117,6 +118,12 @@ function montarIndicadores(s: any): Indicador[] {
         ? `O mais antigo espera há ${s.aguardandoDocumentos.maisAntigoDias ?? '?'} dia(s). Pedidos: ${(s.aguardandoDocumentos.ids || []).map((i: number) => '#' + i).join(' ')}. Coluna "SES Anexos" nas telas mostra cada um.`
         : 'Nenhum pedido esperando documento.',
       situacao: (s.aguardandoDocumentos?.maisAntigoDias ?? 0) > 5 ? 'atencao' : 'info' },
+    { categoria: 'Resposta', nome: 'Pedidos de documentos que voltaram', valor: s.solicitacoes ? `${s.solicitacoes.respondidas7d} de ${s.solicitacoes.enviadas}` : '—',
+      mede: 'Das confirmações que pediram documentos à SES, quantas voltaram com arquivo (continuação na thread) em até 3 e 7 dias — o número do "o que funcionou".',
+      regua: s.solicitacoes?.enviadas
+        ? `≤3 dias: ${s.solicitacoes.respondidas3d} · ≤7 dias: ${s.solicitacoes.respondidas7d} · por solicitante: ${(s.solicitacoes.porSolicitante || []).slice(0, 4).map((x: any) => `${x.solicitante.split('@')[0]} ${x.respondidas}/${x.enviadas}`).join(' · ') || '—'}`
+        : 'Nenhum pedido de documentos enviado ainda (últimos 30 dias).',
+      situacao: 'info', abrir: 'respostas', statusFiltro: null },
     { categoria: 'Resposta', nome: 'Respostas na fila', valor: s.respostasPendentes ?? 0,
       mede: 'Confirmações de recebimento (normal, segredo de justiça ou sem anexo) montadas e ainda não enviadas. Saem sozinhas a cada ciclo do robô (10 min).',
       regua: s.respostaPendenteMaisAntigaMin != null
@@ -217,6 +224,12 @@ function Processados({ statusInicial }: { statusInicial: string | null }) {
         {r.erro && <p className="ruim">Erro: {r.erro}</p>}
         {r.status === 'DUPLICADO_PACIENTE' && r.pedido && !(r.detalhe || '').includes('anexos recuperados') && (
           <p><BotaoReprocessar messageId={r.messageId} rotulo="Recuperar anexos deste e-mail no pedido" aoTerminar={carregar} /></p>
+        )}
+        {r.status === 'PROPOSTA_CONTINUACAO' && r.pedido && (
+          <p><BotaoReprocessar messageId={r.messageId} orderId={r.pedido.id} rotulo={`Confirmar: é continuação do pedido #${r.pedido.id} (anexos entram)`} aoTerminar={carregar} /></p>
+        )}
+        {r.status === 'RESPOSTA' && (
+          <p className="ce-sub">Resposta sem pedido reconhecido. Se for continuação de um pedido, use "Recuperar" na Caixa informando o pedido — ou peça que a SES responda ao e-mail de confirmação (o assunto leva o código [MC-nº]).</p>
         )}
         <p className="ce-sub">Message-ID <code>{r.messageId}</code> · execução #{r.execucaoId}
           {r.pedido && <> · pedido <strong>#{r.pedido.id}</strong> ({r.pedido.status}{r.pedido.vezesPedido > 1 ? `, pedido ${r.pedido.vezesPedido}×` : ''}{r.pedido.naLixeira ? ', na lixeira' : ''})</>}
