@@ -165,15 +165,16 @@ function CelulaAnexosSES({ r }: { r: any }) {
   const chave = r?.sesAnexos as string | undefined;
   const est = chave ? ESTADO[chave] : null;
   const n = r?.anexosN ?? 0;
-  const classe = chave === 'SEM_ANEXO' ? ' mc-ses-btn--alerta' : chave === 'SOLICITADO' ? ' mc-ses-btn--aguarda' : '';
+  const processando = r?.laudo === 'PROCESSANDO';
+  const classe = processando ? ' mc-ses-btn--processando' : chave === 'SEM_ANEXO' ? ' mc-ses-btn--alerta' : chave === 'SOLICITADO' ? ' mc-ses-btn--aguarda' : '';
   const dos = r?.dossieN != null ? `dossiê ${r.dossieN} de ${r.dossieDe ?? 3}` : null;
-  const sub = chave === 'SEM_ANEXO' ? 'nenhum documento' : chave === 'SOLICITADO' ? 'pedimos à SES · aguardando' : (dos ? `${n} doc(s) · ${dos}${r?.dossieSuficiente ? ' ✓' : ''}` : `${n} documento(s)`);
+  const sub = processando ? 'processando laudo…' : chave === 'SEM_ANEXO' ? 'nenhum documento' : chave === 'SOLICITADO' ? 'pedimos à SES · aguardando' : (dos ? `${n} doc(s) · ${dos}${r?.dossieSuficiente ? ' ✓' : ''}` : `${n} documento(s)`);
   return (
     <>
       <button type="button" className={`mc-ses-btn${classe}`} onClick={() => setAberto(true)}
         title={`${est ? est.hint : 'Ver anexos e e-mails da SES'}${r?.dossieFaltantes?.length ? ` Falta: ${r.dossieFaltantes.join(' · ')}.` : ''} Clique para ver, baixar e ler a thread.`}
         aria-label={`Anexos da SES do pedido ${r?.id}: ${est?.rotulo ?? 'ver'}`}>
-        <span className="mc-ses-icone"><i className="pi pi-paperclip" />{n > 0 && <span className="mc-ses-n">{n}</span>}</span>
+        <span className="mc-ses-icone"><i className={processando ? 'pi pi-spin pi-spinner' : 'pi pi-paperclip'} />{n > 0 && <span className="mc-ses-n">{n}</span>}</span>
         <span className="mc-ses-txt">
           <span className={`mc-ses-estado mc-ses-estado--${chave ?? ''}`}>{est ? est.rotulo : '—'}</span>
           <span className="mc-ses-sub">{sub}</span>
@@ -190,7 +191,7 @@ export const colunaAnexosSES = () => (
   <Column
     key="sesAnexos"
     field="sesAnexos"
-    header={cabecalhoComHint('SES Anexos', 'O que a SES mandou de documento: com anexo · sem anexo · solicitado (pedimos) · recebido (devolveram). O número no clipe é quantos documentos; o envelope é quantos e-mails novos. Clique para ver, baixar e ler a thread.')}
+    header={cabecalhoComHint('SES Anexos', 'O que a SES mandou de documento: com anexo · sem anexo · solicitado (pedimos) · recebido (devolveram) · processando laudo (o robô está lendo a peça de inteiro teor; os exames/relatório aparecem quando terminar). O número no clipe é quantos documentos; o envelope é quantos e-mails novos. Clique para ver, baixar e ler a thread.')}
     sortable
     style={{ width: '11rem' }}
     bodyStyle={{ textAlign: 'left' }}
