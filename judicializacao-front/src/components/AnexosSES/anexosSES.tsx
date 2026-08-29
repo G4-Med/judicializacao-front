@@ -183,9 +183,16 @@ function CelulaAnexosSES({ r }: { r: any }) {
   const est = chave ? ESTADO[chave] : null;
   const n = r?.anexosN ?? 0;
   const processando = r?.laudo === 'PROCESSANDO';
-  const classe = processando ? ' mc-ses-btn--processando' : chave === 'SEM_ANEXO' ? ' mc-ses-btn--alerta' : chave === 'SOLICITADO' ? ' mc-ses-btn--aguarda' : '';
+  // Timer do laudo: há quanto tempo está na fila × previsão (~7 min/peça medido + cadência do robô).
+  const haMin = processando && r?.laudoDesde ? Math.max(0, Math.round((Date.now() - new Date(r.laudoDesde).getTime()) / 60000)) : null;
+  const etaMin = processando ? (r?.laudoEtaMin ?? null) : null;
+  const atrasado = haMin != null && etaMin != null && haMin > etaMin * 2 && haMin > 30;
+  const subLaudo = processando
+    ? `processando laudo… ${haMin != null ? `há ${haMin >= 60 ? `${Math.floor(haMin / 60)} h ${haMin % 60} min` : `${haMin} min`}` : ''}${etaMin != null && !atrasado ? ` · previsão ~${etaMin} min` : ''}${atrasado ? ' · demorando mais que o normal' : ''}${r?.laudoNaFrente ? ` · ${r.laudoNaFrente} na frente` : ''}`
+    : '';
+  const classe = processando ? (atrasado ? ' mc-ses-btn--processando mc-ses-btn--atrasado' : ' mc-ses-btn--processando') : chave === 'SEM_ANEXO' ? ' mc-ses-btn--alerta' : chave === 'SOLICITADO' ? ' mc-ses-btn--aguarda' : '';
   const dos = r?.dossieN != null ? `dossiê ${r.dossieN} de ${r.dossieDe ?? 3}` : null;
-  const sub = processando ? 'processando laudo…' : chave === 'SEM_ANEXO' ? 'nenhum documento' : chave === 'SOLICITADO' ? 'pedimos à SES · aguardando' : (dos ? `${n} doc(s) · ${dos}${r?.dossieSuficiente ? ' ✓' : ''}` : `${n} documento(s)`);
+  const sub = processando ? subLaudo : chave === 'SEM_ANEXO' ? 'nenhum documento' : chave === 'SOLICITADO' ? 'pedimos à SES · aguardando' : (dos ? `${n} doc(s) · ${dos}${r?.dossieSuficiente ? ' ✓' : ''}` : `${n} documento(s)`);
   return (
     <>
       <button type="button" className={`mc-ses-btn${classe}`} onClick={() => setAberto(true)}
@@ -208,7 +215,7 @@ export const colunaAnexosSES = () => (
   <Column
     key="sesAnexos"
     field="sesAnexos"
-    header={cabecalhoComHint('SES Anexos', 'O que a SES mandou de documento: com anexo · sem anexo · solicitado (pedimos) · recebido (devolveram) · processando laudo (o robô está lendo a peça de inteiro teor; os exames/relatório aparecem quando terminar). O número no clipe é quantos documentos; o envelope é quantos e-mails novos. Clique para ver, baixar e ler a thread.')}
+    header={cabecalhoComHint('SES Anexos', 'O que a SES mandou de documento: com anexo · sem anexo · solicitado (pedimos) · recebido (devolveram) · processando laudo (o robô está lendo a peça de inteiro teor; mostra há quanto tempo e a previsão — ~7 min por peça mais a espera do robô, que passa a cada 10 min; os exames/relatório aparecem quando terminar). O número no clipe é quantos documentos; o envelope é quantos e-mails novos. Clique para ver, baixar e ler a thread.')}
     sortable
     style={{ width: '11rem' }}
     bodyStyle={{ textAlign: 'left' }}

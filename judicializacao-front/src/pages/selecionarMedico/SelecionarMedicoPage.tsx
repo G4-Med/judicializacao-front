@@ -46,6 +46,26 @@ interface ProcessoResumo {
   medico: string;
   slaMedicoEstourado: boolean | null;
   slaMedicoHoras: number | null;
+  slaFasePrazo?: string | null;
+  slaFaseHorasRestantes?: number | null;
+  slaFaseVencido?: boolean | null;
+}
+
+/** SLA da fase (@R 29/08): 1 dia útil para definir o médico; sexta fecha na segunda. */
+const DIAS_SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+const fmtHoras = (h: number) => (h >= 48 ? `${Math.round(h / 24)} d` : h >= 1 ? `${Math.round(h)} h` : `${Math.max(1, Math.round(h * 60))} min`);
+function CelulaSlaFase({ r }: { r: ProcessoResumo }) {
+  if (r.slaFaseHorasRestantes == null || !r.slaFasePrazo) return <span className="sm-sla-vazio">—</span>;
+  const prazo = new Date(r.slaFasePrazo);
+  const quando = `${DIAS_SEMANA[prazo.getDay()]} ${prazo.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+  const h = r.slaFaseHorasRestantes;
+  const classe = r.slaFaseVencido ? 'sm-sla sm-sla--vencido' : h <= 6 ? 'sm-sla sm-sla--urgente' : 'sm-sla sm-sla--ok';
+  return (
+    <span className={classe} title={`Prazo desta fase: ${prazo.toLocaleString('pt-BR')} (1 dia útil após o "Cotar"; fim de semana não conta)`}>
+      <i className={r.slaFaseVencido ? 'pi pi-exclamation-triangle' : 'pi pi-clock'} />
+      {r.slaFaseVencido ? <>vencido há <b>{fmtHoras(-h)}</b></> : <>até <b>{quando}</b> · {fmtHoras(h)}</>}
+    </span>
+  );
 }
 
 interface ProcessoResumoTableRow extends ProcessoResumo {
@@ -494,6 +514,13 @@ export function SelecionarMedicoPage() {
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '14rem' }}
+          />
+          <Column
+            field="slaFaseHorasRestantes"
+            header={cabecalhoComHint('SLA fase', 'Prazo para definir o médico: 1 dia útil depois que a análise jurídica salvou "Cotar". Pedido que chega na sexta fecha na segunda (fim de semana não conta). Verde = no prazo · laranja = menos de 6 h · vermelho = vencido.')}
+            sortable
+            body={(r: ProcessoResumoTableRow) => <CelulaSlaFase r={r} />}
+            style={{ minWidth: '11rem' }}
           />
           <Column
             field="dias"

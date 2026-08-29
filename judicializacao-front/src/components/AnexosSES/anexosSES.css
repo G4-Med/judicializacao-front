@@ -10,6 +10,7 @@
 .mc-ses-sub { font-size: .7rem; opacity: .7; }
 .mc-ses-btn--alerta { background: #fff1ee; } .mc-ses-btn--alerta:hover { background: #ffe3dd; }
 .mc-ses-btn--processando { background: #e6f0f4; } .mc-ses-btn--processando .mc-ses-sub { color: #1f5f7a; opacity: 1; font-weight: 600; }
+.mc-ses-btn--atrasado { background: #fff4e0; } .mc-ses-btn--atrasado .mc-ses-sub { color: #b45309; }
 .mc-ses-btn--aguarda { background: #fff6e6; } .mc-ses-btn--aguarda:hover { background: #ffeccc; }
 .mc-ses-novos { display: inline-flex; align-items: center; gap: .2rem; font-size: .7rem; font-weight: 700; color: #fff; background: #b45309; border-radius: 999px; padding: .1rem .5rem; }
 
