@@ -15,7 +15,7 @@ import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder, getCnjCan
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './JuridicoPage.css';
-import { colunaSolicitante, tagTipoPaciente , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, tagTipoPaciente , cabecalhoComHint, colunaOrigem } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { PainelPrecos } from '../../components/PainelPrecos/PainelPrecos';
@@ -23,6 +23,7 @@ import { ContadorRegistros } from '../../components/ContadorRegistros/ContadorRe
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 import { BotaoCopiar } from '../../components/BotaoCopiar/BotaoCopiar';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { NovoPedidoManual } from '../../components/NovoPedidoManual/novoPedidoManual';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
@@ -394,6 +395,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           />
         </h2>
           <AcoesTabela>
+            {!readOnly && <NovoPedidoManual aoCriar={() => carregarDados()} />}
             <BotaoExportarExcel todos={dataComSequencial} visiveis={visibleProcessos} nome="analise-juridica" />
             {colunasCfg.botao}
           </AcoesTabela>
@@ -454,6 +456,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             )}  frozen alignFrozen="left" />
           {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
           {colunaAcoesFase({ corpo: (r: any) => <>{editarBodyTemplate(r)}</>, excluir: carregarDados })}
+          {colunaOrigem()}
           {colunaRepedido()}
           {colunaAnexosSES()}
           <Column

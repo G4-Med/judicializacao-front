@@ -29,7 +29,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import './ProcessosPage.css';
-import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint, colunaOrigem } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
@@ -2098,6 +2098,7 @@ ${linhasAnexos}
                 tooltip="Excluir lançamento (só Admin — backup automático antes)"
                 aria-label={`Excluir processo ${r.id}`} />
             )) as any)(r)}</> })}
+          {colunaOrigem()}
           {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
           {colunaCnj()}
           {colunaSei()}

@@ -314,6 +314,19 @@ const ROTULO_PONTO: Record<string, string> = { cnj: 'CNJ', sei: 'SEI', comarca: 
 /** Chip "cadastro" (desenho af56e8f2, nota 94 — GO @R 27/08 14:19): 4 pontos, tooltip com
  *  fonte + próxima ação + dono. verde=tem · âmbar=falta com rota automática · cinza=fila
  *  humana. cadastro null (falha no cálculo) = "indisponível" — a tabela nunca cai (K6). */
+/** Selo de ORIGEM (@R 29/08 13:24): "para sabermos que é um cadastro manual, e os que vieram por e-mail cadastro automático". */
+export function colunaOrigem() {
+  return (
+    <Column key="col-origem" field="origemRegistro" sortable style={{ minWidth: '7.5rem' }}
+      header={cabecalhoComHint('Origem', 'Como o pedido entrou: E-mail = cadastro automático a partir do e-mail da SES · Manual = alguém da equipe cadastrou à mão · — = pedido antigo, origem não registrada.')}
+      body={(r: any) => r.origemRegistro === 'manual'
+        ? <Tag value="Manual" severity="warning" icon="pi pi-user-edit" title="Cadastrado à mão pela equipe (sem e-mail de origem; nenhuma resposta automática saiu)." />
+        : r.origemRegistro === 'email'
+        ? <Tag value="E-mail" severity="info" icon="pi pi-envelope" title="Cadastro automático a partir do e-mail da SES." />
+        : (r.origemRegistro ? <Tag value={String(r.origemRegistro)} severity="secondary" /> : <span className="ident-vazio" title="Pedido anterior ao registro de origem.">—</span>)} />
+  );
+}
+
 export function colunaCadastro(largura = '9rem') {
   return (
     <Column key="col-cadastro" field="cadastro" header={cabecalhoComHint('Cadastro', EXPLICA.cadastro)} sortable

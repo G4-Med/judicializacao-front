@@ -94,6 +94,8 @@ export const getCentralRespostas = (params: { q?: string; status?: string; tipo?
   api.get('/integracoes/central/respostas/', { params });
 
 // Thread de um pedido (loop "pedido sem anexo", @R 28/08): anexos + e-mails enviados e recebidos.
+/** Cadastro MANUAL de pedido (@R 29/08 13:24): aparece na Análise Jurídica na hora, com selo Manual; sem e-mail automático. */
+export const criarPedidoManual = (dados: Record<string, any>) => api.post('/integracoes/pedidos/criar-manual/', dados);
 export const getThreadPedido = (orderId: number) => api.get(`/integracoes/central/pedidos/${orderId}/thread/`);
 export const postThreadVista = (orderId: number) => api.post(`/integracoes/central/pedidos/${orderId}/thread/vista/`);
 // Checkbox do dossiê (v2 ①): OK = equipe confirmou · NA = não se aplica · FALTA = falta mesmo com anexo · null = máquina decide.

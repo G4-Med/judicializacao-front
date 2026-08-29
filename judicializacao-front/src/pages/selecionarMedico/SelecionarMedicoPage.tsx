@@ -19,7 +19,7 @@ import {
 } from '../../services/api/orders';
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
-import { tagTipoPaciente } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { tagTipoPaciente, colunaOrigem } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import './SelecionarMedicoPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
@@ -489,6 +489,7 @@ export function SelecionarMedicoPage() {
             excluir: carregarDados,
             largura: '17rem',
           })}
+          {colunaOrigem()}
           <Column field="idade" header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento. Criança/recém-nascido recebe o e-mail pediátrico de exames.')}
             sortable filter filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '6rem' }}
             body={(r: any) => r.idade ?? <span className="sm-sla-vazio">—</span>} />
