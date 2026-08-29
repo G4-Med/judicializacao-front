@@ -26,6 +26,7 @@ import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExp
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
+import { colunaAnexosSES } from '../../components/AnexosSES/anexosSES';
 
 interface Anexo {
   id: number;
@@ -558,6 +559,7 @@ export function AguardandoCirurgiaPage() {
             style={{ minWidth: '16rem' }}
           />
           {colunaRepedido()}
+          {colunaAnexosSES()}
           {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
           {colunaCnj()}
           {colunaSei()}

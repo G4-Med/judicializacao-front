@@ -28,6 +28,7 @@ import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
 import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
 import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
+import { colunaAnexosSES } from '../../components/AnexosSES/anexosSES';
 
 /**
  * Enviado à SES (task #235, @R 28/08 00:2x): SÓ os pedidos cujo orçamento foi ao
@@ -249,6 +250,7 @@ export function EnviadoSesPage() {
             filterElement={(o) => filterElement(o, 'Buscar')}
             body={(r: LinhaEnviadoSes) => nomeComCopiar(r.paciente)} style={{ minWidth: '16rem' }} />
           {colunaRepedido()}
+          {colunaAnexosSES()}
           {colunaCnj()}
           {colunaSei()}
           {colunaComarca()}

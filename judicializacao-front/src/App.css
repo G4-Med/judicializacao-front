@@ -77,3 +77,26 @@ body.mc-tabelas-justificadas .mc-scroll-topo { display: none; }
   padding: 1px 7px; border-radius: 999px; font-weight: 700; font-size: 0.78rem;
   color: #fff; background: #b45309; white-space: nowrap;
 }
+
+/* SES Anexos (@R 28/08 22:09) — coluna + modal, mesmo molde da coluna "!" */
+.mc-ses-btn { display: inline-flex; align-items: center; gap: .35rem; background: transparent; border: 0; padding: .1rem .2rem; cursor: pointer; font: inherit; color: inherit; border-radius: 6px; }
+.mc-ses-btn:hover { background: rgba(31, 95, 122, .08); }
+.mc-ses-icone { position: relative; display: inline-flex; width: 1.6rem; height: 1.6rem; align-items: center; justify-content: center; border: 1px solid var(--surface-border, #dde3e8); border-radius: 6px; }
+.mc-ses-n { position: absolute; top: -.45rem; right: -.45rem; min-width: 1rem; height: 1rem; padding: 0 .25rem; border-radius: 999px; background: #1f5f7a; color: #fff; font-size: .62rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+.mc-ses-tag { font-size: .68rem; }
+.mc-ses-novos { display: inline-flex; align-items: center; gap: .2rem; font-size: .7rem; font-weight: 700; color: #b45309; background: #fff4e0; border-radius: 999px; padding: .05rem .45rem; }
+.mc-ses-vazio { opacity: .65; }
+.mc-ses-sub { font-size: .85rem; opacity: .75; margin: 0 0 .6rem; }
+.mc-ses-link { color: #1f5f7a; text-decoration: none; display: inline-flex; gap: .3rem; align-items: center; white-space: nowrap; }
+.mc-ses-link:hover { text-decoration: underline; }
+.mc-ses-tabela { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.mc-ses-tabela th { text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; opacity: .7; padding: .4rem .5rem; border-bottom: 1px solid var(--surface-border, #dde3e8); }
+.mc-ses-tabela td { padding: .45rem .5rem; border-bottom: 1px solid var(--surface-border, #dde3e8); vertical-align: middle; }
+.mc-ses-thread { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+.mc-ses-msg { padding: .6rem .8rem; border-radius: 10px; border: 1px solid var(--surface-border, #dde3e8); max-width: 85%; }
+.mc-ses-msg--in { justify-self: start; background: var(--surface-ground, #f6f8fa); }
+.mc-ses-msg--out { justify-self: end; background: #e6f0f4; }
+.mc-ses-msg-cab { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; font-size: .78rem; opacity: .85; margin-bottom: .2rem; }
+.mc-ses-msg-assunto { font-weight: 600; }
+.mc-ses-msg-detalhe { font-size: .8rem; opacity: .8; margin-top: .2rem; }
+.mc-ses-corpo { white-space: pre-wrap; font: .8rem/1.4 ui-monospace, Menlo, monospace; margin: .4rem 0 0; max-height: 18rem; overflow: auto; }

@@ -31,6 +31,7 @@ import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
 import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
 import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
+import { colunaAnexosSES } from '../../components/AnexosSES/anexosSES';
 
 // Meta desta fase (orçamento) — espelha backend/funil.py FASES['orcamento'].meta_dias.
 // "96 horas — é o prazo que sustenta o contrato com o Estado".
@@ -624,6 +625,7 @@ ${blocos}
               </span>
             )} />
           {colunaRepedido()}
+          {colunaAnexosSES()}
           {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
           {colunaCnj()}
           {colunaSei()}

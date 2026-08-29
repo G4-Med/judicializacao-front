@@ -37,6 +37,7 @@ import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, c
 import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
 import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
+import { colunaAnexosSES } from '../../components/AnexosSES/anexosSES';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -610,6 +611,7 @@ const kpis = useMemo(() => {
             style={{ minWidth: '16rem' }}
           />
           {colunaRepedido()}
+          {colunaAnexosSES()}
           {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
           {colunaCnj()}
           {colunaSei()}

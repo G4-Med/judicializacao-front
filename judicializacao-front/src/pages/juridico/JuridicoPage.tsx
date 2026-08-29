@@ -26,6 +26,7 @@ import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasV
 import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
 import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
+import { colunaAnexosSES } from '../../components/AnexosSES/anexosSES';
 
 // Meta desta fase (triagem jurídica) — espelha backend/funil.py FASES['triagem'].meta_dias.
 // "a análise sai no dia seguinte — libera para mim até meio-dia" (fala do @R na reunião).
@@ -451,6 +452,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
               </span>
             )} />
           {colunaRepedido()}
+          {colunaAnexosSES()}
           <Column
             field="idade"
             header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento.')}

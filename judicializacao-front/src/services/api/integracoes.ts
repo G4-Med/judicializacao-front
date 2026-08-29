@@ -92,3 +92,7 @@ export const postCentralReprocessar = (messageId: string) => api.post('/integrac
 // e o que aconteceu com cada uma (fila · enviada · aberta · clicada · devolvida · spam).
 export const getCentralRespostas = (params: { q?: string; status?: string; tipo?: string; dias?: number }) =>
   api.get('/integracoes/central/respostas/', { params });
+
+// Thread de um pedido (loop "pedido sem anexo", @R 28/08): anexos + e-mails enviados e recebidos.
+export const getThreadPedido = (orderId: number) => api.get(`/integracoes/central/pedidos/${orderId}/thread/`);
+export const postThreadVista = (orderId: number) => api.post(`/integracoes/central/pedidos/${orderId}/thread/vista/`);
