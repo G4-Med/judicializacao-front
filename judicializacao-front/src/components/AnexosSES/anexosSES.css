@@ -36,3 +36,16 @@
 .mc-ses-msg details { margin-top: .4rem; font-size: .82rem; }
 .mc-ses-msg summary { cursor: pointer; color: #1f5f7a; font-weight: 600; }
 .mc-ses-corpo { white-space: pre-wrap; font: .8rem/1.45 ui-monospace, Menlo, monospace; margin: .5rem 0 0; max-height: 18rem; overflow: auto; background: var(--surface-card, #fff); border-radius: 8px; padding: .6rem .8rem; border: 1px solid var(--surface-border, #dde3e8); }
+
+/* dossiê (v2 ①) */
+.mc-ses-dossie { border: 1px solid #f3c78a; background: #fff8ec; border-radius: 10px; padding: .7rem .9rem; margin: .2rem 0 .9rem; }
+.mc-ses-dossie--ok { border-color: #bfe3cc; background: #eef8f1; }
+.mc-ses-dossie-cab { display: flex; flex-wrap: wrap; gap: .3rem 1rem; align-items: baseline; margin-bottom: .5rem; }
+.mc-ses-dossie-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+.mc-ses-dossie-lista li { display: grid; grid-template-columns: 1.4rem 1fr auto; gap: .5rem; align-items: center; }
+.mc-ses-dossie-lista li.ok .mc-ses-dossie-marca { color: #1b7a4a; } .mc-ses-dossie-lista li.falta .mc-ses-dossie-marca { color: #b42318; }
+.mc-ses-dossie-txt { display: flex; flex-direction: column; }
+.mc-ses-dossie-acoes { display: inline-flex; gap: .25rem; }
+.mc-ses-dossie-acoes button { font: 600 .7rem system-ui, sans-serif; padding: .2rem .5rem; border-radius: 6px; border: 1px solid var(--surface-border, #dde3e8); background: var(--surface-card, #fff); cursor: pointer; }
+.mc-ses-dossie-acoes button.on { background: #1f5f7a; color: #fff; border-color: #1f5f7a; }
+.mc-ses-dossie-acoes button:disabled { opacity: .5; cursor: wait; }

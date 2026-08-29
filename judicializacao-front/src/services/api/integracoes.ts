@@ -96,3 +96,6 @@ export const getCentralRespostas = (params: { q?: string; status?: string; tipo?
 // Thread de um pedido (loop "pedido sem anexo", @R 28/08): anexos + e-mails enviados e recebidos.
 export const getThreadPedido = (orderId: number) => api.get(`/integracoes/central/pedidos/${orderId}/thread/`);
 export const postThreadVista = (orderId: number) => api.post(`/integracoes/central/pedidos/${orderId}/thread/vista/`);
+// Checkbox do dossiê (v2 ①): OK = equipe confirmou · NA = não se aplica · FALTA = falta mesmo com anexo · null = máquina decide.
+export const patchDossie = (orderId: number, payload: Partial<Record<'oficio' | 'relatorio' | 'exames', 'OK' | 'NA' | 'FALTA' | null>>) =>
+  api.patch(`/integracoes/central/pedidos/${orderId}/dossie/`, payload);

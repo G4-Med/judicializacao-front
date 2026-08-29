@@ -4,7 +4,7 @@ import { Dialog } from 'primereact/dialog';
 import { Tag } from 'primereact/tag';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { cabecalhoComHint } from '../ColunasIdentificacao/colunasIdentificacao';
-import { getThreadPedido, postThreadVista } from '../../services/api/integracoes';
+import { getThreadPedido, postThreadVista, patchDossie } from '../../services/api/integracoes';
 import './anexosSES.css';
 
 /**
@@ -42,6 +42,50 @@ const STATUS_RECEBIDO: Record<string, string> = {
   DUPLICADO_PACIENTE: 're-pedido', RESPOSTA: 'resposta', ERRO: 'falhou',
 };
 
+
+/** O checklist do dossiê (v2 ①): o que o médico precisa para cotar. A máquina marca pelos anexos;
+ *  a equipe manda por cima — OK (confirmado) · NA (não se aplica) · FALTA · auto (volta à máquina). */
+const ITENS_DOSSIE: Array<{ k: 'oficio' | 'relatorio' | 'exames'; rotulo: string; quem: string }> = [
+  { k: 'oficio', rotulo: 'Ofício / decisão judicial', quem: 'jurídico: nº do processo, comarca, prazo' },
+  { k: 'relatorio', rotulo: 'Relatório médico com a indicação', quem: 'médico cotador' },
+  { k: 'exames', rotulo: 'Exames da patologia', quem: 'médico cotador — sem isto ele não responde' },
+];
+function Dossie({ orderId, dossie, onChange }: { orderId: number; dossie: any; onChange: (d: any) => void }) {
+  const [salvando, setSalvando] = useState<string | null>(null);
+  if (!dossie) return null;
+  const mudar = async (k: 'oficio' | 'relatorio' | 'exames', v: 'OK' | 'NA' | 'FALTA' | null) => {
+    setSalvando(k);
+    try { const { data } = await patchDossie(orderId, { [k]: v }); onChange(data.dossie); } finally { setSalvando(null); }
+  };
+  return (
+    <div className={`mc-ses-dossie${dossie.suficiente ? ' mc-ses-dossie--ok' : ''}`}>
+      <div className="mc-ses-dossie-cab">
+        <strong>Dossiê para o médico cotar — {dossie.n} de {dossie.de}</strong>
+        <span className="mc-ses-sub">{dossie.suficiente ? 'suficiente: o médico tem o que precisa' : `falta: ${(dossie.faltantes || []).join(' · ')}`}</span>
+      </div>
+      <ul className="mc-ses-dossie-lista">
+        {ITENS_DOSSIE.map(({ k, rotulo, quem }) => {
+          const ok = dossie[k]; const manual = dossie.manual?.[k]; const auto = dossie.auto?.[k];
+          return (
+            <li key={k} className={ok ? 'ok' : 'falta'}>
+              <span className="mc-ses-dossie-marca"><i className={`pi ${ok ? 'pi-check-circle' : 'pi-circle'}`} /></span>
+              <span className="mc-ses-dossie-txt">
+                <span>{rotulo}</span>
+                <span className="mc-ses-sub">{quem} · {manual ? `equipe: ${manual === 'OK' ? 'confirmado' : manual === 'NA' ? 'não se aplica' : 'falta'}` : auto ? 'máquina: achou nos anexos' : 'máquina: não achou'}</span>
+              </span>
+              <span className="mc-ses-dossie-acoes">
+                <button type="button" className={manual === 'OK' ? 'on' : ''} disabled={salvando === k} onClick={() => mudar(k, manual === 'OK' ? null : 'OK')} title="Confirmar que este item existe">✓ ok</button>
+                <button type="button" className={manual === 'NA' ? 'on' : ''} disabled={salvando === k} onClick={() => mudar(k, manual === 'NA' ? null : 'NA')} title="Não se aplica a este caso (ex.: exame não existe para a patologia)">n/a</button>
+                <button type="button" className={manual === 'FALTA' ? 'on' : ''} disabled={salvando === k} onClick={() => mudar(k, manual === 'FALTA' ? null : 'FALTA')} title="Falta mesmo com anexo (a máquina marcou errado)">falta</button>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 /** O modal: anexos (ver/baixar) + a thread de e-mails (enviados e recebidos) do pedido. */
 function ModalAnexosSES({ orderId, paciente, aberto, fechar }: { orderId: number; paciente?: string; aberto: boolean; fechar: () => void }) {
   const [dados, setDados] = useState<any | null>(null);
@@ -65,6 +109,7 @@ function ModalAnexosSES({ orderId, paciente, aberto, fechar }: { orderId: number
           <span>Enviados por nós: <b>{dados?.enviados?.length ?? 0}</b></span>
           <span>Situação: <b>{dados?.statusDocumentos === 'AGUARDANDO' ? 'aguardando documentos' : dados?.statusDocumentos === 'COMPLETO' ? 'documentos recebidos' : anexos.length ? 'com documentos' : 'sem documentos'}</b></span>
         </div>
+        <Dossie orderId={orderId} dossie={dados?.dossie} onChange={(d) => setDados({ ...dados, dossie: d })} />
         <TabView>
           <TabPanel header={`Anexos (${anexos.length})`} leftIcon="pi pi-file mr-2">
             {anexos.length === 0
@@ -121,11 +166,12 @@ function CelulaAnexosSES({ r }: { r: any }) {
   const est = chave ? ESTADO[chave] : null;
   const n = r?.anexosN ?? 0;
   const classe = chave === 'SEM_ANEXO' ? ' mc-ses-btn--alerta' : chave === 'SOLICITADO' ? ' mc-ses-btn--aguarda' : '';
-  const sub = chave === 'SEM_ANEXO' ? 'nenhum documento' : chave === 'SOLICITADO' ? 'pedimos à SES · aguardando' : chave === 'RECEBIDO' ? `${n} doc(s) · a SES devolveu` : `${n} documento(s)`;
+  const dos = r?.dossieN != null ? `dossiê ${r.dossieN} de ${r.dossieDe ?? 3}` : null;
+  const sub = chave === 'SEM_ANEXO' ? 'nenhum documento' : chave === 'SOLICITADO' ? 'pedimos à SES · aguardando' : (dos ? `${n} doc(s) · ${dos}${r?.dossieSuficiente ? ' ✓' : ''}` : `${n} documento(s)`);
   return (
     <>
       <button type="button" className={`mc-ses-btn${classe}`} onClick={() => setAberto(true)}
-        title={`${est ? est.hint : 'Ver anexos e e-mails da SES'} Clique para ver, baixar e ler a thread.`}
+        title={`${est ? est.hint : 'Ver anexos e e-mails da SES'}${r?.dossieFaltantes?.length ? ` Falta: ${r.dossieFaltantes.join(' · ')}.` : ''} Clique para ver, baixar e ler a thread.`}
         aria-label={`Anexos da SES do pedido ${r?.id}: ${est?.rotulo ?? 'ver'}`}>
         <span className="mc-ses-icone"><i className="pi pi-paperclip" />{n > 0 && <span className="mc-ses-n">{n}</span>}</span>
         <span className="mc-ses-txt">
