@@ -43,7 +43,7 @@ const ehHash = (n?: string) => !!n && /^[0-9a-f]{24,}(\.\w+)?$/i.test(n.trim());
 const fmtData = (iso?: string) => iso ? new Date(iso + (iso.length === 10 ? 'T12:00:00' : '')).toLocaleDateString('pt-BR') : '';
 const TIPO_EMAIL: Record<string, string> = {
   RECEBIMENTO_PEDIDO: 'Confirmação de recebimento', RECEBIMENTO_PEDIDO_SEGREDO: 'Confirmação (segredo de justiça)',
-  RECEBIMENTO_PEDIDO_SEM_ANEXO: 'Confirmação + pedido de documentos', PEDIR_EXAMES: 'Pedido de exames',
+  RECEBIMENTO_PEDIDO_SEM_ANEXO: 'Confirmação + pedido de documentos', PEDIR_EXAMES: 'Pedido de exames', PEDIDO_EXAMES_PEDIATRICO: 'Pedido de exames (pediátrico)',
   ENVIAR_ORCAMENTO: 'Envio de orçamento', DAR_PERDA: 'Perda', SOLICITAR_COTACAO_MEDICO: 'Cotação ao médico',
 };
 const STATUS_RECEBIDO: Record<string, string> = {

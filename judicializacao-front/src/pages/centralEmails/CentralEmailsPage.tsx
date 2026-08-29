@@ -124,6 +124,12 @@ function montarIndicadores(s: any): Indicador[] {
         ? `≤3 dias: ${s.solicitacoes.respondidas3d} · ≤7 dias: ${s.solicitacoes.respondidas7d} · por solicitante: ${(s.solicitacoes.porSolicitante || []).slice(0, 4).map((x: any) => `${x.solicitante.split('@')[0]} ${x.respondidas}/${x.enviadas}`).join(' · ') || '—'}`
         : 'Nenhum pedido de documentos enviado ainda (últimos 30 dias).',
       situacao: 'info', abrir: 'respostas', statusFiltro: null },
+    { categoria: 'Resposta', nome: 'Pedidos pediátricos de exames que voltaram', valor: s.pediatrico ? `${s.pediatrico.respondidas7d} de ${s.pediatrico.enviadas}` : '—',
+      mede: 'Dos e-mails automáticos a pedidos de criança/recém-nascido pedindo exames além dos do processo, quantos voltaram com arquivo em até 3 e 7 dias. Pediátricos perdem 65% hoje (40 de 62) — é o número que diz se o e-mail muda isso.',
+      regua: s.pediatrico?.enviadas
+        ? `≤3 dias: ${s.pediatrico.respondidas3d} · ≤7 dias: ${s.pediatrico.respondidas7d} · por solicitante: ${(s.pediatrico.porSolicitante || []).slice(0, 4).map((x: any) => `${x.solicitante.split('@')[0]} ${x.respondidas}/${x.enviadas}`).join(' · ') || '—'}`
+        : 'Nenhum pedido pediátrico de exames enviado ainda (últimos 30 dias).',
+      situacao: 'info', abrir: 'respostas', statusFiltro: null },
     { categoria: 'Resposta', nome: 'Respostas na fila', valor: s.respostasPendentes ?? 0,
       mede: 'Confirmações de recebimento (normal, segredo de justiça ou sem anexo) montadas e ainda não enviadas. Saem sozinhas a cada ciclo do robô (10 min).',
       regua: s.respostaPendenteMaisAntigaMin != null
@@ -345,7 +351,7 @@ function Caixa() {
 }
 
 const ROTULO_TIPO: Record<string, string> = {
-  RECEBIMENTO_PEDIDO: 'Recebimento', RECEBIMENTO_PEDIDO_SEGREDO: 'Recebimento (segredo)', RECEBIMENTO_PEDIDO_SEM_ANEXO: 'Recebimento (sem anexo)',
+  RECEBIMENTO_PEDIDO: 'Recebimento', RECEBIMENTO_PEDIDO_SEGREDO: 'Recebimento (segredo)', RECEBIMENTO_PEDIDO_SEM_ANEXO: 'Recebimento (sem anexo)', PEDIDO_EXAMES_PEDIATRICO: 'Exames (pediátrico)',
   PEDIR_EXAMES: 'Pedir exames', ENVIAR_ORCAMENTO: 'Enviar orçamento', DAR_PERDA: 'Dar perda', SOLICITAR_COTACAO_MEDICO: 'Cotação ao médico',
 };
 const ROTULO_ENVIO: Record<string, string> = { PENDENTE: 'Na fila', ENVIADO: 'Enviada', ERRO: 'Falhou' };

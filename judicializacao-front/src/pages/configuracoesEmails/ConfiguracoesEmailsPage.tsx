@@ -11,7 +11,7 @@ import {
 } from '../../services/api/orders';
 import './ConfiguracoesEmailsPage.css';
 
-type TipoEmail = 'DAR_PERDA' | 'PEDIR_EXAMES' | 'ENVIAR_ORCAMENTO' | 'RECEBIMENTO_PEDIDO' | 'RECEBIMENTO_PEDIDO_SEGREDO' | 'RECEBIMENTO_PEDIDO_SEM_ANEXO';
+type TipoEmail = 'DAR_PERDA' | 'PEDIR_EXAMES' | 'ENVIAR_ORCAMENTO' | 'RECEBIMENTO_PEDIDO' | 'RECEBIMENTO_PEDIDO_SEGREDO' | 'RECEBIMENTO_PEDIDO_SEM_ANEXO' | 'PEDIDO_EXAMES_PEDIATRICO';
 
 interface ConfiguracaoEmail {
   id?: number;
@@ -28,6 +28,7 @@ const CONFIG_PADRAO: Record<TipoEmail, ConfiguracaoEmail> = {
   RECEBIMENTO_PEDIDO: { tipoEmail: 'RECEBIMENTO_PEDIDO', assunto: '', corpo: '', ativo: true },
   RECEBIMENTO_PEDIDO_SEGREDO: { tipoEmail: 'RECEBIMENTO_PEDIDO_SEGREDO', assunto: '', corpo: '', ativo: true },
   RECEBIMENTO_PEDIDO_SEM_ANEXO: { tipoEmail: 'RECEBIMENTO_PEDIDO_SEM_ANEXO', assunto: '', corpo: '', ativo: true },
+  PEDIDO_EXAMES_PEDIATRICO: { tipoEmail: 'PEDIDO_EXAMES_PEDIATRICO', assunto: '', corpo: '', ativo: true },
 };
 
 const TIPOS_EMAIL: Array<{
@@ -76,6 +77,16 @@ const TIPOS_EMAIL: Array<{
       'em vez de só confirmar, pede ao remetente o que falta (ofício, laudo, exames). Segredo de ' +
       'justiça tem prioridade sobre este. Sem configuração aqui, o sistema usa o Recebimento Pedido normal.',
     icon: 'pi pi-paperclip',
+  },
+  {
+    tipoEmail: 'PEDIDO_EXAMES_PEDIATRICO',
+    titulo: 'Pedido de exames (pediátrico / recém-nascido)',
+    descricao: 'Segundo e-mail, automático, para todo pedido de paciente com menos de 18 anos: explica que casos ' +
+      'infantis e de recém-nascidos sem os exames da patologia quase não recebem cotação e pede qualquer exame além ' +
+      'dos juntados ao processo (inclusive em posse da família). Placeholders extras: {{faixaPediatrica}} ' +
+      '("recém-nascido(a)", "criança de 4 anos", "adolescente de 15 anos") e {{idadePaciente}}. A resposta entra ' +
+      'sozinha na thread do pedido. Sem template ativo aqui, o e-mail não sai.',
+    icon: 'pi pi-heart',
   },
 ];
 
