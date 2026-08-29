@@ -183,14 +183,28 @@ function CelulaAnexosSES({ r }: { r: any }) {
   const est = chave ? ESTADO[chave] : null;
   const n = r?.anexosN ?? 0;
   const processando = r?.laudo === 'PROCESSANDO';
-  // Timer do laudo: há quanto tempo está na fila × previsão (~7 min/peça medido + cadência do robô).
+  // Cronômetro: re-renderiza a cada 30 s para o "há N min" subir e a previsão descer sem recarregar a página
+  // (@R 29/08 01:16 "o tempo não está diminuindo"). A previsão vem do backend com a hora em que foi calculada;
+  // aqui desconta o que já passou desde então.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!processando) return;
+    const id = window.setInterval(() => setTick((t) => t + 1), 30000);
+    return () => window.clearInterval(id);
+  }, [processando]);
   const haMin = processando && r?.laudoDesde ? Math.max(0, Math.round((Date.now() - new Date(r.laudoDesde).getTime()) / 60000)) : null;
-  const etaMin = processando ? (r?.laudoEtaMin ?? null) : null;
-  const atrasado = haMin != null && etaMin != null && haMin > etaMin * 2 && haMin > 30;
+  const passouDesdeCalculo = r?.laudoCalculadoEm ? Math.max(0, (Date.now() - new Date(r.laudoCalculadoEm).getTime()) / 60000) : 0;
+  const etaMin = processando && r?.laudoEtaMin != null ? Math.max(0, Math.round(r.laudoEtaMin - passouDesdeCalculo)) : null;
+  const roboParado = processando && (r?.laudoRoboParadoMin ?? 0) > 0;
+  const atrasado = haMin != null && etaMin != null && etaMin === 0 && passouDesdeCalculo > (r?.laudoEtaMin ?? 0) + 15;
+  const fmtMin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`);
   const subLaudo = processando
-    ? `processando laudo… ${haMin != null ? `há ${haMin >= 60 ? `${Math.floor(haMin / 60)} h ${haMin % 60} min` : `${haMin} min`}` : ''}${etaMin != null && !atrasado ? ` · previsão ~${etaMin} min` : ''}${atrasado ? ' · demorando mais que o normal' : ''}${r?.laudoNaFrente ? ` · ${r.laudoNaFrente} na frente` : ''}`
+    ? (r?.laudoLendoAgora ? 'lendo a peça agora' : 'processando laudo…')
+      + (haMin != null ? ` · há ${fmtMin(haMin)}` : '')
+      + (roboParado ? ` · robô parado há ${fmtMin(r.laudoRoboParadoMin)}` : etaMin == null ? '' : etaMin > 0 ? ` · faltam ~${fmtMin(etaMin)}` : atrasado ? ' · demorando mais que o normal' : ' · termina a qualquer momento')
+      + (r?.laudoNaFrente ? ` · ${r.laudoNaFrente} na frente` : '')
     : '';
-  const classe = processando ? (atrasado ? ' mc-ses-btn--processando mc-ses-btn--atrasado' : ' mc-ses-btn--processando') : chave === 'SEM_ANEXO' ? ' mc-ses-btn--alerta' : chave === 'SOLICITADO' ? ' mc-ses-btn--aguarda' : '';
+  const classe = processando ? (atrasado || roboParado ? ' mc-ses-btn--processando mc-ses-btn--atrasado' : ' mc-ses-btn--processando') : chave === 'SEM_ANEXO' ? ' mc-ses-btn--alerta' : chave === 'SOLICITADO' ? ' mc-ses-btn--aguarda' : '';
   const dos = r?.dossieN != null ? `dossiê ${r.dossieN} de ${r.dossieDe ?? 3}` : null;
   const sub = processando ? subLaudo : chave === 'SEM_ANEXO' ? 'nenhum documento' : chave === 'SOLICITADO' ? 'pedimos à SES · aguardando' : (dos ? `${n} doc(s) · ${dos}${r?.dossieSuficiente ? ' ✓' : ''}` : `${n} documento(s)`);
   return (
