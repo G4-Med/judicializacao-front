@@ -1,0 +1,9 @@
+.npm-intro { margin: 0 0 .9rem; color: #5b6772; line-height: 1.4; }
+.npm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem .9rem; }
+.npm-grid label { display: flex; flex-direction: column; gap: .25rem; font-size: .82rem; color: #5b6772; }
+.npm-grid label b { color: #ef4444; }
+.npm-grid .p-inputtext, .npm-grid .p-inputtextarea { width: 100%; }
+.npm-c2 { grid-column: span 2; }
+.npm-erro { display: block; color: #ef4444; margin-top: .6rem; }
+.npm-rodape { display: flex; justify-content: flex-end; gap: .5rem; margin-top: 1rem; }
+@media (max-width: 640px) { .npm-grid { grid-template-columns: 1fr; } .npm-c2 { grid-column: span 1; } }

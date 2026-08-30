@@ -44,3 +44,11 @@
 .ce-linha-clicavel:hover > td { background: #eef5f8; }
 .ce-ver { font-size: .78rem; color: #1f5f7a; display: inline-flex; gap: .3rem; align-items: center; white-space: nowrap; }
 .ce-templates .page-header { display: none; }
+
+/* Respostas por destinatário */
+.ce-resumo-dest { display: flex; flex-wrap: wrap; gap: .5rem; margin: .5rem 0 .9rem; }
+.ce-dest { display: flex; flex-direction: column; gap: .1rem; align-items: flex-start; padding: .45rem .7rem; border: 1px solid var(--surface-border, #dde3e8); border-radius: 8px; background: var(--surface-card, #fff); cursor: pointer; font: inherit; text-align: left; }
+.ce-dest:hover { border-color: #1f5f7a; }
+.ce-dest-nome { font-size: .8rem; font-weight: 600; }
+.ce-dest-n { font-size: .72rem; opacity: .7; }
+.acv-pedido-id { font-family: ui-monospace, Menlo, monospace; font-size: .75rem; opacity: .7; }

@@ -10,7 +10,8 @@ import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 import { Tag } from 'primereact/tag';
 import { ConfiguracoesEmailsPage } from '../configuracoesEmails/ConfiguracoesEmailsPage';
-import { getCentralSaude, getCentralEmails, getCentralCaixa, postCentralReprocessar } from '../../services/api/integracoes';
+import { getCentralSaude, getCentralEmails, getCentralCaixa, postCentralReprocessar, getCentralRespostas } from '../../services/api/integracoes';
+import { enviarEmailPendente, enviarEmailsPendentesLote } from '../../services/api/orders';
 import { cabecalhoComHint } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import './CentralEmailsPage.css';
 
@@ -37,18 +38,19 @@ const COR_STATUS: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'se
 };
 const ROTULO_STATUS: Record<string, string> = {
   CRIADO: 'Virou pedido', DUPLICADO_PACIENTE: 'Re-pedido (contado)', REMETENTE_INVALIDO: 'Ignorado (remetente)',
+  CONTINUACAO: 'Continuação (anexos entraram)', PROPOSTA_CONTINUACAO: 'Parece continuação — confirmar',
   RESPOSTA: 'Resposta a e-mail', ERRO: 'Falhou',
 };
 
 /** "Recuperar anexos" / "Processar agora": busca o e-mail na caixa pelo Message-ID e faz o que
  *  o monitor deveria ter feito. Idempotente no backend — clicar duas vezes não duplica. */
-function BotaoReprocessar({ messageId, rotulo, aoTerminar }: { messageId: string; rotulo: string; aoTerminar: () => void }) {
+function BotaoReprocessar({ messageId, rotulo, aoTerminar, orderId }: { messageId: string; rotulo: string; aoTerminar: () => void; orderId?: number }) {
   const [ocupado, setOcupado] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const clicar = async () => {
     setOcupado(true); setMsg(null);
     try {
-      const { data } = await postCentralReprocessar(messageId);
+      const { data } = await postCentralReprocessar(messageId, orderId);
       setMsg(data.jaFeito ? 'já feito' : data.processadoAgora ? `processado: ${data.status}` : data.jaProcessado ? 'já processado' : `${data.anexosSubidos ?? 0} anexo(s) subido(s)`);
       aoTerminar();
     } catch (e: any) {
@@ -68,7 +70,7 @@ function BotaoReprocessar({ messageId, rotulo, aoTerminar }: { messageId: string
  *  cada indicador... hint". A régua de cada um fica aqui, não na cabeça de quem lê. */
 type Indicador = {
   categoria: string; nome: string; valor: number | string; mede: string; regua: string;
-  situacao: 'ok' | 'atencao' | 'info'; statusFiltro?: string | null; abrir?: 'processados' | 'templates';
+  situacao: 'ok' | 'atencao' | 'info'; statusFiltro?: string | null; abrir?: 'processados' | 'templates' | 'respostas';
 };
 function montarIndicadores(s: any): Indicador[] {
   const esperado = Math.round((24 * 60) / (s.intervaloEsperadoMinutos || 10));
@@ -110,14 +112,34 @@ function montarIndicadores(s: any): Indicador[] {
       mede: 'Pedidos que o robô capturou mas ainda não viraram pedido na tela (fila entre a leitura e a criação).',
       regua: 'O cron converte no próximo ciclo. Se o número não zera em 20 min, a conversão travou.',
       situacao: s.pendentesConversao ? 'atencao' : 'ok', statusFiltro: 'CRIADO', abrir: 'processados' },
+    { categoria: 'Conversão', nome: 'Aguardando documentos', valor: s.aguardandoDocumentos?.n ?? 0,
+      mede: 'Pedidos que chegaram sem nenhum documento e a SES ainda não devolveu (o pedido de documentos sai na confirmação; 1 lembrete após 3 dias úteis).',
+      regua: s.aguardandoDocumentos?.n
+        ? `O mais antigo espera há ${s.aguardandoDocumentos.maisAntigoDias ?? '?'} dia(s). Pedidos: ${(s.aguardandoDocumentos.ids || []).map((i: number) => '#' + i).join(' ')}. Coluna "SES Anexos" nas telas mostra cada um.`
+        : 'Nenhum pedido esperando documento.',
+      situacao: (s.aguardandoDocumentos?.maisAntigoDias ?? 0) > 5 ? 'atencao' : 'info' },
+    { categoria: 'Resposta', nome: 'Pedidos de documentos que voltaram', valor: s.solicitacoes ? `${s.solicitacoes.respondidas7d} de ${s.solicitacoes.enviadas}` : '—',
+      mede: 'Das confirmações que pediram documentos à SES, quantas voltaram com arquivo (continuação na thread) em até 3 e 7 dias — o número do "o que funcionou".',
+      regua: s.solicitacoes?.enviadas
+        ? `≤3 dias: ${s.solicitacoes.respondidas3d} · ≤7 dias: ${s.solicitacoes.respondidas7d} · por solicitante: ${(s.solicitacoes.porSolicitante || []).slice(0, 4).map((x: any) => `${x.solicitante.split('@')[0]} ${x.respondidas}/${x.enviadas}`).join(' · ') || '—'}`
+        : 'Nenhum pedido de documentos enviado ainda (últimos 30 dias).',
+      situacao: 'info', abrir: 'respostas', statusFiltro: null },
+    { categoria: 'Resposta', nome: 'Pedidos pediátricos de exames que voltaram', valor: s.pediatrico ? `${s.pediatrico.respondidas7d} de ${s.pediatrico.enviadas}` : '—',
+      mede: 'Dos e-mails automáticos a pedidos de criança/recém-nascido pedindo exames além dos do processo, quantos voltaram com arquivo em até 3 e 7 dias. Pediátricos perdem 65% hoje (40 de 62) — é o número que diz se o e-mail muda isso.',
+      regua: s.pediatrico?.enviadas
+        ? `≤3 dias: ${s.pediatrico.respondidas3d} · ≤7 dias: ${s.pediatrico.respondidas7d} · por solicitante: ${(s.pediatrico.porSolicitante || []).slice(0, 4).map((x: any) => `${x.solicitante.split('@')[0]} ${x.respondidas}/${x.enviadas}`).join(' · ') || '—'}`
+        : 'Nenhum pedido pediátrico de exames enviado ainda (últimos 30 dias).',
+      situacao: 'info', abrir: 'respostas', statusFiltro: null },
     { categoria: 'Resposta', nome: 'Respostas na fila', valor: s.respostasPendentes ?? 0,
-      mede: 'Confirmações de recebimento (normal, segredo de justiça ou sem anexo) montadas e ainda não enviadas.',
-      regua: 'Informativo — saem no próximo envio. Fila crescendo sem esvaziar = envio parado.',
-      situacao: 'info', abrir: 'processados' },
+      mede: 'Confirmações de recebimento (normal, segredo de justiça ou sem anexo) montadas e ainda não enviadas. Saem sozinhas a cada ciclo do robô (10 min).',
+      regua: s.respostaPendenteMaisAntigaMin != null
+        ? `A mais antiga espera há ${s.respostaPendenteMaisAntigaMin} min. Acima de 30 min = o envio automático falhou — abra Respostas, veja o erro e reenvie.`
+        : 'Fila vazia: tudo o que foi montado já saiu.',
+      situacao: (s.respostaPendenteMaisAntigaMin ?? 0) > 30 ? 'atencao' : 'info', abrir: 'respostas', statusFiltro: 'PENDENTE' },
     { categoria: 'Resposta', nome: 'Respostas com erro', valor: s.respostasComErro ?? 0,
       mede: 'Confirmações que tentaram sair e falharam no envio.',
-      regua: 'Zero é o normal. O remetente não recebeu nada — reenviar pela tela E-mails.',
-      situacao: s.respostasComErro ? 'atencao' : 'ok', abrir: 'processados' },
+      regua: 'Zero é o normal. O remetente não recebeu nada — reenviar em Respostas.',
+      situacao: s.respostasComErro ? 'atencao' : 'ok', abrir: 'respostas', statusFiltro: 'ERRO' },
     { categoria: 'Configuração', nome: 'Monitor ativo', valor: s.monitorAtivo ? 'sim' : 'NÃO',
       mede: 'A chave geral: desligada, o robô roda mas não faz nada.',
       regua: 'Tem que estar "sim".', situacao: s.monitorAtivo ? 'ok' : 'atencao' },
@@ -130,7 +152,7 @@ function montarIndicadores(s: any): Indicador[] {
   ];
 }
 
-function Saude({ onVer }: { onVer: (abrir: 'processados' | 'templates', status?: string | null) => void }) {
+function Saude({ onVer }: { onVer: (abrir: 'processados' | 'templates' | 'respostas', status?: string | null) => void }) {
   const [s, setS] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const carregar = () => { setLoading(true); getCentralSaude().then(({ data }) => setS(data)).finally(() => setLoading(false)); };
@@ -208,6 +230,12 @@ function Processados({ statusInicial }: { statusInicial: string | null }) {
         {r.erro && <p className="ruim">Erro: {r.erro}</p>}
         {r.status === 'DUPLICADO_PACIENTE' && r.pedido && !(r.detalhe || '').includes('anexos recuperados') && (
           <p><BotaoReprocessar messageId={r.messageId} rotulo="Recuperar anexos deste e-mail no pedido" aoTerminar={carregar} /></p>
+        )}
+        {r.status === 'PROPOSTA_CONTINUACAO' && r.pedido && (
+          <p><BotaoReprocessar messageId={r.messageId} orderId={r.pedido.id} rotulo={`Confirmar: é continuação do pedido #${r.pedido.id} (anexos entram)`} aoTerminar={carregar} /></p>
+        )}
+        {r.status === 'RESPOSTA' && (
+          <p className="ce-sub">Resposta sem pedido reconhecido. Se for continuação de um pedido, use "Recuperar" na Caixa informando o pedido — ou peça que a SES responda ao e-mail de confirmação (o assunto leva o código [MC-nº]).</p>
         )}
         <p className="ce-sub">Message-ID <code>{r.messageId}</code> · execução #{r.execucaoId}
           {r.pedido && <> · pedido <strong>#{r.pedido.id}</strong> ({r.pedido.status}{r.pedido.vezesPedido > 1 ? `, pedido ${r.pedido.vezesPedido}×` : ''}{r.pedido.naLixeira ? ', na lixeira' : ''})</>}
@@ -322,12 +350,116 @@ function Caixa() {
   );
 }
 
+const ROTULO_TIPO: Record<string, string> = {
+  RECEBIMENTO_PEDIDO: 'Recebimento', RECEBIMENTO_PEDIDO_SEGREDO: 'Recebimento (segredo)', RECEBIMENTO_PEDIDO_SEM_ANEXO: 'Recebimento (sem anexo)', PEDIDO_EXAMES_PEDIATRICO: 'Exames (pediátrico)',
+  PEDIR_EXAMES: 'Pedir exames', ENVIAR_ORCAMENTO: 'Enviar orçamento', DAR_PERDA: 'Dar perda', SOLICITAR_COTACAO_MEDICO: 'Cotação ao médico',
+};
+const ROTULO_ENVIO: Record<string, string> = { PENDENTE: 'Na fila', ENVIADO: 'Enviada', ERRO: 'Falhou' };
+
+/** Respostas por pessoa (@R 28/08 21:07: "como eu sei as mensagens que eu mandei para cada pessoa
+ *  que mandou pedido? estamos mandando?"). Cada e-mail que o sistema montou para quem pediu, com
+ *  o que aconteceu com ele — e o botão de enviar aqui mesmo, porque o envio é manual. */
+function Respostas({ statusInicial }: { statusInicial: string | null }) {
+  const [q, setQ] = useState('');
+  const [status, setStatus] = useState<string | null>(statusInicial);
+  const [tipo, setTipo] = useState<string | null>(null);
+  const [dados, setDados] = useState<any>({ itens: [], total: 0, porStatus: {}, porDestinatario: [] });
+  const [loading, setLoading] = useState(false);
+  const [enviando, setEnviando] = useState<number[] | 'lote' | null>(null);
+  const [expandidas, setExpandidas] = useState<any>(null);
+  useEffect(() => { setStatus(statusInicial); }, [statusInicial]);
+  const carregar = () => {
+    setLoading(true);
+    const params: any = { dias: 60 };
+    if (q.trim()) params.q = q.trim();
+    if (status) params.status = status;
+    if (tipo) params.tipo = tipo;
+    getCentralRespostas(params).then(({ data }) => setDados(data)).finally(() => setLoading(false));
+  };
+  useEffect(carregar, [status, tipo]);
+  const pendentes = (dados.itens as any[]).filter((i) => i.status === 'PENDENTE');
+  const enviarUm = async (id: number) => {
+    setEnviando([id]);
+    try { await enviarEmailPendente(id); } finally { setEnviando(null); carregar(); }
+  };
+  const enviarTodas = async () => {
+    if (!pendentes.length || !window.confirm(`Enviar agora as ${pendentes.length} resposta(s) na fila?`)) return;
+    setEnviando('lote');
+    try { await enviarEmailsPendentesLote(pendentes.map((p) => p.id)); } finally { setEnviando(null); carregar(); }
+  };
+  const fmtDt = (v?: string | null) => (v ? new Date(v).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
+  const entrega = (r: any) => {
+    if (r.status === 'PENDENTE') return <Tag value={`na fila · ${r.idadeMin ?? '?'} min`} severity={(r.idadeMin ?? 0) > 60 ? 'warning' : 'info'} />;
+    if (r.status === 'ERRO') return <Tag value="falhou" severity="danger" />;
+    if (r.rejeitado) return <Tag value="devolvida" severity="danger" />;
+    if (r.spam) return <Tag value="caiu em spam" severity="danger" />;
+    if (r.clicado) return <Tag value="aberta · clicou" severity="success" />;
+    if (r.aberto) return <Tag value="aberta" severity="success" />;
+    return <Tag value="enviada" severity="success" />;
+  };
+  return (
+    <div>
+      <p className="ce-sub ce-saude-intro">
+        Cada resposta que o sistema montou para quem mandou pedido, e o que aconteceu com ela. As <strong>confirmações de recebimento saem
+        sozinhas</strong> a cada ciclo do robô, com o texto que a análise do pedido escolheu (normal · segredo de justiça · sem anexo); orçamento, perda e
+        pedido de exames continuam sendo enviados pela equipe. "Aberta" e "clicou" vêm do rastreio do provedor (quando o destinatário permite). O botão
+        Enviar serve para reenviar o que falhou.
+      </p>
+      <div className="ce-resumo-dest">
+        {(dados.porDestinatario as any[]).slice(0, 8).map((d) => (
+          <button key={d.destinatario} className="ce-dest" onClick={() => { setQ(d.destinatario); setTimeout(carregar, 0); }} title="Filtrar por este destinatário">
+            <span className="ce-dest-nome">{d.destinatario}</span>
+            <span className="ce-dest-n">{d.enviados} enviada(s){d.pendentes ? ` · ${d.pendentes} na fila` : ''}{d.abertos ? ` · ${d.abertos} aberta(s)` : ''}</span>
+          </button>
+        ))}
+      </div>
+      <div className="ce-filtros">
+        <IconField iconPosition="left" style={{ flex: 1 }}>
+          <InputIcon className="pi pi-search" />
+          <InputText value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') carregar(); }}
+            placeholder="Buscar por destinatário, paciente ou assunto" style={{ width: '100%' }} />
+        </IconField>
+        <Dropdown value={status} options={Object.keys(ROTULO_ENVIO).map((k) => ({ label: ROTULO_ENVIO[k], value: k }))} onChange={(e) => setStatus(e.value)} placeholder="Todas" showClear style={{ minWidth: '10rem' }} />
+        <Dropdown value={tipo} options={Object.keys(ROTULO_TIPO).map((k) => ({ label: ROTULO_TIPO[k], value: k }))} onChange={(e) => setTipo(e.value)} placeholder="Todos os tipos" showClear style={{ minWidth: '13rem' }} />
+        <Button label="Buscar" icon="pi pi-search" onClick={carregar} />
+        <Button label={`Enviar as ${pendentes.length} na fila`} icon="pi pi-send" severity="warning" disabled={!pendentes.length} loading={enviando === 'lote'} onClick={enviarTodas} />
+      </div>
+      <p className="ce-sub">{dados.total} resposta(s) nos últimos {dados.dias ?? 60} dias · {Object.entries(dados.porStatus || {}).map(([k, v]) => `${ROTULO_ENVIO[k] ?? k}: ${v}`).join(' · ')}</p>
+      <DataTable value={dados.itens} loading={loading} dataKey="id" paginator rows={25} rowsPerPageOptions={[25, 50, 100]}
+        expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
+        rowExpansionTemplate={(r: any) => (
+          <div className="ce-expansor"><div className="ce-bloco">
+            <h4><i className="pi pi-envelope" /> {r.assunto}</h4>
+            <pre className="ce-corpo">{r.corpo}</pre>
+            {r.erroEnvio && <p className="ce-sub ruim">Erro de envio: {r.erroEnvio} ({r.tentativas} tentativa(s))</p>}
+            {r.motivoRejeicao && <p className="ce-sub ruim">Devolvida: {r.motivoRejeicao}</p>}
+          </div></div>)}
+        emptyMessage="Nenhuma resposta neste filtro." aria-label="Respostas por destinatário">
+        <Column expander style={{ width: '3rem' }} />
+        <Column field="destinatario" header="Para" sortable style={{ minWidth: '15rem' }} />
+        <Column field="paciente" header="Paciente / pedido" sortable style={{ minWidth: '14rem' }}
+          body={(r) => <span>{r.paciente || '—'}{r.orderId ? <span className="acv-pedido-id"> #{r.orderId}</span> : null}</span>} />
+        <Column field="tipoEmail" header="Tipo" sortable style={{ width: '11rem' }} body={(r) => ROTULO_TIPO[r.tipoEmail] ?? r.tipoEmail} />
+        <Column field="criadoEm" header="Montada em" sortable style={{ width: '8rem' }} body={(r) => fmtDt(r.criadoEm)} />
+        <Column field="enviadoEm" header="Enviada em" sortable style={{ width: '8rem' }} body={(r) => fmtDt(r.enviadoEm)} />
+        <Column header="Entrega" style={{ width: '11rem' }} body={entrega} />
+        <Column header="" style={{ width: '9rem' }}
+          body={(r) => (r.status === 'PENDENTE' || r.status === 'ERRO'
+            ? <Button label="Enviar" icon="pi pi-send" size="small" outlined loading={Array.isArray(enviando) && enviando.includes(r.id)} onClick={() => enviarUm(r.id)} />
+            : null)} />
+      </DataTable>
+    </div>
+  );
+}
+
 export function CentralEmailsPage() {
   const [aba, setAba] = useState(0);
   const [statusPreset, setStatusPreset] = useState<string | null>(null);
-  const ver = (abrir: 'processados' | 'templates', status?: string | null) => {
+  const [respostaPreset, setRespostaPreset] = useState<string | null>(null);
+  const ver = (abrir: 'processados' | 'templates' | 'respostas', status?: string | null) => {
     if (abrir === 'processados') { setStatusPreset(status ?? null); setAba(1); }
-    else setAba(3);
+    else if (abrir === 'respostas') { setRespostaPreset(status ?? null); setAba(3); }
+    else setAba(4);
   };
   return (
     <div className="ce-page">
@@ -339,6 +471,7 @@ export function CentralEmailsPage() {
         <TabPanel header="Saúde" leftIcon="pi pi-heart mr-2"><Saude onVer={ver} /></TabPanel>
         <TabPanel header="Processados" leftIcon="pi pi-list mr-2"><Processados statusInicial={statusPreset} /></TabPanel>
         <TabPanel header="Caixa (reconciliação)" leftIcon="pi pi-envelope mr-2"><Caixa /></TabPanel>
+        <TabPanel header="Respostas" leftIcon="pi pi-send mr-2"><Respostas statusInicial={respostaPreset} /></TabPanel>
         <TabPanel header="Templates de resposta" leftIcon="pi pi-file-edit mr-2">
           <p className="ce-sub">Os textos que saem automaticamente para quem mandou o pedido: <strong>Recebimento normal</strong>, <strong>Segredo de justiça</strong> (menor de 18 — sem nome nem número do processo) e <strong>Sem anexo</strong> (pede o documento que faltou). Os demais são os e-mails enviados pela equipe nas fases seguintes.</p>
           <div className="ce-templates"><ConfiguracoesEmailsPage /></div>

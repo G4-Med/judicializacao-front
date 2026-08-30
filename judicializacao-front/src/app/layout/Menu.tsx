@@ -84,15 +84,22 @@ export function Menu({ visible, onHide }: Props) {
 
   const handleLeafClick = (item: MenuItem) => {
     if (item.command) item.command({ originalEvent: new Event('click') as any, item })
+    // @R 29/08 14:47 — ao fechar o menu, o botão clicado NÃO pode continuar com o foco:
+    // ele ficaria dentro de um painel oculto e o navegador bloqueia a interação
+    // ("Blocked aria-hidden on an element because its descendant retained focus"),
+    // que é o sintoma de "clico na aba e não troca".
+    ;(document.activeElement as HTMLElement | null)?.blur()
     onHide()
   }
 
   return (
     <>
       {visible && <div className="mc-sidebar__backdrop" onClick={onHide} aria-hidden />}
+      {/* `inert` tira o painel fechado da navegacao E do foco de uma vez so — e o
+          substituto correto do aria-hidden, que sozinho deixava foco preso dentro. */}
       <aside
         className={'mc-sidebar' + (visible ? ' mc-sidebar--open' : '')}
-        aria-hidden={!visible}
+        {...(visible ? {} : ({ inert: true } as any))}
       >
         <div className="mc-sidebar__head">
           <span>Navegação</span>

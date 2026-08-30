@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import type { DataTableFilterMeta, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { colunaBaixarOrcamento, colunaDiferenca, colunaEmpenhoEstado, colunaPagoEm } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
@@ -21,11 +23,12 @@ import type {
 } from '../../services/api/financeiro';
 import './AguardandoCirurgiaPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
-import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint, colunaOrigem } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
+import { colunaAnexosSES } from '../../components/AnexosSES/anexosSES';
 
 interface Anexo {
   id: number;
@@ -530,7 +533,7 @@ export function AguardandoCirurgiaPage() {
             <BotaoExportarExcel todos={linhas} nome="aguardando-cirurgia" />
             {colunasCfg.botao}
           </AcoesTabela>
-        <DataTable rowClassName={rowClassRepedido}
+        <DataTable scrollable rowClassName={rowClassRepedido}
           aria-label="Pedidos aguardando confirmação de cirurgia"
           value={linhas}
           loading={loading}
@@ -546,26 +549,20 @@ export function AguardandoCirurgiaPage() {
           filterDisplay="row"
           emptyMessage="Nenhum pedido aguardando cirurgia."
           className="ag-cir-table"
-        >
-          {colunasCfg.filtrar(<>
-          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
+        >          {colunasCfg.filtrar(<>
+
+          <Column field="sequencial" header="#" style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+{colunaAcoesFase({ corpo: (r: any) => <>{renderConfirmar(r)}</> })}
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
-            sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
-          />
+           frozen alignFrozen="left" />
+          {colunaOrigem()}
           {colunaRepedido()}
-          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
-          {colunaCnj()}
-          {colunaSei()}
-          {colunaComarca()}
-          {colunaCadastro()}
-          {colunaSegredo()}
-          {colunaInteiroTeor()}
-          {colunaSolicitante()}
           <Column
             field="medico"
             header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}
@@ -599,9 +596,21 @@ export function AguardandoCirurgiaPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '7rem' }}
           />
-          <Column header="Confirmar" body={renderConfirmar} style={{ minWidth: '10rem', textAlign: 'center' }} />
-        </>)}
-        </DataTable>
+          {colunaAnexosSES()}
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+{colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaSolicitante()}
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
+          </>)}
+</DataTable>
       </div>
 
       <Dialog

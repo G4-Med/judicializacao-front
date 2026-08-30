@@ -33,6 +33,7 @@ import { RelatorioResumidoPage } from '../../pages/relatorios/RelatorioResumidoP
 import { RelatorioConsolidadoPage } from '../../pages/relatorios/RelatorioConsolidadoPage';
 import { EmailsPage } from '../../pages/emails/EmailsPage';
 import { ConfiguracoesEmailsPage } from '../../pages/configuracoesEmails/ConfiguracoesEmailsPage';
+import { ConfiguracoesColunasPage } from '../../pages/configuracoesColunas/ConfiguracoesColunasPage';
 import { MonitorIntegracaoPage } from '../../pages/monitorIntegracao/MonitorIntegracaoPage';
 import { AccessProvider } from '../../access/AccessContext';
 import { ProtectedScreen, RequireAuth } from '../../access/ProtectedRoute';
@@ -83,6 +84,8 @@ export function AppRoutes() {
         <Route path="/usuarios" element={<ProtectedScreen screen="usuarios"><UsuariosPage /></ProtectedScreen>} />
         <Route path="/configuracoes" element={<ProtectedScreen screen="configuracoes"><ConfiguracoesPage /></ProtectedScreen>} />
         <Route path="/configuracoes-emails" element={<ProtectedScreen screen="configuracoesEmails"><ConfiguracoesEmailsPage /></ProtectedScreen>} />
+        {/* Colunas: preferência de UI do próprio usuário — mesma proteção da tela de configurações. */}
+        <Route path="/configuracoes-colunas" element={<ProtectedScreen screen="configuracoes"><ConfiguracoesColunasPage /></ProtectedScreen>} />
         <Route path="/monitor-integracao" element={<ProtectedScreen screen="monitorIntegracao"><MonitorIntegracaoPage /></ProtectedScreen>} />
         <Route path="/logs" element={<ProtectedScreen screen="logs"><LogsPage /></ProtectedScreen>} />
         <Route path="/lixeira" element={<ProtectedScreen screen="lixeira"><LixeiraPage /></ProtectedScreen>} />

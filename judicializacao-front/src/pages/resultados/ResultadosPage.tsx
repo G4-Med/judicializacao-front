@@ -6,6 +6,7 @@ import type {
   DataTableSortEvent
 } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -29,14 +30,14 @@ import './ResultadosPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 // Reaproveita estilos do dialog Atualizar (timeline, update-section, anexo, etc).
 import '../protocolados/ProtocoladosPage.css';
-import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, colunaSegredo, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar, colunaInteiroTeor , cabecalhoComHint, colunaOrigem } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento, kpisEmpenho } from '../../components/ColunasEmpenho/colunasEmpenho';
 import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
-import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
+import { colunaAnexosSES } from '../../components/AnexosSES/anexosSES';
 
 interface HistoricoAcompanhamento {
   id: number;
@@ -563,7 +564,7 @@ const kpis = useMemo(() => {
             <BotaoExportarExcel todos={dataComCamposCalculados} nome="resultados" />
             {colunasCfg.botao}
           </AcoesTabela>
-        <DataTable rowClassName={rowClassRepedido}
+        <DataTable scrollable rowClassName={rowClassRepedido}
           expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
           rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Processos finalizados — resultado (ganho ou perda), valor e tempo de tramitação"
@@ -588,41 +589,27 @@ const kpis = useMemo(() => {
           tableStyle={{ minWidth: '90rem' }}
           emptyMessage="Nenhum resultado encontrado."
           className="resultados-table"
-        >
-          {colunasCfg.filtrar(<>
-          <Column expander style={{ width: '3rem' }} />
-          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+        >          {colunasCfg.filtrar(<>
 
+          <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
+          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />
           <Column
             field="sequencial"
             header="#"
-            sortable
             style={{ minWidth: '4rem' }}
             body={(rowData: ResultadoProcessoTableRow) => rowData.sequencial}
-          />
-
+           frozen alignFrozen="left" />
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+{colunaAcoesFase({ corpo: (r: any) => <>{atualizarBodyTemplate(r)}{resultadoBodyTemplate(r)}</>, excluir: carregarDados })}
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
-            sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
-          />
+           frozen alignFrozen="left" />
+          {colunaOrigem()}
           {colunaRepedido()}
-          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
-          {colunaCnj()}
-          {colunaSei()}
-          {colunaComarca()}
-          {colunaCadastro()}
-          {colunaSegredo()}
-          {colunaInteiroTeor()}
-          {colunaBaixarOrcamento()}
-          {colunaEmpenhoEstado()}
-          {colunaPagoEm()}
-          {colunaDiferenca()}
-          {colunaSolicitante()}
-
           <Column
             field="cliente"
             header={cabecalhoComHint('Cliente', 'Empresa/prestador que responde pelo orçamento.')}
@@ -631,7 +618,6 @@ const kpis = useMemo(() => {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
-
           <Column
             field="valor"
             header={cabecalhoComHint('Valor', 'Valor do orçamento que enviamos ao Estado por este pedido.')}
@@ -641,7 +627,6 @@ const kpis = useMemo(() => {
             body={precoBodyTemplate}
             style={{ minWidth: '10rem' }}
           />
-
           <Column
             field="numeroProcesso"
             header="Processo"
@@ -650,7 +635,6 @@ const kpis = useMemo(() => {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
-
           <Column
             field="dias"
             header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
@@ -660,26 +644,21 @@ const kpis = useMemo(() => {
             body={diasBodyTemplate}
             style={{ minWidth: '7rem' }}
           />
-
-          <Column
-            field="resultado"
-            header={cabecalhoComHint('Resultado', 'Desfecho registrado: ganho, perda ou em andamento.')}
-            sortable
-            filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
-            body={resultadoBodyTemplate}
-            style={{ minWidth: '12rem' }}
-          />
-
-          <Column
-            header="Atualizar"
-            body={atualizarBodyTemplate}
-            style={{ minWidth: '10rem' }}
-            bodyStyle={{ textAlign: 'center' }}
-          />
-          {colunaExcluirAdmin(carregarDados)}
-        </>)}
-        </DataTable>
+          {colunaAnexosSES()}
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+{colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaSolicitante()}
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
+          </>)}
+</DataTable>
       </div>
 
       <Dialog

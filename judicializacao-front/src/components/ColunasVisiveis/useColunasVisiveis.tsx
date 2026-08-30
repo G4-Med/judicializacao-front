@@ -5,6 +5,7 @@ import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Checkbox } from 'primereact/checkbox';
 import api from '../../services/api';
+import { CHAVE_PADRAO, DICIONARIO_COLUNAS, verbete } from './dicionarioColunas';
 
 /**
  * Personalização de colunas POR USUÁRIO (task #228, @R 27/08 19:46: "botão que
@@ -23,6 +24,14 @@ import api from '../../services/api';
  */
 
 interface ColunaInfo { id: string; label: string }
+
+/** Duas listas de colunas ocultas são a MESMA coisa? (ordem não importa) */
+function mesmaLista(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const x = [...a].sort().join('|');
+  const y = [...b].sort().join('|');
+  return x === y;
+}
 
 function rotuloDe(el: any, fallback: string): string {
   const h = el.props?.header;
@@ -52,21 +61,44 @@ function achatar(nodes: ReactNode): any[] {
 export function useColunasVisiveis(tela: string) {
   const chave = `colunas_ocultas:${tela}`;
   const lsKey = `mc_${chave}`;
+  // @R 29/08 13:28: o PADRÃO (todas as telas) manda; a escolha POR TELA sobrescreve; e coluna
+  // marcada como opcional no dicionário NASCE DESMARCADA para quem nunca configurou nada.
   const [ocultas, setOcultas] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem(lsKey) || '[]'); } catch { return []; }
+    try {
+      const daTela = localStorage.getItem(lsKey);
+      if (daTela) return JSON.parse(daTela);
+      const doPadrao = localStorage.getItem(`mc_${CHAVE_PADRAO}`);
+      if (doPadrao) return JSON.parse(doPadrao);
+    } catch { /* storage indisponível */ }
+    return DICIONARIO_COLUNAS.filter((v) => v.padraoOculta).map((v) => v.id);
   });
   const [aberto, setAberto] = useState(false);
   const conhecidas = useRef<ColunaInfo[]>([]);
+  const assinaturaConhecida = useRef<string>('');
+  const pendenteAviso = useRef(false);
   const [, force] = useState(0);
 
   useEffect(() => {
+    // 1º a preferência DESTA tela; se o usuário nunca mexeu nela, cai no PADRÃO de todas as telas.
     api.get(`/preferencias/${encodeURIComponent(chave)}/`)
       .then(({ data }) => {
         const doServidor = data?.valor?.ocultas;
         if (Array.isArray(doServidor)) {
-          setOcultas(doServidor);
+          // CURA DO LOOP: só troca o estado se a lista REALMENTE mudou. Um setOcultas com a
+          // mesma lista re-monta as colunas do cabeçalho, e o HeaderCell do PrimeReact
+          // (useEffect sem deps) reage à troca chamando setState de novo — o vaivém que
+          // produzia "Maximum update depth exceeded" ao trocar de tela.
+          setOcultas((atual) => (mesmaLista(atual, doServidor) ? atual : doServidor));
           try { localStorage.setItem(lsKey, JSON.stringify(doServidor)); } catch { /* cheio/bloqueado */ }
+          return;
         }
+        return api.get(`/preferencias/${encodeURIComponent(CHAVE_PADRAO)}/`).then(({ data: d2 }) => {
+          const doPadrao = d2?.valor?.ocultas;
+          if (Array.isArray(doPadrao)) {
+            setOcultas((atual) => (mesmaLista(atual, doPadrao) ? atual : doPadrao));
+            try { localStorage.setItem(`mc_${CHAVE_PADRAO}`, JSON.stringify(doPadrao)); } catch { /* fail-soft */ }
+          }
+        });
       })
       .catch(() => undefined);   // API fora → fica o cache local
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -82,19 +114,58 @@ export function useColunasVisiveis(tela: string) {
   const filtrar = (children: ReactNode) => {
     const els = achatar(children);
     const achadas: ColunaInfo[] = [];
-    const resultado = els.filter((el) => {
-      const field = el?.props?.field;
-      if (typeof field !== 'string' || !field) return true;   // coluna de sistema
-      achadas.push({ id: field, label: rotuloDe(el, field) });
-      return !ocultas.includes(field);
-    });
-    // registra o cardápio de colunas p/ o painel (sem loop de render)
-    if (JSON.stringify(achadas) !== JSON.stringify(conhecidas.current)) {
+    let sistema = 0;
+    const resultado = els
+      .filter((el) => {
+        const field = el?.props?.field;
+        if (typeof field !== 'string' || !field) return true;   // coluna de sistema
+        achadas.push({ id: field, label: rotuloDe(el, field) });
+        return !ocultas.includes(field);
+      })
+      // @R 29/08 14:47 — CURA DO LOOP "Maximum update depth exceeded".
+      // O HeaderCell do PrimeReact 10.9 tem um useEffect SEM array de dependências: a cada
+      // render ele compara a coluna com a da renderização anterior e, se `sortable` mudou,
+      // chama setState. Sem `key`, o React reaproveita a mesma célula para colunas DIFERENTES
+      // quando a lista visível muda (ocultar coluna, preferência que chega da API) — a célula
+      // vê sortable diferente, dispara setState, re-renderiza, e o ciclo nunca fecha.
+      // Com key estável por coluna, cada célula fica casada com a SUA coluna e o efeito para.
+      .map((el) => {
+        if (!isValidElement(el)) return el;
+        const pr = el.props as any;
+        // Identidade ESTÁVEL por coluna. Para as colunas de sistema (sem `field`:
+        // expander, seleção, Ações) a chave NÃO pode depender da posição — elas
+        // aparecem/somem conforme permissão e preferência, e uma chave por índice
+        // faria o React casar a célula do cabeçalho com a coluna ERRADA. Foi essa
+        // troca de par que fazia o PrimeReact disparar setState em cadeia
+        // ("Maximum update depth exceeded") ao trocar de tela.
+        const chaveCol =
+          typeof pr?.field === 'string' && pr.field ? `col-${pr.field}`
+          : pr?.expander ? 'sys-expander'
+          : pr?.selectionMode ? 'sys-selecao'
+          : pr?.rowEditor ? 'sys-editor'
+          : typeof pr?.header === 'string' && pr.header ? `sys-h-${pr.header}`
+          : `sys-${sistema++}`;
+        return React.cloneElement(el as any, { key: chaveCol });
+      });
+    // registra o cardápio de colunas p/ o painel de "Colunas" — comparando só os IDs
+    // (string estável) e SEM setState durante o render (era a 2ª ponta do loop).
+    const assinatura = achadas.map((c) => c.id).join('|');
+    if (assinatura !== assinaturaConhecida.current) {
+      assinaturaConhecida.current = assinatura;
       conhecidas.current = achadas;
-      setTimeout(() => force((v) => v + 1), 0);
+      pendenteAviso.current = true;
     }
     return resultado;
   };
+
+  // O aviso de "o cardápio de colunas mudou" sai DEPOIS do render (nunca durante),
+  // e só quando o painel está aberto — quem lê `conhecidas.current` é o diálogo.
+  useEffect(() => {
+    if (pendenteAviso.current) {
+      pendenteAviso.current = false;
+      if (aberto) force((v) => v + 1);
+    }
+  });
 
   const botao = (
     <>
@@ -110,12 +181,15 @@ export function useColunasVisiveis(tela: string) {
                 onChange={(e) => salvar(e.checked
                   ? ocultas.filter((o) => o !== c.id)
                   : [...ocultas, c.id])} />
-              <span>{c.label}</span>
+              <span title={verbete(c.id)?.oQueE ?? c.label}>{c.label}</span>
             </label>
           ))}
         </div>
         <div style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between' }}>
-          <Button label="Restaurar padrão" text size="small" onClick={() => salvar([])} />
+          <Button label="O que é cada coluna" text size="small" icon="pi pi-question-circle"
+            onClick={() => { window.location.href = '/configuracoes-colunas'; }}
+            title="Abre Configurações › Colunas: explica cada coluna e deixa definir o padrão de todas as telas" />
+          <Button label="Mostrar todas" text size="small" onClick={() => salvar([])} />
           <Button label="Fechar" size="small" onClick={() => setAberto(false)} />
         </div>
       </Dialog>

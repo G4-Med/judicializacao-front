@@ -2,18 +2,20 @@
 import { DataTable } from 'primereact/datatable';
 import type { DataTableFilterMeta, DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { Dropdown } from 'primereact/dropdown';
 import { Dialog } from 'primereact/dialog';
+import { Checkbox } from 'primereact/checkbox';
 import { FilterMatchMode } from 'primereact/api';
 import { getJuridico, salvarJuridico, getStatusOrders, getAnexosOrder, getCnjCandidatos, confirmarCnj, uploadAnexoOrder, getInteligenciaPedido } from '../../services/api/orders';
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
 import './JuridicoPage.css';
-import { colunaSolicitante, tagTipoPaciente , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, tagTipoPaciente , cabecalhoComHint, colunaOrigem, colunaCadastro, colunaInteiroTeor } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { PainelPrecos } from '../../components/PainelPrecos/PainelPrecos';
@@ -21,11 +23,12 @@ import { ContadorRegistros } from '../../components/ContadorRegistros/ContadorRe
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
 import { BotaoCopiar } from '../../components/BotaoCopiar/BotaoCopiar';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
+import { NovoPedidoManual } from '../../components/NovoPedidoManual/novoPedidoManual';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
-import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
 import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
+import { colunaAnexosSES } from '../../components/AnexosSES/anexosSES';
 
 // Meta desta fase (triagem jurídica) — espelha backend/funil.py FASES['triagem'].meta_dias.
 // "a análise sai no dia seguinte — libera para mim até meio-dia" (fala do @R na reunião).
@@ -125,6 +128,8 @@ export function JuridicoPage() {
   const [inteiroTeorFile, setInteiroTeorFile] = useState<File | null>(null)
   const [inteiroTeorJaAnexado, setInteiroTeorJaAnexado] = useState(false)
   const [inteiroTeorObrigatorio, setInteiroTeorObrigatorio] = useState(false)
+  // @R 29/08 00:55: caixa "não teve peça de inteiro teor" — libera o Cotar sem a peça, com registro de quem declarou.
+  const [semPecaInteiroTeor, setSemPecaInteiroTeor] = useState(false)
 
   const colunasCfg = useColunasVisiveis('analise-juridica');
 
@@ -267,7 +272,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
     // Peça de inteiro teor obrigatória nos DOIS caminhos da decisão (@R 27/08).
     // Refinamento 20:27: a equipe g4med pode seguir sem — anexa depois em outra fase.
     const decidindo = statusJuridico === 'Cotar' || statusJuridico === 'Não Cotar';
-    if (decidindo && !equipeG4med && !inteiroTeorJaAnexado && !inteiroTeorFile) {
+    if (decidindo && !equipeG4med && !inteiroTeorJaAnexado && !inteiroTeorFile && !semPecaInteiroTeor) {
       setInteiroTeorObrigatorio(true);
       return;
     }
@@ -276,6 +281,7 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
         nprocesso: nprocesso || null,
         numeroSei: numeroSei || null,
         statusJuridico: statusJuridico || null,
+        semPecaInteiroTeor: decidindo && !inteiroTeorJaAnexado && !inteiroTeorFile && semPecaInteiroTeor,
         orcamentos: orcamentos || null,
         obs: obs || null,
     };
@@ -388,10 +394,11 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           />
         </h2>
           <AcoesTabela>
+            {!readOnly && <NovoPedidoManual aoCriar={() => carregarDados()} />}
             <BotaoExportarExcel todos={dataComSequencial} visiveis={visibleProcessos} nome="analise-juridica" />
             {colunasCfg.botao}
           </AcoesTabela>
-        <DataTable
+        <DataTable scrollable
           aria-label="Pedidos aguardando triagem jurídica"
           value={dataComSequencial}
           onValueChange={(value) => setVisibleProcessos(value as ProcessoJuridicoRow[])}
@@ -427,12 +434,14 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
           loading={loading}
           emptyMessage="Nenhum processo aguardando jurídico."
           className="juridico-table"
-        >
-          {colunasCfg.filtrar(<>
+        >          {colunasCfg.filtrar(<>
+
           {/* Abre o painel de preços do procedimento dentro da própria linha (task #207) */}
-          <Column expander style={{ width: '3.5rem' }} headerStyle={{ width: '3.5rem' }}
-            headerClassName="col-expander" bodyClassName="col-expander" />
-          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
+<Column expander style={{ width: '3.5rem' }} headerStyle={{ width: '3.5rem' }}
+            headerClassName="col-expander" bodyClassName="col-expander" frozen alignFrozen="left" />
+          <Column field="sequencial" header="#" style={{ minWidth: '4rem' }}  frozen alignFrozen="left" />
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+{colunaAcoesFase({ corpo: (r: any) => <>{editarBodyTemplate(r)}</>, excluir: carregarDados })}
           <Column field="paciente" header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '16rem' }}
             body={(r: ProcessoJuridicoRow) => (
@@ -444,12 +453,9 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                     className="juridico-tag-menor-idade"
                     title="Paciente com menos de 18 anos. Confirme se este pedido deve ser marcado Segredo de Justiça." />
                 )}
-                {!r.qtdAnexos && (
-                  <Tag value="Sem anexo" severity="danger" className="juridico-tag-sem-anexo"
-                    title="Este pedido chegou do e-mail do Estado sem nenhum anexo." />
-                )}
               </span>
-            )} />
+            )}  frozen alignFrozen="left" />
+          {colunaOrigem()}
           {colunaRepedido()}
           <Column
             field="idade"
@@ -463,8 +469,32 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
             body={(r: any) => tagTipoPaciente(r.tipoPaciente)} />
           <Column field="procedimento" className="col-procedimento-upper" header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')} sortable filter
             filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '18rem' }} />
+          {/* @R 28/08: "a data que o pedido chegou e o horário e o tempo atual no funil" */}
+<Column field="chegouEm" header={cabecalhoComHint('Chegou em',
+              'Quando o pedido ENTROU no sistema (o monitor lê o e-mail a cada 10 min). Data e hora.')}
+            sortable style={{ minWidth: '10rem' }}
+            body={(r: ProcessoJuridicoRow) => {
+              if (!r.chegouEm) return <span className="juridico-geo-vazio">—</span>;
+              const d = new Date(r.chegouEm);
+              return <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                {d.toLocaleDateString('pt-BR')} <small style={{ opacity: 0.7 }}>{d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small>
+              </span>;
+            }} />
+          <Column field="dias" header={cabecalhoComHint('Tempo no funil',
+              `Desde a data do e-mail do pedido. Teto: ${SLA_META_DIAS_TRIAGEM} dias — acima disso está errado (fica vermelho).`)}
+            sortable filter filterElement={(o) => filterElement(o, 'Buscar')}
+            style={{ minWidth: '9rem' }}
+            body={(r: ProcessoJuridicoRow) => {
+              const h = r.horasNoFunil ?? r.dias * 24;
+              const dias = Math.floor(h / 24), horas = h % 24;
+              const estourou = r.dias > SLA_META_DIAS_TRIAGEM;
+              return <Tag value={`${dias}d ${horas}h`} severity={estourou ? 'danger' : dias >= SLA_META_DIAS_TRIAGEM - 1 ? 'warning' : 'success'}
+                icon={estourou ? 'pi pi-exclamation-triangle' : 'pi pi-clock'}
+                title={estourou ? `Passou do teto de ${SLA_META_DIAS_TRIAGEM} dias` : `Dentro do teto de ${SLA_META_DIAS_TRIAGEM} dias`} />;
+            }} />
+          {colunaAnexosSES()}
           {/* CNJ e SEI nas colunas (@R 27/08 12:59): os dois números do pedido, buscáveis e copiáveis */}
-          <Column field="nprocesso" header="Nº CNJ" sortable filter
+<Column field="nprocesso" header="Nº CNJ" sortable filter
             filterElement={(o) => filterElement(o, 'Buscar CNJ')} style={{ minWidth: '14rem' }}
             body={(r: ProcessoJuridicoRow) => r.nprocesso
               ? <><code className="juridico-numero" title="Número CNJ do processo">{r.nprocesso}</code><BotaoCopiar valor={r.nprocesso} rotulo="número CNJ" /></>
@@ -490,50 +520,24 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                 </span>
               );
             }} />
+          {colunaCadastro()}
           {/* Selo Segredo em toda tabela (@R 27/08 16:52) — na fase 1 é onde a decisão
               COTAR/NÃO COTAR acontece já sabendo que o processo é sigiloso. */}
-          <Column field="segredo" header="Segredo" sortable style={{ minWidth: '9rem' }}
+<Column field="segredo" header="Segredo" sortable style={{ minWidth: '9rem' }}
             body={(r: any) => {
               if (r.segredo === 'sim') return <Tag value="Segredo de Justiça" severity="danger" icon="pi pi-lock" title={r.segredoFonte ?? 'Marcado no sistema'} />;
               if (r.segredo === 'possivel') return <Tag value="Possível segredo" severity="warning" icon="pi pi-question-circle" title={`Sinal da consulta ao CNJ. ${r.segredoFonte ?? ''}`} />;
               if (r.segredo === 'nao') return <Tag value="Sem segredo" severity="secondary" />;
               return <span className="juridico-geo-vazio">—</span>;
             }} />
+          {colunaInteiroTeor()}
           {colunaSolicitante()}
-          {/* @R 28/08: "a data que o pedido chegou e o horário e o tempo atual no funil" */}
-          <Column field="chegouEm" header={cabecalhoComHint('Chegou em',
-              'Quando o pedido ENTROU no sistema (o monitor lê o e-mail a cada 10 min). Data e hora.')}
-            sortable style={{ minWidth: '10rem' }}
-            body={(r: ProcessoJuridicoRow) => {
-              if (!r.chegouEm) return <span className="juridico-geo-vazio">—</span>;
-              const d = new Date(r.chegouEm);
-              return <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-                {d.toLocaleDateString('pt-BR')} <small style={{ opacity: 0.7 }}>{d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small>
-              </span>;
-            }} />
-          <Column field="dias" header={cabecalhoComHint('Tempo no funil',
-              `Desde a data do e-mail do pedido. Teto: ${SLA_META_DIAS_TRIAGEM} dias — acima disso está errado (fica vermelho).`)}
-            sortable filter filterElement={(o) => filterElement(o, 'Buscar')}
-            style={{ minWidth: '9rem' }}
-            body={(r: ProcessoJuridicoRow) => {
-              const h = r.horasNoFunil ?? r.dias * 24;
-              const dias = Math.floor(h / 24), horas = h % 24;
-              const estourou = r.dias > SLA_META_DIAS_TRIAGEM;
-              return <Tag value={`${dias}d ${horas}h`} severity={estourou ? 'danger' : dias >= SLA_META_DIAS_TRIAGEM - 1 ? 'warning' : 'success'}
-                icon={estourou ? 'pi pi-exclamation-triangle' : 'pi pi-clock'}
-                title={estourou ? `Passou do teto de ${SLA_META_DIAS_TRIAGEM} dias` : `Dentro do teto de ${SLA_META_DIAS_TRIAGEM} dias`} />;
-            }} />
-          <Column header="Ações"
-            body={editarBodyTemplate}
-            style={{ minWidth: '7rem' }} 
-            bodyStyle={{ textAlign: 'center' }} />
-          {colunaExcluirAdmin(carregarDados)}
           {colunaBaixarOrcamento()}
           {colunaEmpenhoEstado()}
           {colunaPagoEm()}
           {colunaDiferenca()}
-        </>)}
-        </DataTable>
+          </>)}
+</DataTable>
       </div>
 
       <Dialog
@@ -815,8 +819,15 @@ const abrirEdicao = (rowData: ProcessoJuridicoRow) => {
                   />
                   {inteiroTeorObrigatorio && (
                     <small style={{ color: '#ef4444' }}>
-                      Anexe a peça de inteiro teor da decisão — ela é obrigatória tanto para Cotar quanto para Não Cotar.
+                      Anexe a peça de inteiro teor da decisão — ela é obrigatória para Cotar e Não Cotar. Se o processo não tem a peça, marque a caixa abaixo.
                     </small>
+                  )}
+                  {(statusJuridico === 'Cotar' || statusJuridico === 'Não Cotar') && !inteiroTeorFile && (
+                    <div className="sem-peca-box" title="Marque só quando o processo realmente não tem peça de inteiro teor. Fica registrado quem declarou e quando; o robô não terá o que ler e o médico recebe só os anexos da SES.">
+                      <Checkbox inputId="semPeca" checked={semPecaInteiroTeor} disabled={readOnly}
+                        onChange={(e) => { setSemPecaInteiroTeor(!!e.checked); if (e.checked) setInteiroTeorObrigatorio(false); }} />
+                      <label htmlFor="semPeca">Não teve peça de inteiro teor neste processo — seguir sem a peça <small>(fica registrado quem declarou)</small></label>
+                    </div>
                   )}
                 </>
               )}

@@ -7,6 +7,10 @@ import type {
   DataTableSortEvent
 } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { colunaAnexosSES } from '../../components/AnexosSES/anexosSES';
+import { colunaBaixarOrcamento, colunaDiferenca, colunaEmpenhoEstado, colunaPagoEm } from '../../components/ColunasEmpenho/colunasEmpenho';
+import { colunaRepedido } from '../../components/Repedido/repedido';
+import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -26,7 +30,7 @@ import './SegredoJusticaPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
 import { CabecalhoFase } from '../../components/CabecalhoFase/CabecalhoFase';
-import { colunaSolicitante, tagTipoPaciente, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar , cabecalhoComHint} from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaSolicitante, tagTipoPaciente, colunaCnj, colunaSei, colunaComarca, colunaCadastro, FILTROS_IDENTIFICACAO, nomeComCopiar , cabecalhoComHint, colunaInteiroTeor, colunaOrigem, colunaSegredo } from '../../components/ColunasIdentificacao/colunasIdentificacao';
 import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExportarExcel';
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
@@ -499,7 +503,7 @@ useEffect(() => { carregarDados(); }, [fila]);
             <BotaoExportarExcel todos={dataComCamposCalculados} visiveis={visibleProcessos} nome="segredo-justica" />
             {colunasCfg.botao}
           </AcoesTabela>
-        <DataTable
+        <DataTable scrollable
           aria-label="Pedidos em segredo de justiça"
           value={dataComCamposCalculados}
           onValueChange={(value) => setVisibleProcessos(value as SegredoJusticaTableRow[])}
@@ -520,36 +524,29 @@ useEffect(() => { carregarDados(); }, [fila]);
           tableStyle={{ minWidth: '95rem' }}
           emptyMessage="Nenhum processo encontrado."
           className="segredo-justica-table"
-        >
-          {colunasCfg.filtrar(<>
-          {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
+        >          {colunasCfg.filtrar(<>
 
+          {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />}
           <Column
             field="sequencial"
             header="#"
-            sortable
             style={{ minWidth: '4rem' }}
             body={(rowData: SegredoJusticaTableRow) => rowData.sequencial}
-          />
-
+           frozen alignFrozen="left" />
+          {/* Ações da fase ao lado do paciente (@R 29/08) — mesmos botões, agora fixos à esquerda. */}
+{colunaAcoesFase({ corpo: (r: any) => <>{atualizarBodyTemplate(r)}</> })}
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
-            sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
-          />
-          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
-          {colunaCnj()}
-          {colunaSei()}
-          {colunaComarca()}
-          {colunaCadastro()}
-          {colunaSolicitante()}
-
+           frozen alignFrozen="left" />
+          {colunaOrigem()}
+          {colunaRepedido()}
           {/* @R 27/08 16:45: "quero saber a idade, se é pediatria e adulto (tipo do
               médico) e o nome do procedimento". Idade ausente = "—", nunca chute. */}
-          <Column
+<Column
             field="idade"
             header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento.')}
             sortable
@@ -571,9 +568,17 @@ useEffect(() => { carregarDados(); }, [fila]);
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
           />
+          <Column
+            field="cliente"
+            header="Especialidade"
+            sortable
+            filter
+            filterElement={(options) => filterElement(options, 'Buscar')}
+            style={{ minWidth: '14rem' }}
+          />
           {/* @R 27/08 16:53: médico vinculado ou "sem profissional" na cara — a ação
               de passar para médico é o "Enviar para cotação" do diálogo Atualizar. */}
-          <Column
+<Column
             field="medico"
             header={cabecalhoComHint('Médico', 'Profissional da rede que cotou (ou vai cotar) este procedimento.')}
             sortable
@@ -584,7 +589,7 @@ useEffect(() => { carregarDados(); }, [fila]);
           />
           {/* @R 27/08 16:53: "cadê a coluna para verificar se era segredo mesmo —
               alguns eram normais". O veredito da consulta automática ao CNJ. */}
-          <Column
+<Column
             field="segredoApiSinal"
             header="É segredo mesmo?"
             sortable
@@ -609,15 +614,6 @@ useEffect(() => { carregarDados(); }, [fila]);
             }}
           />
           <Column
-            field="cliente"
-            header="Especialidade"
-            sortable
-            filter
-            filterElement={(options) => filterElement(options, 'Buscar')}
-            style={{ minWidth: '14rem' }}
-          />
-
-          <Column
             field="valor"
             header={cabecalhoComHint('Valor', 'Valor do orçamento que enviamos ao Estado por este pedido.')}
             sortable
@@ -626,7 +622,6 @@ useEffect(() => { carregarDados(); }, [fila]);
             body={precoBodyTemplate}
             style={{ minWidth: '10rem' }}
           />
-
           <Column
             field="dias"
             header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
@@ -636,7 +631,6 @@ useEffect(() => { carregarDados(); }, [fila]);
             body={diasBodyTemplate}
             style={{ minWidth: '7rem' }}
           />
-
           <Column
             field="statusProcesso"
             header={cabecalhoComHint('Status', 'Onde o pedido está no funil (statusProcesso).')}
@@ -646,15 +640,21 @@ useEffect(() => { carregarDados(); }, [fila]);
             body={statusBodyTemplate}
             style={{ minWidth: '12rem' }}
           />
-
-          <Column
-            header="Atualizar"
-            body={atualizarBodyTemplate}
-            style={{ minWidth: '10rem' }}
-            bodyStyle={{ textAlign: 'center' }}
-          />
-        </>)}
-        </DataTable>
+          {colunaAnexosSES()}
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+{colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaSolicitante()}
+          {colunaBaixarOrcamento()}
+          {colunaEmpenhoEstado()}
+          {colunaPagoEm()}
+          {colunaDiferenca()}
+          </>)}
+</DataTable>
       </div>
 
       <Dialog

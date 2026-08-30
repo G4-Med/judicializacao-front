@@ -1,0 +1,8 @@
+/* Ações da fase — a decisão ao lado do paciente, fixa ao rolar */
+.mc-acoes { display: inline-flex; align-items: center; gap: .3rem; flex-wrap: nowrap; }
+.mc-acoes .mc-acao--principal.p-button { font-weight: 600; white-space: nowrap; padding: .35rem .7rem; }
+.mc-acoes .mc-acao--secundaria.p-button { padding: .35rem .5rem; }
+.mc-acoes-lixeira { display: inline-flex; margin-left: .35rem; padding-left: .45rem; border-left: 1px solid var(--surface-border, #dde3e8); }
+/* colunas congeladas ganham um filete para o olho saber onde termina a parte fixa */
+.p-datatable .p-frozen-column { background: var(--surface-card, #fff); }
+.p-datatable .p-frozen-column.mc-col-fim-fixa { box-shadow: inset -2px 0 0 #dde3e8; }

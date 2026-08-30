@@ -71,9 +71,18 @@ body.mc-tabelas-justificadas .mc-scroll-topo { display: none; }
   background: rgba(180, 83, 9, 0.10);
   box-shadow: inset 3px 0 0 #b45309;
 }
-.p-datatable .p-datatable-tbody > tr.mc-linha-repedido:hover > td { background: rgba(180, 83, 9, 0.16); }
+.p-datatable .p-datatable-tbody > tr.mc-linha-repedido:hover > td { background: rgba(180, 35, 24, 0.14); }
 .mc-repedido-badge {
-  display: inline-flex; align-items: center; gap: 3px;
-  padding: 1px 7px; border-radius: 999px; font-weight: 700; font-size: 0.78rem;
-  color: #fff; background: #b45309; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: .3rem; padding: .15rem .55rem; border-radius: 999px;
+  background: #b42318; color: #fff; font-weight: 700; font-size: .8rem; letter-spacing: .02em;
+  box-shadow: 0 0 0 3px rgba(180, 35, 24, .15);
 }
+.mc-repedido-cab { display: inline-flex; align-items: center; gap: .3rem; color: #b42318; font-weight: 700; }
+.mc-repedido-cab .pi { font-size: .95rem; }
+
+
+/* Barra de rolagem horizontal SEMPRE no rodapé da tabela (@R 29/08 14:23: "a barra de rolagem
+   sempre tem que estar na parte do final dos registros, não em cima"). A DataTable scrollable do
+   PrimeReact põe o overflow no wrapper; com o cabeçalho fixo (sticky) a barra sobe para o topo. */
+.p-datatable-wrapper { overflow-x: auto !important; overflow-y: visible !important; max-height: none !important; }
+.p-datatable-scrollable .p-datatable-thead > tr > th { position: sticky; top: 0; z-index: 2; }

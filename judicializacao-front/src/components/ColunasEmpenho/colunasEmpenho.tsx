@@ -55,7 +55,14 @@ export function colunaEmpenhoEstado() {
         const v = (r: any) => r.empenho548?.pago ?? -1;
         return [...e.data].sort((a: any, b: any) => (v(a) - v(b)) * (e.order ?? 1));
       }}
-      body={(r: any) => (r.empenho548
+      body={(r: any) => (r.empenho548?.fonte === 'api548' && (r.empenho548.podeDarBaixa || r.empenho548.revisarManual)
+        // Veredito VIVO da API do 548 (#258): "pode dar baixa" só no sinal forte; amarelo = conferir.
+        ? (r.empenho548.podeDarBaixa
+          ? <Tag value={`PAGO após o pedido · pode dar baixa ${fmtBRL(r.empenho548.pago)}`} severity="success" icon="pi pi-check-circle"
+              title={`${r.empenho548.porque ?? ''} Fonte: API do 548 (${String(r.empenho548.atualizadoEm ?? '').slice(0, 16).replace('T', ' ')}). O favorecido é o TRIBUNAL (depósito judicial), não o prestador.${r.empenho548.ancoraSuspeita ? ' ⚠ Data do pedido parece backfill — confira antes de baixar.' : ''}`} />
+          : <Tag value={`Revisar · pagou antes, valor bate ${fmtBRL(r.empenho548.pago)}`} severity="warning" icon="pi pi-search"
+              title={`${r.empenho548.porque ?? ''} Fonte: API do 548. Pagamento anterior ao pedido com valor entre 60% e 140% do orçado — pode ser este item ou outro do mesmo processo. Favorecido = tribunal, não o prestador.`} />)
+        : r.empenho548
         ? (r.empenho548.pago > 0
           ? (ehExato(r)
             ? <Tag value={`PAGO = ORÇADO ${fmtBRL(r.empenho548.pago)}`} icon="pi pi-star-fill"

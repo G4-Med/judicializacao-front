@@ -19,6 +19,8 @@ import {
 } from '../../services/api/orders';
 import { useAccess } from '../../access/AccessContext';
 import { ReadOnlyBanner } from '../../components/access/ReadOnlyBanner';
+import { tagTipoPaciente, colunaOrigem } from '../../components/ColunasIdentificacao/colunasIdentificacao';
+import { colunaAcoesFase } from '../../components/AcoesFase/acoesFase';
 import './SelecionarMedicoPage.css';
 import { PainelKpis } from '../../components/PainelKpis/PainelKpis';
 import { PrimeiraVisitaInfo } from '../../components/PrimeiraVisitaInfo/PrimeiraVisitaInfo';
@@ -28,9 +30,9 @@ import { BotaoExportarExcel } from '../../components/BotaoExportarExcel/BotaoExp
 import { AcoesTabela } from '../../components/AcoesTabela/AcoesTabela';
 import { useColunasVisiveis } from '../../components/ColunasVisiveis/useColunasVisiveis';
 import { ExpansorPedido } from '../../components/ExpansorPedido/ExpansorPedido';
-import { colunaExcluirAdmin } from '../../components/ExpansorPedido/colunaExcluirAdmin';
 import { FILTRO_PAGAMENTO, colunaEmpenhoEstado, colunaPagoEm, colunaDiferenca, colunaBaixarOrcamento } from '../../components/ColunasEmpenho/colunasEmpenho';
 import { colunaRepedido, rowClassRepedido } from '../../components/Repedido/repedido';
+import { colunaAnexosSES } from '../../components/AnexosSES/anexosSES';
 
 interface ProcessoResumo {
   id: number;
@@ -45,6 +47,26 @@ interface ProcessoResumo {
   medico: string;
   slaMedicoEstourado: boolean | null;
   slaMedicoHoras: number | null;
+  slaFasePrazo?: string | null;
+  slaFaseHorasRestantes?: number | null;
+  slaFaseVencido?: boolean | null;
+}
+
+/** SLA da fase (@R 29/08): 1 dia útil para definir o médico; sexta fecha na segunda. */
+const DIAS_SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+const fmtHoras = (h: number) => (h >= 48 ? `${Math.round(h / 24)} d` : h >= 1 ? `${Math.round(h)} h` : `${Math.max(1, Math.round(h * 60))} min`);
+function CelulaSlaFase({ r }: { r: ProcessoResumo }) {
+  if (r.slaFaseHorasRestantes == null || !r.slaFasePrazo) return <span className="sm-sla-vazio">—</span>;
+  const prazo = new Date(r.slaFasePrazo);
+  const quando = `${DIAS_SEMANA[prazo.getDay()]} ${prazo.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+  const h = r.slaFaseHorasRestantes;
+  const classe = r.slaFaseVencido ? 'sm-sla sm-sla--vencido' : h <= 6 ? 'sm-sla sm-sla--urgente' : 'sm-sla sm-sla--ok';
+  return (
+    <span className={classe} title={`Prazo desta fase: ${prazo.toLocaleString('pt-BR')} (1 dia útil após o "Cotar"; fim de semana não conta)`}>
+      <i className={r.slaFaseVencido ? 'pi pi-exclamation-triangle' : 'pi pi-clock'} />
+      {r.slaFaseVencido ? <>vencido há <b>{fmtHoras(-h)}</b></> : <>até <b>{quando}</b> · {fmtHoras(h)}</>}
+    </span>
+  );
 }
 
 interface ProcessoResumoTableRow extends ProcessoResumo {
@@ -124,6 +146,10 @@ export function SelecionarMedicoPage() {
       const lista = Array.isArray(processosRes.data) ? processosRes.data : [];
       setProcessos(
         lista.map((item: any) => ({
+          // Cicatriz 29/08 00:15 (@R "não estão populados os dados"): o mapeamento copiava só
+          // os campos que conhecia e DESCARTAVA CNJ/SEI/comarca/solicitante/peça/dossiê/re-pedido
+          // que a API já devolvia. Espalha tudo primeiro; o que vem abaixo só normaliza.
+          ...item,
           id: item.id,
           paciente: item.paciente ?? '',
           procedimento: item.procedimento ?? '',
@@ -407,6 +433,7 @@ export function SelecionarMedicoPage() {
             {colunasCfg.botao}
           </AcoesTabela>
         <DataTable
+          scrollable
           expandedRows={expandidas} onRowToggle={(e) => setExpandidas(e.data)}
           rowExpansionTemplate={(r: any) => <ExpansorPedido linha={r} />}
           aria-label="Pedidos aguardando seleção de médico"
@@ -435,28 +462,39 @@ export function SelecionarMedicoPage() {
           tableStyle={{ minWidth: '92rem' }}
           className="selecionar-medico-table"
           emptyMessage="Nenhum processo encontrado."
-        >
-          {colunasCfg.filtrar(<>
-          <Column expander style={{ width: '3rem' }} />
-          {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
-          <Column field="sequencial" header="#" sortable style={{ minWidth: '4rem' }} />
+        >          {colunasCfg.filtrar(<>
+
+          <Column expander style={{ width: '3rem' }} frozen alignFrozen="left" />
+          {!readOnly && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} frozen alignFrozen="left" />}
+          <Column field="sequencial" header="#" style={{ minWidth: '4rem' }} frozen alignFrozen="left" />
+          {/* Ações da fase ao lado do paciente (@R 29/08): a decisão desta tela é escolher o médico. */}
+{colunaAcoesFase({
+            readOnly,
+            principal: { label: 'Selecionar médico', icon: 'pi pi-user-edit', onClick: (r) => abrirDialog(r) },
+            secundarias: [
+              { label: 'Sugerir médico via IA', icon: 'pi pi-sparkles', onClick: (r) => void handleSugerirMedicoIA(r),
+                loading: (r) => iaLoadingId === r.id, disabled: (r) => iaLoadingId !== null && iaLoadingId !== r.id },
+              { label: 'Perda por falta de profissional', icon: 'pi pi-user-minus', severity: 'danger',
+                onClick: (r) => void handleMarcarSemProfissional(r) },
+            ],
+            excluir: carregarDados,
+            largura: '17rem',
+          })}
           <Column
             field="paciente" body={(r: any) => nomeComCopiar(r.paciente)}
             header={cabecalhoComHint('Paciente', 'Nome do beneficiário, em MAIÚSCULAS sem acento (padrão de busca).')}
-            sortable
             filter
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '16rem' }}
+            frozen alignFrozen="left"
           />
+          {colunaOrigem()}
           {colunaRepedido()}
-          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
-          {colunaCnj()}
-          {colunaSei()}
-          {colunaComarca()}
-          {colunaCadastro()}
-          {colunaSegredo()}
-          {colunaInteiroTeor()}
-          {colunaSolicitante()}
+          <Column field="idade" header={cabecalhoComHint('Idade', 'Idade do paciente hoje, calculada da data de nascimento. Criança/recém-nascido recebe o e-mail pediátrico de exames.')}
+            sortable filter filterElement={(o) => filterElement(o, 'Buscar')} style={{ minWidth: '6rem' }}
+            body={(r: any) => r.idade ?? <span className="sm-sla-vazio">—</span>} />
+          <Column field="tipoPaciente" header={cabecalhoComHint('Tipo', 'Recém-nascido (≤28 dias) · Pediátrico (<18) · Adulto · Idoso (60+). Muda o médico certo e o risco de segredo.')}
+            sortable style={{ minWidth: '7rem' }} body={(r: any) => tagTipoPaciente(r.tipoPaciente)} />
           <Column
             field="procedimento" className="col-procedimento-upper"
             header={cabecalhoComHint('Procedimento', 'O que a decisão judicial determinou. É a chave para achar o preço histórico.')}
@@ -490,6 +528,13 @@ export function SelecionarMedicoPage() {
             style={{ minWidth: '14rem' }}
           />
           <Column
+            field="slaFaseHorasRestantes"
+            header={cabecalhoComHint('SLA fase', 'Prazo para definir o médico: 1 dia útil depois que a análise jurídica salvou "Cotar". Pedido que chega na sexta fecha na segunda (fim de semana não conta). Verde = no prazo · laranja = menos de 6 h · vermelho = vencido.')}
+            sortable
+            body={(r: ProcessoResumoTableRow) => <CelulaSlaFase r={r} />}
+            style={{ minWidth: '11rem' }}
+          />
+          <Column
             field="dias"
             header={cabecalhoComHint('Dias', 'Dias corridos desde a entrada do pedido nesta fase. Compare com o SLA no cabeçalho.')}
             sortable
@@ -497,63 +542,21 @@ export function SelecionarMedicoPage() {
             filterElement={(options) => filterElement(options, 'Buscar')}
             style={{ minWidth: '7rem' }}
           />
-          {!readOnly && (
-            <Column
-              header="Sugerir IA"
-              body={(rowData: ProcessoResumoTableRow) => (
-                <Button
-                  label=""
-                  tooltip="Sugerir médico via IA"
-                  tooltipOptions={{ position: 'bottom' }}
-                  icon="pi pi-sparkles"
-                  outlined
-                  loading={iaLoadingId === rowData.id}
-                  disabled={iaLoadingId !== null && iaLoadingId !== rowData.id}
-                  onClick={() => void handleSugerirMedicoIA(rowData)}
-                />
-              )}
-              style={{ minWidth: '7rem' }}
-              bodyStyle={{ textAlign: 'center' }}
-            />
-          )}
-          {!readOnly && (
-            <Column
-              header="Selecionar Médico"
-              body={(rowData: ProcessoResumoTableRow) => (
-                <Button
-                  label=""
-                  icon="pi pi-user-edit"
-                  outlined
-                  onClick={() => abrirDialog(rowData)}
-                />
-              )}
-              style={{ minWidth: '8rem' }}
-              bodyStyle={{ textAlign: 'center' }}
-            />
-          )}
-          {!readOnly && (
-            <Column
-              header="Perda"
-              body={(rowData: ProcessoResumoTableRow) => (
-                <Button
-                  label=""
-                  icon="pi pi-user-minus"
-                  severity="danger"
-                  outlined
-                  onClick={() => void handleMarcarSemProfissional(rowData)}
-                />
-              )}
-              style={{ minWidth: '5rem' }}
-              bodyStyle={{ textAlign: 'center' }}
-            />
-          )}
-          {colunaExcluirAdmin(carregarDados)}
+          {colunaAnexosSES()}
+          {/* Identificação do pedido (task #214): CNJ + SEI com copiar, Comarca + km */}
+{colunaCnj()}
+          {colunaSei()}
+          {colunaComarca()}
+          {colunaCadastro()}
+          {colunaSegredo()}
+          {colunaInteiroTeor()}
+          {colunaSolicitante()}
           {colunaBaixarOrcamento()}
           {colunaEmpenhoEstado()}
           {colunaPagoEm()}
           {colunaDiferenca()}
-        </>)}
-        </DataTable>
+          </>)}
+</DataTable>
       </div>
 
       <Dialog
