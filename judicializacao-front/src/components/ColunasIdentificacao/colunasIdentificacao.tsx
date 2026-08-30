@@ -323,6 +323,8 @@ export function colunaOrigem() {
         ? <Tag value="Manual" severity="warning" icon="pi pi-user-edit" title="Cadastrado à mão pela equipe (sem e-mail de origem; nenhuma resposta automática saiu)." />
         : r.origemRegistro === 'email'
         ? <Tag value="E-mail" severity="info" icon="pi pi-envelope" title="Cadastro automático a partir do e-mail da SES." />
+        : r.origemRegistro === 'base_antiga'
+        ? <Tag value="Base antiga" severity="secondary" icon="pi pi-history" title={`Lançamento anterior ao sistema, importado da base histórica (30/08).${r.statusLegado ? ' Status original: ' + r.statusLegado : ''}`} />
         : (r.origemRegistro ? <Tag value={String(r.origemRegistro)} severity="secondary" /> : <span className="ident-vazio" title="Pedido anterior ao registro de origem.">—</span>)} />
   );
 }
