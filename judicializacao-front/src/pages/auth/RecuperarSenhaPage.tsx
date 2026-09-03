@@ -1,3 +1,4 @@
+import logoG4med from '../../assets/logo-g4med-branca.svg'
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -10,16 +11,8 @@ import './LoginPage.css';
 interface BrandProps { compact?: boolean }
 const BrandMark = ({ compact = false }: BrandProps) => (
   <div className={`login-page__brand ${compact ? 'login-page__brand--compact' : ''}`}>
-    <span className="login-page__brand-mark" aria-hidden>
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="2.2"
-        strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 12l2 2 4-4" />
-        <path d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4z" />
-      </svg>
-    </span>
     <div className="login-page__brand-text">
-      <div>MED<span>CHECK</span></div>
+      <img src={logoG4med} alt="G4MED" style={{ height: 30, display: 'block', marginBottom: 6 }} />
       <small>Urgência e Emergência Judicial</small>
     </div>
   </div>
@@ -251,7 +244,7 @@ export function RecuperarSenhaPage() {
           </form>
         </div>
       </div>
-      <p className="login-page__copyright">© {new Date().getFullYear()} MEDCHECK · Sistema de Judicialização</p>
+      <p className="login-page__copyright">© {new Date().getFullYear()} G4MED · Sistema de Judicialização</p>
     </div>
   );
 }

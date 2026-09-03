@@ -3,6 +3,25 @@
 .mc-acoes .mc-acao--principal.p-button { font-weight: 600; white-space: nowrap; padding: .35rem .7rem; }
 .mc-acoes .mc-acao--secundaria.p-button { padding: .35rem .5rem; }
 .mc-acoes-lixeira { display: inline-flex; margin-left: .35rem; padding-left: .45rem; border-left: 1px solid var(--surface-border, #dde3e8); }
-/* colunas congeladas ganham um filete para o olho saber onde termina a parte fixa */
-.p-datatable .p-frozen-column { background: var(--surface-card, #fff); }
-.p-datatable .p-frozen-column.mc-col-fim-fixa { box-shadow: inset -2px 0 0 #dde3e8; }
+
+/* --------------------------------------------------------------------------
+   Coluna congelada NÃO pode ser atravessada pelo que rola por baixo.
+   Causa (PrimeReact 10.9): o CSS do componente dá empilhamento só ao cabeçalho
+       .p-datatable-scrollable th.p-frozen-column { z-index: 1 }
+   e NUNCA ao corpo. Sem z-index, a célula fixa é pintada na ordem do DOM — e as
+   células roladas, que vêm DEPOIS, aparecem POR CIMA dela. Por isso o cabeçalho
+   ficava certo e só o corpo sobrepunha (bug @R 30/08, tela /processos).
+   `background: inherit` é de propósito: todo destaque de linha (selecionada
+   #eff6ff, hover #f3f4f6, listrada #f8f8fa) mora na <tr> — um branco fixo aqui
+   deixaria a coluna fixa branca no meio de uma linha destacada.
+   -------------------------------------------------------------------------- */
+.p-datatable-scrollable .p-datatable-tbody > tr > td.p-frozen-column {
+  background: inherit;
+  z-index: 1;
+}
+
+/* filete/sombra na primeira coluna que ROLA: mostra onde termina a parte fixa */
+.p-datatable-scrollable .p-datatable-tbody > tr > td.p-frozen-column + td:not(.p-frozen-column),
+.p-datatable-scrollable .p-datatable-thead > tr > th.p-frozen-column + th:not(.p-frozen-column) {
+  box-shadow: inset 6px 0 6px -6px rgba(0, 0, 0, .18);
+}

@@ -10,7 +10,10 @@ import { getEmailsPendentesCount, getNotificacoesCentral } from '../../services/
 import { getMinhaSessao, trocarMinhaSenha } from '../../services/api/client'
 import { readAuthProfile } from '../../access/authProfile'
 import { chaveOnboardingHome } from '../onboarding/useHomeOnboarding'
-import logo from '../../assets/logo-horizontal.png'
+// Marca G4MED — lockup canônico 3 blocos (G|4|MED), asset do acervo oficial da marca
+// SVG A0 (Anton, manual v2) é o canônico; os PNG logo-g4med-*.png são rasterizados DELE (fallback fiel).
+// NUNCA usar o antigo logog4med_REPROVADA_* (5 blocos com serifa — lockup reprovado).
+import logo from '../../assets/logo-g4med-preta.svg'
 import { AjudaModal } from '../../components/AjudaModal/AjudaModal'
 import './Header.css'
 
@@ -185,7 +188,7 @@ export function Header({ onMenuClick }: Props) {
           aria-label="Abrir menu"
         />
         <span className="mc-brand__mark">
-          <img src={logo} alt="MedCheck" style={{ height: 62 }} />
+          <img src={logo} alt="G4MED" style={{ height: 40 }} />
         </span>
 
         
